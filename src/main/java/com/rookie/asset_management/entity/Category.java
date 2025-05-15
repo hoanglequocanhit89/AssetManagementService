@@ -1,9 +1,6 @@
 package com.rookie.asset_management.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+import jakarta.persistence.*;
 import lombok.Getter;
 import lombok.Setter;
 
@@ -12,11 +9,13 @@ import lombok.Setter;
 @Getter
 @Setter
 public class Category {
-    @Id
-    private Integer id;
-    @Column(length = 64, unique = true)
-    private String name;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Integer id;
 
-    @Column(length = 2, unique = true, columnDefinition = "CHAR(2)")
-    private String prefix;
+  @Column(length = 64, unique = true)
+  private String name;
+
+  @Column(length = 2, unique = true, columnDefinition = "CHAR(2)")
+  private String prefix;
 }

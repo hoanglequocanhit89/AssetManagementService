@@ -12,7 +12,7 @@
 	<artifactId>asset-management</artifactId>
 	<version>0.0.1-SNAPSHOT</version>
 	<name>asset-management</name>
-	<description>Demo project for Spring Boot</description>
+	<description>Asset Management project</description>
 	<url/>
 	<licenses>
 		<license/>
@@ -69,23 +69,13 @@
 			<artifactId>springdoc-openapi-starter-webmvc-ui</artifactId>
 			<version>2.8.6</version>
 		</dependency>
+		<dependency>
+			<groupId>org.springframework.boot</groupId>
+			<artifactId>spring-boot-devtools</artifactId>
+			<scope>runtime</scope>
+		</dependency>
 	</dependencies>
 
-<!--Add profiles for different environments-->
-	<profiles>
-		<profile>
-			<id>dev</id>
-			<properties>
-				<spring.profiles.active>dev</spring.profiles.active>
-			</properties>
-		</profile>
-		<profile>
-			<id>prod</id>
-			<properties>
-				<spring.profiles.active>prod</spring.profiles.active>
-			</properties>
-		</profile>
-	</profiles>
 	<build>
 		<plugins>
 			<plugin>
@@ -118,12 +108,6 @@
 							<artifactId>lombok</artifactId>
 						</exclude>
 					</excludes>
-<!--					 Add the following line to pass the active profile as a JVM argument-->
-<!--					to run the application with the specified profile, you can use the following command:-->
-<!--					mvn spring-boot:run -P{profile-to-run}-->
-					<jvmArguments>
-						-Dspring.profiles.active=${spring.profiles.active}
-					</jvmArguments>
 				</configuration>
 			</plugin>
 			<!-- JaCoCo -->
@@ -148,6 +132,30 @@
 						</goals>
 					</execution>
 				</executions>
+			</plugin>
+
+			<plugin>
+				<groupId>com.diffplug.spotless</groupId>
+				<artifactId>spotless-maven-plugin</artifactId>
+				<version>2.43.0</version>
+				<executions>
+					<execution>
+						<id>format-on-compile</id>
+						<phase>compile</phase>
+						<goals>
+							<goal>apply</goal>
+						</goals>
+					</execution>
+				</executions>
+				<configuration>
+					<java>
+						<googleJavaFormat>
+							<version>1.17.0</version>
+							<style>GOOGLE</style>
+							<groupArtifact>com.google.googlejavaformat:google-java-format</groupArtifact>
+						</googleJavaFormat>
+					</java>
+				</configuration>
 			</plugin>
 		</plugins>
 	</build>

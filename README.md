@@ -52,7 +52,8 @@ src/
 ### Prerequisites
 - JDK 21 or higher
 - Maven 3.6+
-- PostgreSQL
+- PostgreSQL 17 or higher
+- Docker and Docker Compose
 
 ### Steps
 1. Clone the repository:
@@ -60,17 +61,12 @@ src/
    git clone https://github.com/hoanglequocanhit89/AssetManagementService.git
    cd AssetManagementService
    ```
+   
+2. Configure environment variables, follow the `.env.example` file
 
-2. Configure database connection in `application.properties`
-
-3. Build the application:
+3. Run docker compose to start the application and PostgreSQL database:
    ```bash
-   mvn clean install
-   ```
-
-4. Run the application:
-   ```bash
-   mvn spring-boot:run
+   docker compose up
    ```
 
 ## API Documentation
