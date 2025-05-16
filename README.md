@@ -61,28 +61,26 @@ src/
    git clone https://github.com/hoanglequocanhit89/AssetManagementService.git
    cd AssetManagementService
    ```
+   
+2. Configure environment variables, follow the `.env.example` file
 
-2. Create `application-dev.properties` and follow the `application.properties.example` to set up for dev profile
-
-3. Configure environment variables, follow the `.env.example` file
-
-4. Run docker compose to set up PostgreSQL:
+3. Run docker compose to set up PostgreSQL:
    ```bash
    docker-compose up -d
    ```
 
-5. Build the application:
+4. Build the application:
    ```bash
    mvn clean install
    ```
 
-6. Run the application for dev profile:
+5. Run the application:
    ```bash
-   mvn spring-boot:run -Pdev
+   mvn spring-boot:run
    ```
    or with mvnw command:
    ```bash
-    ./mvnw spring-boot:run -Pdev
+    ./mvnw spring-boot:run
     ```
 
 ## API Documentation
