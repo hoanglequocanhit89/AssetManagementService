@@ -70,12 +70,12 @@ src/
    docker-compose up -d
    ```
 
-4. Build the application:
+5. Build the application:
    ```bash
    mvn clean install
    ```
 
-5. Run the application for dev profile:
+6. Run the application for dev profile:
    ```bash
    mvn spring-boot:run -Pdev
    ```
