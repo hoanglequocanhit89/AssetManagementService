@@ -52,7 +52,8 @@ src/
 ### Prerequisites
 - JDK 21 or higher
 - Maven 3.6+
-- PostgreSQL
+- PostgreSQL 17 or higher
+- Docker and Docker Compose
 
 ### Steps
 1. Clone the repository:
@@ -79,6 +80,10 @@ src/
    ```bash
    mvn spring-boot:run -Pdev
    ```
+   or with mvnw command:
+   ```bash
+    ./mvnw spring-boot:run -Pdev
+    ```
 
 ## API Documentation
 The API documentation is available at `/swagger-ui.html` when running the application.
