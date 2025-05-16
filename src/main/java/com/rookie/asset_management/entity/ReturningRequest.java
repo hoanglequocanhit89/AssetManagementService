@@ -14,6 +14,7 @@ import java.time.LocalDate;
 @Setter
 public class ReturningRequest {
     @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Integer id;
 
     @OneToOne

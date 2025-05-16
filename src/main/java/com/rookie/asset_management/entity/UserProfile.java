@@ -14,6 +14,7 @@ import java.time.LocalDate;
 @Setter
 public class UserProfile {
     @Id
+    // No use of @GeneratedValue here as we are using @MapsId
     private Integer id;
 
     @Column(name = "first_name", length = 128)
