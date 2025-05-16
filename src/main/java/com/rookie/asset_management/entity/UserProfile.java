@@ -1,0 +1,39 @@
+package com.rookie.asset_management.entity;
+
+import com.fasterxml.jackson.annotation.JsonIgnore;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
+
+import java.time.LocalDate;
+
+@Entity
+@Table(name = "user_profiles")
+@Getter
+@Setter
+public class UserProfile {
+    @Id
+    private Integer id;
+
+    @Column(name = "first_name", length = 128)
+    private String firstName;
+
+    @Column(name = "last_name", length = 128)
+    private String lastName;
+
+    @DateTimeFormat(pattern = "dd-MM-yyyy") // format for date input
+    private LocalDate dob;
+
+    private Boolean gender;
+
+    @OneToOne
+    @MapsId
+    @JoinColumn(name = "id")
+    @JsonIgnore // to prevent circular reference
+    private User user;
+
+    public String getFullName() {
+        return this.firstName + " " + this.lastName;
+    }
+}
