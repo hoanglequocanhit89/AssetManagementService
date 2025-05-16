@@ -61,16 +61,23 @@ src/
    cd AssetManagementService
    ```
 
-2. Configure database connection in `application.properties`
+2. Create `application-dev.properties` and follow the `application.properties.example` to set up for dev profile
 
-3. Build the application:
+3. Configure environment variables, follow the `.env.example` file
+
+4. Run docker compose to set up PostgreSQL:
+   ```bash
+   docker-compose up -d
+   ```
+
+4. Build the application:
    ```bash
    mvn clean install
    ```
 
-4. Run the application:
+5. Run the application for dev profile:
    ```bash
-   mvn spring-boot:run
+   mvn spring-boot:run -Pdev
    ```
 
 ## API Documentation

@@ -2,13 +2,15 @@ server.port=(your port)
 
 
 # Data source
-spring.datasource.url=(your database URL)
+spring.datasource.url=(your database URL) - e.g. jdbc:postgres://localhost:{docker_db_port_is_5433_in_docker_compose}/{POSTGRES_DB}-db_name_in_env
 spring.datasource.username=(your database username)
 spring.datasource.password=(your database password)
+## make sure to use the same driver as the database
 spring.datasource.driver-class-name=(your database driver class name)
 
 # JPA/Hibernate
-spring.jpa.properties.hibernate.dialect=(org.hibernate.dialect.YourDialect)
+## make sure to use the same dialect as the database
+spring.jpa.properties.hibernate.dialect=(org.hibernate.dialect.YourDialect) - optional for dialect, it's usually auto-detected
 spring.jpa.properties.hibernate.format_sql=(true or false) - optional for pretty printing
 spring.jpa.properties.hibernate.use_sql_comments=(true or false) - optional for SQL comments
 spring.jpa.properties.hibernate.generate_statistics=(true or false) - optional for statistics
