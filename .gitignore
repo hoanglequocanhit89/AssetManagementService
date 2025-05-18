@@ -16,8 +16,6 @@ target/
 ### Application files ###
 application-prod.properties
 application-prod.yml
-application-test.properties
-application-test.yml
 application-dev.properties
 application-dev.yml
 application-local.properties

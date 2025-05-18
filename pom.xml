@@ -71,15 +71,8 @@
 		</dependency>
 		<dependency>
 			<groupId>org.springframework.boot</groupId>
-			<artifactId>spring-boot-docker-compose</artifactId>
+			<artifactId>spring-boot-devtools</artifactId>
 			<scope>runtime</scope>
-		</dependency>
-		<!-- dotenv -->
-		<!-- https://mvnrepository.com/artifact/io.github.cdimascio/dotenv-java -->
-		<dependency>
-			<groupId>io.github.cdimascio</groupId>
-			<artifactId>dotenv-java</artifactId>
-			<version>3.2.0</version>
 		</dependency>
 	</dependencies>
 

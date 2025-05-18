@@ -2,7 +2,7 @@ version: '3.8'
 
 services:
   postgres:
-    build: .
+    image: postgres:17-alpine
     container_name: asset_management_db
     ports:
       - "5433:5432"
@@ -12,6 +12,9 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
+    networks:
+        - asset_management_network
     restart: unless-stopped
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U postgres"]
@@ -19,5 +22,28 @@ services:
       timeout: 5s
       retries: 5
 
+  app:
+    image: maven:3.9.8-eclipse-temurin-21
+    container_name: asset_management_app
+    volumes:
+      - .:/app # Mount the current directory to /app in the container
+      - maven_cache:/root/.m2 # Cache Maven dependencies
+    working_dir: /app
+    ports:
+      - "8081:8080"
+    env_file:
+      - .env
+    networks:
+      - asset_management_network
+    depends_on:
+        postgres:
+            condition: service_healthy
+    command: ["mvn", "spring-boot:run"]
+
 volumes:
   postgres_data:
+  maven_cache:
+
+networks:
+    asset_management_network:
+        driver: bridge

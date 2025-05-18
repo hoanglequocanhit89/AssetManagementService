@@ -64,24 +64,10 @@ src/
    
 2. Configure environment variables, follow the `.env.example` file
 
-3. Run docker compose to set up PostgreSQL:
+3. Run docker compose to start the application and PostgreSQL database:
    ```bash
-   docker-compose up -d
+   docker compose up
    ```
-
-4. Build the application:
-   ```bash
-   mvn clean install
-   ```
-
-5. Run the application:
-   ```bash
-   mvn spring-boot:run
-   ```
-   or with mvnw command:
-   ```bash
-    ./mvnw spring-boot:run
-    ```
 
 ## API Documentation
 The API documentation is available at `/swagger-ui.html` when running the application.

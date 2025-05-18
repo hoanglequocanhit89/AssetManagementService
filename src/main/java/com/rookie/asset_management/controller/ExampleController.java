@@ -27,7 +27,7 @@ public class ExampleController {
     private final ExampleService exampleService;
 
     // Example method to handle a GET request
-     @GetMapping("/example")
+     @GetMapping
      public ResponseEntity<ApiDtoResponse<Map<String, String>>> getExample() {
             // Create a sample response
             String message = exampleService.exampleMethod();
