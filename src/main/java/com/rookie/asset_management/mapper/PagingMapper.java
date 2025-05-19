@@ -1,18 +1,17 @@
 package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import org.springframework.data.domain.Page;
+
 import java.util.Collection;
 import java.util.function.Function;
-import org.mapstruct.Mapper;
-import org.springframework.data.domain.Page;
 
 /**
  * Mapper interface for converting between Page E and PagingRes D. This interface provides a method
  * to convert a Page D to a PagingRes D using a mapper function. Should extend this interface to
  * convert a Page E to a PagingRes D.
  */
-@Mapper(componentModel = "spring")
-public interface PagingMapper {
+public interface PagingMapper<E, D> extends BaseMapper<E, D> {
 
   /**
    * Converts a Page E to a PagingRes D using a mapper function.<br>
@@ -22,8 +21,10 @@ public interface PagingMapper {
    * @param mapper function to map each entity to DTO
    * @return the PagingRes of DTOs
    */
-  default <E, D> PagingDtoResponse<D> toPagingResult(Page<E> pages, Function<E, D> mapper) {
-    Collection<D> dtoList = pages.getContent().stream().map(mapper).toList();
+  default PagingDtoResponse<D> toPagingResult(Page<E> pages, Function<E, D> mapper) {
+    Collection<D> dtoList = pages.getContent().stream()
+        .map(mapper)
+        .toList();
 
     return new PagingDtoResponse<>(
         dtoList,

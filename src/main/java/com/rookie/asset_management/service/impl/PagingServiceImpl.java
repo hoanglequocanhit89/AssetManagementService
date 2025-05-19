@@ -1,8 +1,11 @@
 package com.rookie.asset_management.service.impl;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.mapper.PagingMapper;
 import com.rookie.asset_management.repository.SpecificationRepository;
 import com.rookie.asset_management.service.PagingService;
+
+import lombok.RequiredArgsConstructor;
 
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -11,42 +14,20 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
 import java.io.Serializable;
-import java.util.function.Function;
 
 /**
  * Abstract implementation of PagingService that provides common pagination and sorting functionality.
  *
- * @param <T> the type of the DTO
+ * @param <D> the type of the DTO
  * @param <E> the type of the entity
  * @param <K> the type of the entity's identifier
  */
-public abstract class PagingServiceImpl<T, E, K extends Serializable>
-    implements PagingService<T, E> {
+@RequiredArgsConstructor
+public abstract class PagingServiceImpl<D, E, K extends Serializable> implements PagingService<D, E> {
 
-  /**
-   * Get the repository for the entity. This method should be implemented by subclasses to return
-   * the specific repository.
-   *
-   * @return the repository
-   */
-  protected abstract SpecificationRepository<E, K> getRepository();
+  private final PagingMapper<E, D> pagingMapper;
 
-  /**
-   * Convert an entity to a DTO.
-   *
-   * @param entity the entity to convert
-   * @return the DTO
-   */
-  protected abstract T convertToDto(E entity);
-
-  /**
-   * Convert a page of entities to a page of DTOs.
-   *
-   * @param page the page of entities
-   * @param converter the function to convert an entity to a DTO
-   * @return a paginated response containing the DTOs
-   */
-  protected abstract PagingDtoResponse<T> toPagingResult(Page<E> page, Function<E, T> converter);
+  private final SpecificationRepository<E, K> specificationRepository;
 
   /**
    * * Create a pageable object for pagination and sorting.
@@ -84,12 +65,12 @@ public abstract class PagingServiceImpl<T, E, K extends Serializable>
   }
 
   @Override
-  public PagingDtoResponse<T> getMany(Specification<E> spec, Pageable pageable) {
+  public PagingDtoResponse<D> getMany(Specification<E> spec, Pageable pageable) {
     if (spec != null) {
-      Page<E> page = getRepository().findAll(spec, pageable);
-      return toPagingResult(page, this::convertToDto);
+      Page<E> page = specificationRepository.findAll(spec, pageable);
+      return pagingMapper.toPagingResult(page, pagingMapper::toDto);
     }
-    Page<E> page = getRepository().findAll(pageable);
-    return toPagingResult(page, this::convertToDto);
+    Page<E> page = specificationRepository.findAll(pageable);
+    return pagingMapper.toPagingResult(page, pagingMapper::toDto);
   }
 }
