@@ -1,14 +1,12 @@
 package com.rookie.asset_management.exception.handler;
 
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
-import com.rookie.asset_management.exception.AccessDeniedException;
-import com.rookie.asset_management.exception.ConflictException;
-import com.rookie.asset_management.exception.NotFoundException;
-import com.rookie.asset_management.exception.UnAuthorizedException;
+import com.rookie.asset_management.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 /**
  * Global exception handler for handling exceptions in the application.
@@ -18,54 +16,24 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
-  // handle when the user is not authorized
-  @ExceptionHandler(UnAuthorizedException.class)
-  public ResponseEntity<ApiDtoResponse<Void>> handleUnAuthorizedException(UnAuthorizedException ex) {
+  // handle defined exceptions
+  @ExceptionHandler(AppException.class)
+  public ResponseEntity<ApiDtoResponse<Void>> handleAppException(AppException ex) {
     ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder()
         .message(ex.getMessage())
         .build();
     log.error(ex.getMessage(), ex);
-    return ResponseEntity.status(401).body(response);
+    return ResponseEntity.status(ex.getHttpStatusCode()).body(response);
   }
 
-  // handle when the user is authorized but not allowed to access the resource
-  @ExceptionHandler(AccessDeniedException.class)
-  public ResponseEntity<ApiDtoResponse<Void>> handleAccessDeniedException(AccessDeniedException ex) {
+  // handle case when spring throws NoResourceFoundException when no handler is found
+  @ExceptionHandler(NoResourceFoundException.class)
+  public ResponseEntity<ApiDtoResponse<Void>> handleNoResourceFoundException(NoResourceFoundException ex) {
     ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder()
-        .message(ex.getMessage())
-        .build();
-    log.error(ex.getMessage(), ex);
-    return ResponseEntity.status(403).body(response);
-  }
-
-  // handle when the resource is not found
-  @ExceptionHandler(NotFoundException.class)
-  public ResponseEntity<ApiDtoResponse<Void>> handleResourceNotFoundException(NotFoundException ex) {
-    ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder()
-        .message(ex.getMessage())
+        .message("Resource not found")
         .build();
     log.error(ex.getMessage(), ex);
     return ResponseEntity.status(404).body(response);
-  }
-
-  // handle when the resource is already exists, delete a resource with can not be deleted, etc.
-  @ExceptionHandler(ConflictException.class)
-  public ResponseEntity<ApiDtoResponse<Void>> handleResourceConflictException(ConflictException ex) {
-    ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder()
-        .message(ex.getMessage())
-        .build();
-    log.error(ex.getMessage(), ex);
-    return ResponseEntity.status(409).body(response);
-  }
-
-  // handle when the user input is invalid
-  @ExceptionHandler(IllegalArgumentException.class)
-  public ResponseEntity<ApiDtoResponse<Void>> handleIllegalArgumentException(IllegalArgumentException ex) {
-    ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder()
-        .message(ex.getMessage())
-        .build();
-    log.error(ex.getMessage(), ex);
-    return ResponseEntity.status(400).body(response);
   }
 
   // handle when other exceptions are thrown without any specific handler
