@@ -10,10 +10,10 @@ import org.springframework.data.repository.NoRepositoryBean;
  * JpaSpecificationExecutor to provide basic CRUD operations and specification-based querying
  * capabilities.
  *
- * @param <T> the entity type
+ * @param <E> the entity type
  * @param <K> the type of the entity's identifier. This is a {@link Serializable} type.
  */
 @NoRepositoryBean
 // Indicates that this is not a repository bean and should not be instantiated directly
-public interface SpecificationRepository<T, K extends Serializable>
-    extends JpaRepository<T, K>, JpaSpecificationExecutor<T> {}
+public interface SpecificationRepository<E, K extends Serializable>
+    extends JpaRepository<E, K>, JpaSpecificationExecutor<E> {}

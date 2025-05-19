@@ -6,6 +6,11 @@ CREATE TYPE ASSET_STATUS AS ENUM (
 	'ASSIGNED'
 );
 
+CREATE TYPE GENDER AS ENUM (
+    'MALE',
+    'FEMALE'
+);
+
 CREATE TYPE ASSIGNMENT_STATUS AS ENUM (
 	'WAITING',
 	'ACCEPTED'
@@ -21,7 +26,7 @@ CREATE TABLE "user_profiles" (
                                  "first_name" VARCHAR(128) NOT NULL,
                                  "last_name" VARCHAR(128) NOT NULL,
                                  "dob" DATE NOT NULL,
-                                 "gender" BOOLEAN DEFAULT null
+                                 "gender" GENDER DEFAULT null
 );COMMENT ON COLUMN user_profiles.dob IS 'must older than 18 years old';
 COMMENT ON COLUMN user_profiles.gender IS '1: male, 0: female';
 

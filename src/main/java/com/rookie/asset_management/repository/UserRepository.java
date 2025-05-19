@@ -2,8 +2,17 @@ package com.rookie.asset_management.repository;
 
 import com.rookie.asset_management.entity.User;
 import java.util.Optional;
-import org.springframework.data.jpa.repository.JpaRepository;
 
-public interface UserRepository extends JpaRepository<User, Long> {
+/**
+ * Repository interface for User entity. It extends the SpecificationRepository interface to provide
+ * basic CRUD operations and custom query capabilities.
+ */
+public interface UserRepository extends SpecificationRepository<User, Integer> {
+  /**
+   * find user by id who is not disabled
+   *
+   * @param id id of the user to find
+   * @return Optional user entity
+   */
   Optional<User> findByIdAndDisabledFalse(Integer id);
 }

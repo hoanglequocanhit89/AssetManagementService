@@ -50,9 +50,6 @@ src/
 ## Setup and Installation
 
 ### Prerequisites
-- JDK 21 or higher
-- Maven 3.6+
-- PostgreSQL 17 or higher
 - Docker and Docker Compose
 
 ### Steps
@@ -68,14 +65,21 @@ src/
    ```bash
    docker compose up
    ```
+4. 
 
 ## API Documentation
 The API documentation is available at `/swagger-ui.html` when running the application.
 
 ## Contributing
 1. Fork the project
-2. Create your feature branch (`git checkout -b feat/amazing-feature`)
-3. Commit your changes (`git commit -m '{ticket-code}: Add some amazing feature'`)
+2. Create your feature branch (`git checkout -b <pefix>/<branch-name>`)
+   - `<prefix>`: feat, fix, ref, hotfix, release
+   - `<branch-name>`: A short description of the feature or bug
+   - Example: `feat/amazing-feature`
+3. Commit your changes (`git commit -m '<type>: <description>'`)
+   - `<type>`: feat, fix, docs, style, refactor, test
+   - `<description>`: A short description of the change
+   - Example: `feat: add new asset management api`
 4. Push to the branch (`git push origin feat/amazing-feature`)
 5. Open a Pull Request
 
