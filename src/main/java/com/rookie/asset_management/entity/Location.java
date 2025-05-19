@@ -12,6 +12,7 @@ public class Location {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
+
   @Column(unique = true, nullable = false, length = 64)
   private String name;
 }

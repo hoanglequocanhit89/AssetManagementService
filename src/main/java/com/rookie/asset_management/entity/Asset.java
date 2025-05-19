@@ -2,12 +2,11 @@ package com.rookie.asset_management.entity;
 
 import com.rookie.asset_management.enums.AssetStatus;
 import jakarta.persistence.*;
+import java.time.LocalDate;
+import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
-
-import java.time.LocalDate;
-import java.util.List;
 
 @Entity
 @Table(name = "assets")
@@ -17,7 +16,12 @@ public class Asset extends BaseEntityAudit {
   private String name;
   private String specification;
 
-  @Column(name = "asset_code", length = 8, unique = true, nullable = false, columnDefinition = "CHAR(8)")
+  @Column(
+      name = "asset_code",
+      length = 8,
+      unique = true,
+      nullable = false,
+      columnDefinition = "CHAR(8)")
   // to ensure the code is stored in the correct format
   private String assetCode;
 
@@ -43,7 +47,6 @@ public class Asset extends BaseEntityAudit {
   public void prePersist() {
     super.prePersist();
     this.generateAssetCode();
-
   }
 
   private void generateAssetCode() {

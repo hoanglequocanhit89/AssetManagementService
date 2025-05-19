@@ -10,7 +10,5 @@ import org.springframework.test.context.ActiveProfiles;
 class AssetManagementApplicationTests {
 
   @Test
-  void contextLoads() {
-  }
-
+  void contextLoads() {}
 }

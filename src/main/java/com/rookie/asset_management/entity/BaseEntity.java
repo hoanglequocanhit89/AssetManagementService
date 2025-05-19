@@ -1,14 +1,13 @@
 package com.rookie.asset_management.entity;
 
 import jakarta.persistence.*;
+import java.util.Date;
 import lombok.Getter;
 import lombok.Setter;
 
-import java.util.Date;
-
 /**
- * Base entity class that contains common fields for all entities.
- * This class is used as a base class for all entities which need to have created and updated timestamps.
+ * Base entity class that contains common fields for all entities. This class is used as a base
+ * class for all entities which need to have created and updated timestamps.
  */
 @Getter
 @Setter
@@ -17,8 +16,10 @@ public abstract class BaseEntity {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
+
   @Column(name = "created_at")
   private Date createdAt;
+
   @Column(name = "updated_at")
   private Date updatedAt;
 
@@ -34,4 +35,3 @@ public abstract class BaseEntity {
     this.updatedAt = new Date();
   }
 }
-

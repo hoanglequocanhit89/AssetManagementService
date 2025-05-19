@@ -14,10 +14,9 @@ public interface PagingService<T, E> {
   /**
    * Get a paginated list of entities.
    *
-   * @param spec     the spec to filter the entities. This can be null.
+   * @param spec the spec to filter the entities. This can be null.
    * @param pageable the pagination information.
    * @return a paginated response containing the entities
    */
   PagingDtoResponse<T> getMany(Specification<E> spec, Pageable pageable);
-
 }

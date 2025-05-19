@@ -1,15 +1,14 @@
 package com.rookie.asset_management.dto.response;
 
+import java.util.Collection;
 import lombok.Builder;
 import lombok.Data;
 import lombok.NoArgsConstructor;
 
-import java.util.Collection;
-
 /**
- * PagingDtoResponse is a generic class that represents a paginated response.
- * It contains the content of the current page, total pages, total elements, size of the page,
- * current page number, and whether the page is empty.
+ * PagingDtoResponse is a generic class that represents a paginated response. It contains the
+ * content of the current page, total pages, total elements, size of the page, current page number,
+ * and whether the page is empty.
  *
  * @param <T> the type of the content
  */
@@ -25,7 +24,13 @@ public class PagingDtoResponse<T> {
   private Integer page;
   private Boolean empty;
 
-  public PagingDtoResponse(Collection<T> content, Integer totalPages, long totalElements, Integer size, Integer page, boolean empty) {
+  public PagingDtoResponse(
+      Collection<T> content,
+      Integer totalPages,
+      long totalElements,
+      Integer size,
+      Integer page,
+      boolean empty) {
     this.content = content;
     this.totalPages = totalPages;
     this.totalElements = totalElements;

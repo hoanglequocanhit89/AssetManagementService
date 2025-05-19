@@ -4,8 +4,8 @@ import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
 /**
- * Custom exception class for application-specific errors.
- * This class is used for handling application-specific errors in the application.
+ * Custom exception class for application-specific errors. This class is used for handling
+ * application-specific errors in the application.
  */
 @Getter
 public class AppException extends RuntimeException {

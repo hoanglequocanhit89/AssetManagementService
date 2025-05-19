@@ -7,5 +7,4 @@ public final class ApiPaths {
   private ApiPaths() {
     // Private constructor to prevent instantiation
   }
-
 }

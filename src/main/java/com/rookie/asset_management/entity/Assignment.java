@@ -2,11 +2,10 @@ package com.rookie.asset_management.entity;
 
 import com.rookie.asset_management.enums.AssignmentStatus;
 import jakarta.persistence.*;
+import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
 import org.springframework.format.annotation.DateTimeFormat;
-
-import java.time.LocalDate;
 
 @Entity
 @Table(name = "assignments")
@@ -37,5 +36,4 @@ public class Assignment {
 
   @Enumerated(EnumType.STRING)
   private AssignmentStatus status;
-
 }

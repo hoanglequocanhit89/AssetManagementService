@@ -9,14 +9,14 @@ import org.springframework.data.jpa.domain.Specification;
  */
 public class SpecificationBuilder<T> {
   /**
-   * The current specification.
-   * This is initialized to null and will be built up using the addIfNotNull and add method.
+   * The current specification. This is initialized to null and will be built up using the
+   * addIfNotNull and add method.
    */
   private Specification<T> spec = Specification.where(null);
 
   /**
-   * Adds a specification to the current specification.
-   * This method is used to chain multiple specifications together.
+   * Adds a specification to the current specification. This method is used to chain multiple
+   * specifications together.
    *
    * @param specFunc the function that generates the specification
    * @return the current SpecificationBuilder instance
@@ -29,8 +29,8 @@ public class SpecificationBuilder<T> {
   }
 
   /**
-   * Builds the final specification.
-   * This method returns the current specification, which can be used in a query.
+   * Builds the final specification. This method returns the current specification, which can be
+   * used in a query.
    *
    * @return the final specification
    */

@@ -1,13 +1,12 @@
 package com.rookie.asset_management.entity;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.Setter;
-import org.springframework.format.annotation.DateTimeFormat;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.Getter;
+import lombok.Setter;
+import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Table(name = "users")
@@ -16,6 +15,7 @@ import java.util.List;
 public class User extends BaseEntityAudit {
   @Column(unique = true, nullable = false)
   private String username;
+
   private String password;
 
   @ManyToOne
@@ -25,7 +25,12 @@ public class User extends BaseEntityAudit {
   @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
   private UserProfile userProfile;
 
-  @Column(name = "staff_code", length = 6, unique = true, nullable = false, columnDefinition = "CHAR(6)")
+  @Column(
+      name = "staff_code",
+      length = 6,
+      unique = true,
+      nullable = false,
+      columnDefinition = "CHAR(6)")
   // to ensure the staff code is stored as a fixed-length string
   private String staffCode;
 
@@ -37,6 +42,7 @@ public class User extends BaseEntityAudit {
 
   @Column(name = "first_login")
   private Boolean firstLogin;
+
   @Column(name = "joined_date")
   @DateTimeFormat(pattern = "dd-MM-yyyy")
   private LocalDate joinedDate;
