@@ -8,6 +8,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 
 import lombok.Getter;
@@ -75,6 +76,11 @@ public class User extends BaseEntityAudit {
   public void prePersist() {
     super.prePersist();
     this.generatePassword();
+  }
+
+  @PostPersist
+  public void postPersist() {
+    // generate staff code after the user is persisted
     this.generateStaffCode();
   }
 
