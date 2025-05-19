@@ -1,0 +1,36 @@
+# Root EditorConfig file
+root = true
+
+# Apply to Java source files
+[*.java]
+
+# Indentation
+indent_style = space
+indent_size = 2
+continuation_indent_size = 4
+
+# Line endings and charset
+end_of_line = lf
+charset = utf-8
+
+# Trim and insert final newline
+trim_trailing_whitespace = true
+insert_final_newline = true
+
+# Max line length
+max_line_length = 100
+
+# Braces: K&R style (Egyptian brackets)
+# These are usually handled by your formatter (e.g., IntelliJ code style settings), not .editorconfig directly.
+
+# Import ordering and rules (requires IDE settings or formatter plugin to enforce)
+# IntelliJ-specific: disable wildcard imports
+ij_java_imports_layout = *
+ij_java_imports_layout.sort_imports = true
+ij_java_imports_layout.blank_lines_between_imports = 0
+ij_java_imports_layout.separate_static_imports = true
+ij_java_imports_layout.use_fqn = false
+ij_java_imports_layout.class_count_to_use_import_on_demand = 9999
+ij_java_imports_layout.names_count_to_use_static_import_on_demand = 9999
+
+# Wrapping settings are typically not enforced via .editorconfig but through the IDE formatter or plugins
