@@ -4,26 +4,25 @@ import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.mapper.PagingMapper;
 import com.rookie.asset_management.repository.SpecificationRepository;
 import com.rookie.asset_management.service.PagingService;
-
+import java.io.Serializable;
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 
-import java.io.Serializable;
-
 /**
- * Abstract implementation of PagingService that provides common pagination and sorting functionality.
+ * Abstract implementation of PagingService that provides common pagination and sorting
+ * functionality.
  *
  * @param <D> the type of the DTO
  * @param <E> the type of the entity
  * @param <K> the type of the entity's identifier
  */
 @RequiredArgsConstructor
-public abstract class PagingServiceImpl<D, E, K extends Serializable> implements PagingService<D, E> {
+public abstract class PagingServiceImpl<D, E, K extends Serializable>
+    implements PagingService<D, E> {
 
   private final PagingMapper<E, D> pagingMapper;
 

@@ -30,6 +30,7 @@ public class SpecificationBuilder<T> {
 
   /**
    * Adds a specification to the current specification if the value is not null.
+   *
    * @param value the value to check
    * @param specFunc the function that generates the specification
    * @return the current SpecificationBuilder instance

@@ -1,7 +1,6 @@
 package com.rookie.asset_management.repository;
 
 import java.io.Serializable;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.repository.NoRepositoryBean;
@@ -16,5 +15,5 @@ import org.springframework.data.repository.NoRepositoryBean;
  */
 @NoRepositoryBean
 // Indicates that this is not a repository bean and should not be instantiated directly
-public interface SpecificationRepository<E, K extends Serializable> extends JpaRepository<E, K>, JpaSpecificationExecutor<E> {
-}
+public interface SpecificationRepository<E, K extends Serializable>
+    extends JpaRepository<E, K>, JpaSpecificationExecutor<E> {}

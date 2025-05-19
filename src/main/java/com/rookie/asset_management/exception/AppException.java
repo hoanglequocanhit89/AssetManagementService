@@ -1,7 +1,6 @@
 package com.rookie.asset_management.exception;
 
 import lombok.Getter;
-
 import org.springframework.http.HttpStatus;
 
 /**

@@ -4,14 +4,10 @@ import com.rookie.asset_management.dto.request.UserFilterRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.UserDtoResponse;
-
 import com.rookie.asset_management.service.UserService;
-
 import lombok.RequiredArgsConstructor;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
-
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -33,12 +29,13 @@ public class UserController {
       @RequestParam(defaultValue = "id") String sortBy,
       @RequestParam(defaultValue = "asc") String sortDir) {
 
-    PagingDtoResponse<UserDtoResponse> users = userService.getAllUsers(userFilterRequest, page, size, sortBy, sortDir);
-    ApiDtoResponse<PagingDtoResponse<UserDtoResponse>> response = ApiDtoResponse.<PagingDtoResponse<UserDtoResponse>>builder()
-        .message("User list retrieved successfully")
-        .data(users)
-        .build();
+    PagingDtoResponse<UserDtoResponse> users =
+        userService.getAllUsers(userFilterRequest, page, size, sortBy, sortDir);
+    ApiDtoResponse<PagingDtoResponse<UserDtoResponse>> response =
+        ApiDtoResponse.<PagingDtoResponse<UserDtoResponse>>builder()
+            .message("User list retrieved successfully")
+            .data(users)
+            .build();
     return ResponseEntity.ok(response);
-
   }
 }

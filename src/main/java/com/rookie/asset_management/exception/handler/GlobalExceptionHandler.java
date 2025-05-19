@@ -2,9 +2,7 @@ package com.rookie.asset_management.exception.handler;
 
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.exception.AppException;
-
 import lombok.extern.slf4j.Slf4j;
-
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;

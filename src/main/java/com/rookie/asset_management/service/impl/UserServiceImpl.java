@@ -15,7 +15,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
 @Service
-public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, Integer> implements UserService {
+public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, Integer>
+    implements UserService {
 
   private final UserRepository userRepository;
   private final UserMapper userMapper;
@@ -29,18 +30,20 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   }
 
   @Override
-  public PagingDtoResponse<UserDtoResponse> getAllUsers(UserFilterRequest userFilterRequest, int page, int size, String sortBy, String sortDir) {
+  public PagingDtoResponse<UserDtoResponse> getAllUsers(
+      UserFilterRequest userFilterRequest, int page, int size, String sortBy, String sortDir) {
     Pageable pageable = createPageable(page, size, sortDir, sortBy);
     // destructure the filter request
     String name = userFilterRequest.getName();
     String staffCode = userFilterRequest.getStaffCode();
     String type = userFilterRequest.getType();
     // Create a specification based on the filter request
-    Specification<User> spec = new SpecificationBuilder<User>()
-        .addIfNotNull(name, UserSpecification.hasName(name))
-        .addIfNotNull(staffCode, UserSpecification.hasStaffCode(staffCode))
-        .addIfNotNull(type, UserSpecification.hasType(type))
-        .build();
+    Specification<User> spec =
+        new SpecificationBuilder<User>()
+            .addIfNotNull(name, UserSpecification.hasName(name))
+            .addIfNotNull(staffCode, UserSpecification.hasStaffCode(staffCode))
+            .addIfNotNull(type, UserSpecification.hasType(type))
+            .build();
     return getMany(spec, pageable);
   }
 }

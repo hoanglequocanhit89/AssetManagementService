@@ -7,19 +7,15 @@ import com.rookie.asset_management.entity.UserProfile;
 import com.rookie.asset_management.repository.LocationRepository;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
-
 import jakarta.transaction.Transactional;
-
-import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
-
-import org.springframework.boot.CommandLineRunner;
-import org.springframework.context.annotation.Configuration;
-import org.springframework.core.annotation.Order;
-
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
+import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.CommandLineRunner;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.annotation.Order;
 
 @Slf4j
 @Configuration
@@ -62,12 +58,14 @@ public class UserSeed implements CommandLineRunner {
     }
 
     // Create admin user
-    User adminUser = getUser("adminu1", "Admin", "User 1", "01-01-2024", "01-01-1990", adminRole, locationDN);
+    User adminUser =
+        getUser("adminu1", "Admin", "User 1", "01-01-2024", "01-01-1990", adminRole, locationDN);
     adminRole.setUsers(List.of(adminUser));
     adminUser.setStaffCode("ADMIN1");
 
     // Create users
-    User staffUser = getUser("staffu1", "Staff", "User 1", "01-01-2025", "01-01-1995", staffRole, locationDN);
+    User staffUser =
+        getUser("staffu1", "Staff", "User 1", "01-01-2025", "01-01-1995", staffRole, locationDN);
     staffRole.setUsers(List.of(staffUser));
     staffUser.setStaffCode("STAFF1");
 
@@ -78,7 +76,14 @@ public class UserSeed implements CommandLineRunner {
     log.info("Users seeded successfully.");
   }
 
-  private User getUser(String username, String firstName, String lastName, String joinedDate, String dob, Role staffRole, Location locationDN) {
+  private User getUser(
+      String username,
+      String firstName,
+      String lastName,
+      String joinedDate,
+      String dob,
+      Role staffRole,
+      Location locationDN) {
     // Date format: dd-MM-yyyy
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
     // create user
