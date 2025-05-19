@@ -1,12 +1,35 @@
 package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
+import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
+/**
+ * Mapper interface for converting between User entity and UserDtoResponse DTO. This interface
+ * extends PagingMapper to provide pagination support. Should be annotated with @Mapper to enable
+ * MapStruct code generation.
+ */
 @Mapper(componentModel = "spring")
-public interface UserMapper {
+public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
+
+  /**
+   * override to map the userProfile fields to the User DTO response. Converts a UserCreation DTO to
+   * a User entity.
+   *
+   * @param user the user to convert
+   * @return the converted user DTO
+   */
+  @Override
+  @Mapping(target = "fullName", expression = "java(user.getUserProfile().getFullName())")
+  @Mapping(source = "role.name", target = "role")
+  @Mapping(
+      target = "canDisable",
+      expression = "java(user.getAssignments().size() > 0 ? false : true)")
+  // map canDisable to true if no assignments
+  UserDtoResponse toDto(User user);
 
   /**
    * Converts a {@link User} entity to a {@link UserDetailDtoResponse}.
@@ -17,7 +40,23 @@ public interface UserMapper {
   @Mapping(target = "location", source = "location.name")
   @Mapping(target = "role", source = "role.name")
   @Mapping(target = "fullName", expression = "java(user.getUserProfile().getFullName())")
-  @Mapping(target = "dob", source = "user.userProfile.dob")
-  @Mapping(target = "gender", source = "user.userProfile.gender")
+  @Mapping(target = "dob", source = "userProfile.dob")
+  @Mapping(target = "gender", source = "userProfile.gender")
   UserDetailDtoResponse toUserDetailsDto(User user);
+
+  /**
+   * default method to map a role name to a {@link Role} entity. This helps to convert a role name
+   * string to a Role entity.
+   *
+   * @param roleName the name of the role
+   * @return the Role entity
+   */
+  default Role map(String roleName) {
+    if (roleName == null) {
+      return null;
+    }
+    Role role = new Role();
+    role.setName(roleName);
+    return role;
+  }
 }

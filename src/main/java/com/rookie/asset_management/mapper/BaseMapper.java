@@ -1,5 +1,7 @@
 package com.rookie.asset_management.mapper;
 
+import java.util.List;
+
 /**
  * This interface defines methods for converting an entity to a DTO and vice versa.
  *
@@ -22,4 +24,24 @@ public interface BaseMapper<E, D> {
    * @return the converted entity
    */
   E toEntity(D dto);
+
+  /**
+   * Converts a list of entities to a list of DTOs.
+   *
+   * @param entities the list of entities to convert
+   * @return the list of converted DTOs
+   */
+  default List<D> toDtoList(List<E> entities) {
+    return entities.stream().map(this::toDto).toList();
+  }
+
+  /**
+   * Converts a list of DTOs to a list of entities.
+   *
+   * @param dtos the list of DTOs to convert
+   * @return the list of converted entities
+   */
+  default List<E> toEntityList(List<D> dtos) {
+    return dtos.stream().map(this::toEntity).toList();
+  }
 }

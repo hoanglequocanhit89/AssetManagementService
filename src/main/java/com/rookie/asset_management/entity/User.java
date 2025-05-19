@@ -1,6 +1,15 @@
 package com.rookie.asset_management.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.CascadeType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import jakarta.persistence.OneToOne;
+import jakarta.persistence.PostPersist;
+import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -63,6 +72,11 @@ public class User extends BaseEntityAudit {
   public void prePersist() {
     super.prePersist();
     this.generatePassword();
+  }
+
+  @PostPersist
+  public void postPersist() {
+    // generate staff code after the user is persisted
     this.generateStaffCode();
   }
 
