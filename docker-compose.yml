@@ -26,7 +26,11 @@ services:
     image: maven:3.9.8-eclipse-temurin-21
     container_name: asset_management_app
     volumes:
-      - .:/app # Mount the current directory to /app in the container
+      - ./src:/app/src # Mount the current directory to /app in the container
+      - ./pom.xml:/app/pom.xml # Mount the pom.xml file
+      - ./.env:/app/.env # Mount the .env file
+      - ./mvnw:/app/mvnw # Mount the Maven wrapper script
+      - ./mvnw.cmd:/app/mvnw.cmd # Mount the Maven wrapper script for Windows
       - maven_cache:/root/.m2 # Cache Maven dependencies
     working_dir: /app
     ports:

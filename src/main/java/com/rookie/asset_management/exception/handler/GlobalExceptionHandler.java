@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.exception.AppException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MissingServletRequestParameterException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.servlet.resource.NoResourceFoundException;
@@ -32,6 +33,18 @@ public class GlobalExceptionHandler {
         ApiDtoResponse.<Void>builder().message("Resource not found").build();
     log.error(ex.getMessage(), ex);
     return ResponseEntity.status(404).body(response);
+  }
+
+  // handle case when spring throws MissingServletRequestParameterException when a required
+  @ExceptionHandler(MissingServletRequestParameterException.class)
+  public ResponseEntity<ApiDtoResponse<Void>> handleMissingServletRequestParameterException(
+      MissingServletRequestParameterException ex) {
+    ApiDtoResponse<Void> response =
+        ApiDtoResponse.<Void>builder()
+            .message(String.format("Missing request parameter: %s", ex.getParameterName()))
+            .build();
+    log.error(ex.getMessage(), ex);
+    return ResponseEntity.status(400).body(response);
   }
 
   // handle when other exceptions are thrown without any specific handler

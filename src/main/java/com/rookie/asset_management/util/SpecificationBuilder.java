@@ -1,4 +1,4 @@
-package com.rookie.asset_management.service.specification;
+package com.rookie.asset_management.util;
 
 import org.springframework.data.jpa.domain.Specification;
 
@@ -23,6 +23,21 @@ public class SpecificationBuilder<T> {
    */
   public SpecificationBuilder<T> add(Specification<T> specFunc) {
     if (specFunc != null) {
+      spec = spec.and(specFunc);
+    }
+    return this;
+  }
+
+  /**
+   * Adds a specification to the current specification if the value is not null.
+   *
+   * @param value the value to check
+   * @param specFunc the function that generates the specification
+   * @return the current SpecificationBuilder instance
+   * @param <V> the type of the value
+   */
+  public <V> SpecificationBuilder<T> addIfNotNull(V value, Specification<T> specFunc) {
+    if (value != null) {
       spec = spec.and(specFunc);
     }
     return this;
