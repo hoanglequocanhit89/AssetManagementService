@@ -13,29 +13,29 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class Assignment {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Integer id;
 
-    @ManyToOne
-    @JoinColumn(name = "asset_id", nullable = false)
-    private Asset asset;
+  @ManyToOne
+  @JoinColumn(name = "asset_id", nullable = false)
+  private Asset asset;
 
-    @ManyToOne
-    @JoinColumn(name = "assigned_by", nullable = false)
-    private User assignedBy;
+  @ManyToOne
+  @JoinColumn(name = "assigned_by", nullable = false)
+  private User assignedBy;
 
-    @ManyToOne
-    @JoinColumn(name = "assigned_to", nullable = false)
-    private User assignedTo;
+  @ManyToOne
+  @JoinColumn(name = "assigned_to", nullable = false)
+  private User assignedTo;
 
-    private String note;
+  private String note;
 
-    @Column(name = "assigned_date")
-    @DateTimeFormat(pattern = "dd-MM-yyyy")
-    private LocalDate assignedDate;
+  @Column(name = "assigned_date")
+  @DateTimeFormat(pattern = "dd-MM-yyyy")
+  private LocalDate assignedDate;
 
-    @Enumerated(EnumType.STRING)
-    private AssignmentStatus status;
+  @Enumerated(EnumType.STRING)
+  private AssignmentStatus status;
 
 }

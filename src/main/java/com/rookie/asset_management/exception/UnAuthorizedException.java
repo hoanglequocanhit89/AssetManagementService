@@ -6,7 +6,7 @@ package com.rookie.asset_management.exception;
  * It is typically used in RESTful APIs to return a 401 UnAuthorized status code.
  */
 public class UnAuthorizedException extends RuntimeException {
-    public UnAuthorizedException(String message) {
-        super(message);
-    }
+  public UnAuthorizedException(String message) {
+    super(message);
+  }
 }

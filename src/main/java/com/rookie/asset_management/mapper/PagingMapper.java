@@ -15,27 +15,27 @@ import java.util.function.Function;
 @Mapper(componentModel = "spring")
 public interface PagingMapper {
 
-    /**
-     * Converts a Page E to a PagingRes D using a mapper function.<br>
-     * E is the type of the entity in the page.
-     * D is the type of the DTO.
-     *
-     * @param pages  the page of entities
-     * @param mapper function to map each entity to DTO
-     * @return the PagingRes of DTOs
-     */
-    default <E, D> PagingDtoResponse<D> toPagingResult(Page<E> pages, Function<E, D> mapper) {
-        Collection<D> dtoList = pages.getContent().stream()
-            .map(mapper)
-            .toList();
+  /**
+   * Converts a Page E to a PagingRes D using a mapper function.<br>
+   * E is the type of the entity in the page.
+   * D is the type of the DTO.
+   *
+   * @param pages  the page of entities
+   * @param mapper function to map each entity to DTO
+   * @return the PagingRes of DTOs
+   */
+  default <E, D> PagingDtoResponse<D> toPagingResult(Page<E> pages, Function<E, D> mapper) {
+    Collection<D> dtoList = pages.getContent().stream()
+        .map(mapper)
+        .toList();
 
-        return new PagingDtoResponse<>(
-            dtoList,
-            pages.getTotalPages(),
-            pages.getTotalElements(),
-            pages.getSize(),
-            pages.getNumber(),
-            pages.isEmpty()
-        );
-    }
+    return new PagingDtoResponse<>(
+        dtoList,
+        pages.getTotalPages(),
+        pages.getTotalElements(),
+        pages.getSize(),
+        pages.getNumber(),
+        pages.isEmpty()
+    );
+  }
 }

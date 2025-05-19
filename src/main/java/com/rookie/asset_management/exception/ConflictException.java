@@ -6,7 +6,7 @@ package com.rookie.asset_management.exception;
  * It is typically used in RESTful APIs to return a 409 Conflict status code.
  */
 public class ConflictException extends RuntimeException {
-    public ConflictException(String message) {
-        super(message);
-    }
+  public ConflictException(String message) {
+    super(message);
+  }
 }

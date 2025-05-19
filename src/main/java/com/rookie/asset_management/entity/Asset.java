@@ -14,51 +14,52 @@ import java.util.List;
 @Getter
 @Setter
 public class Asset extends BaseEntityAudit {
-    private String name;
-    private String specification;
+  private String name;
+  private String specification;
 
-    @Column(name ="asset_code", length = 8, unique = true, nullable = false, columnDefinition = "CHAR(8)") // to ensure the code is stored in the correct format
-    private String assetCode;
+  @Column(name = "asset_code", length = 8, unique = true, nullable = false, columnDefinition = "CHAR(8)")
+  // to ensure the code is stored in the correct format
+  private String assetCode;
 
-    @Column(name = "installed_date")
-    @DateTimeFormat(pattern = "dd-MM-yyyy")
-    private LocalDate installedDate;
+  @Column(name = "installed_date")
+  @DateTimeFormat(pattern = "dd-MM-yyyy")
+  private LocalDate installedDate;
 
-    @Enumerated(EnumType.STRING)
-    private AssetStatus status;
+  @Enumerated(EnumType.STRING)
+  private AssetStatus status;
 
-    @ManyToOne
-    @JoinColumn(name = "location_id")
-    private Location location;
+  @ManyToOne
+  @JoinColumn(name = "location_id")
+  private Location location;
 
-    @ManyToOne
-    @JoinColumn(name = "category_id")
-    private Category category;
+  @ManyToOne
+  @JoinColumn(name = "category_id")
+  private Category category;
 
-    @OneToMany(mappedBy = "asset", fetch = FetchType.LAZY)
-    private List<Assignment> assignments;
+  @OneToMany(mappedBy = "asset", fetch = FetchType.LAZY)
+  private List<Assignment> assignments;
 
-    @Override
-    public void prePersist() {
-        super.prePersist();
-        this.generateAssetCode();
+  @Override
+  public void prePersist() {
+    super.prePersist();
+    this.generateAssetCode();
 
+  }
+
+  private void generateAssetCode() {
+    // auto generate asset code
+    StringBuilder assetCodeBuilder = new StringBuilder();
+    // add the prefix of the category
+    assetCodeBuilder.append(this.category.getPrefix());
+    // get the formatted id
+    // convert the id to a string and then to a char array
+    char[] idChars = String.valueOf(this.getId()).toCharArray();
+    // add leading zeros to make it 6 digits
+    int len = 6 - idChars.length;
+    for (int i = 0; i < len; i++) {
+      assetCodeBuilder.append("0");
     }
-
-    private void generateAssetCode() {
-        // auto generate asset code
-        StringBuilder assetCodeBuilder = new StringBuilder();
-        // add the prefix of the category
-        assetCodeBuilder.append(this.category.getPrefix());
-        // get the formatted id
-        // convert the id to a string and then to a char array
-        char[] idChars = String.valueOf(this.getId()).toCharArray();
-        // add leading zeros to make it 6 digits
-        int len = 6 - idChars.length;
-        for (int i = 0; i < len; i++) {
-            assetCodeBuilder.append("0");
-        }
-        assetCodeBuilder.append(idChars);
-        this.assetCode = assetCodeBuilder.toString();
-    }
+    assetCodeBuilder.append(idChars);
+    this.assetCode = assetCodeBuilder.toString();
+  }
 }

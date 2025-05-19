@@ -12,10 +12,10 @@ import java.util.List;
 @Getter
 @Setter
 public class Role {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
-    @JsonIgnore // to prevent circular reference
-    @OneToMany(mappedBy = "role")
-    private List<User> users;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Integer id;
+  @JsonIgnore // to prevent circular reference
+  @OneToMany(mappedBy = "role")
+  private List<User> users;
 }

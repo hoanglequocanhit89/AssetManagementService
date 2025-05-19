@@ -6,7 +6,7 @@ package com.rookie.asset_management.exception;
  * It is typically used in RESTful APIs to return a 404 Not Found status code.
  */
 public class NotFoundException extends RuntimeException {
-    public NotFoundException(String message) {
-        super(message);
-    }
+  public NotFoundException(String message) {
+    super(message);
+  }
 }

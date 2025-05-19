@@ -8,9 +8,11 @@ import java.io.Serializable;
 /**
  * Base repository interface for all entities.
  * This interface extends JpaRepository to provide basic CRUD operations.
+ *
  * @param <T> the entity type
  * @param <K> the type of the entity's identifier. This is a {@link Serializable} type
  */
-@NoRepositoryBean // Indicates that this is not a repository bean and should not be instantiated directly
+@NoRepositoryBean
+// Indicates that this is not a repository bean and should not be instantiated directly
 public interface BaseRepository<T, K extends Serializable> extends JpaRepository<T, K> {
 }

@@ -18,28 +18,25 @@ import java.util.Map;
 @RequestMapping("/api/v1/example")
 @RequiredArgsConstructor
 public class ExampleController {
-    // This is a placeholder for the actual implementation of the controller.
-    // You can add methods to handle specific requests related to example operations.
-    // For example, you can add methods to handle GET, POST, PUT, DELETE requests.
-    // The return type of the methods must follow the API response structure defined in ApiDtoResponse.
+  // This is a placeholder for the actual implementation of the controller.
+  // You can add methods to handle specific requests related to example operations.
+  // For example, you can add methods to handle GET, POST, PUT, DELETE requests.
+  // The return type of the methods must follow the API response structure defined in ApiDtoResponse.
 
-    // ExampleService is a placeholder for the actual service that will handle business logic.
-    private final ExampleService exampleService;
+  // ExampleService is a placeholder for the actual service that will handle business logic.
+  private final ExampleService exampleService;
 
-    // Example method to handle a GET request
-     @GetMapping
-     public ResponseEntity<ApiDtoResponse<Map<String, String>>> getExample() {
-            // Create a sample response
-            String message = exampleService.exampleMethod();
-            // Create a map to hold the test response data
-            Map<String, String> data = Map.of("message", message);
-            ApiDtoResponse<Map<String, String>> response = ApiDtoResponse.<Map<String, String>>builder()
-                    .message("Success")
-                    .data(data)
-                    .build();
-         return ResponseEntity.ok(response);
-     }
+  // Example method to handle a GET request
+  @GetMapping
+  public ResponseEntity<ApiDtoResponse<Map<String, String>>> getExample() {
+    // Create a sample response
+    String message = exampleService.exampleMethod();
+    // Create a map to hold the test response data
+    Map<String, String> data = Map.of("message", message);
+    ApiDtoResponse<Map<String, String>> response = ApiDtoResponse.<Map<String, String>>builder().message("Success").data(data).build();
+    return ResponseEntity.ok(response);
+  }
 
-     // other methods can be added here to handle different requests
+  // other methods can be added here to handle different requests
 
 }

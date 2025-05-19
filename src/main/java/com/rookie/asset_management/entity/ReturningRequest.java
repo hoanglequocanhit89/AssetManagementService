@@ -13,26 +13,26 @@ import java.time.LocalDate;
 @Getter
 @Setter
 public class ReturningRequest {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Integer id;
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  private Integer id;
 
-    @OneToOne
-    @JoinColumn(name = "assigment_id", nullable = false)
-    private Assignment assignment;
+  @OneToOne
+  @JoinColumn(name = "assigment_id", nullable = false)
+  private Assignment assignment;
 
-    @ManyToOne
-    @JoinColumn(name = "requested_by", nullable = false)
-    private User requestedBy;
+  @ManyToOne
+  @JoinColumn(name = "requested_by", nullable = false)
+  private User requestedBy;
 
-    @ManyToOne
-    @JoinColumn(name = "accepted_by", nullable = false)
-    private User acceptedBy;
+  @ManyToOne
+  @JoinColumn(name = "accepted_by", nullable = false)
+  private User acceptedBy;
 
-    @Column(name = "requested_date")
-    @DateTimeFormat(pattern = "dd-MM-yyyy")
-    private LocalDate returnedDate;
+  @Column(name = "requested_date")
+  @DateTimeFormat(pattern = "dd-MM-yyyy")
+  private LocalDate returnedDate;
 
-    @Enumerated(EnumType.STRING)
-    private ReturningRequestStatus status;
+  @Enumerated(EnumType.STRING)
+  private ReturningRequestStatus status;
 }
