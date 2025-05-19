@@ -20,5 +20,10 @@ public interface UserService {
    * @return a PagingDtoResponse containing a list of UserDtoResponse
    */
   PagingDtoResponse<UserDtoResponse> getAllUsers(
-      UserFilterRequest userFilterRequest, int page, int size, String sortBy, String sortDir);
+      Integer adminId,
+      UserFilterRequest userFilterRequest,
+      int page,
+      int size,
+      String sortBy,
+      String sortDir);
 }

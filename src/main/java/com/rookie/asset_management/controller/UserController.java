@@ -5,6 +5,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.UserDtoResponse;
 import com.rookie.asset_management.service.UserService;
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -23,14 +24,15 @@ public class UserController {
 
   @GetMapping
   public ResponseEntity<ApiDtoResponse<PagingDtoResponse<UserDtoResponse>>> getAllUsers(
+      @Valid @RequestParam Integer adminId,
       @ModelAttribute UserFilterRequest userFilterRequest,
       @RequestParam(defaultValue = "0") Integer page,
-      @RequestParam(defaultValue = "10") Integer size,
-      @RequestParam(defaultValue = "id") String sortBy,
+      @RequestParam(defaultValue = "20") Integer size,
+      @RequestParam(defaultValue = "firstName") String sortBy,
       @RequestParam(defaultValue = "asc") String sortDir) {
 
     PagingDtoResponse<UserDtoResponse> users =
-        userService.getAllUsers(userFilterRequest, page, size, sortBy, sortDir);
+        userService.getAllUsers(adminId, userFilterRequest, page, size, sortBy, sortDir);
     ApiDtoResponse<PagingDtoResponse<UserDtoResponse>> response =
         ApiDtoResponse.<PagingDtoResponse<UserDtoResponse>>builder()
             .message("User list retrieved successfully")
