@@ -1,9 +1,17 @@
 package com.rookie.asset_management.entity;
 
-import jakarta.persistence.*;
-import java.util.Date;
+import jakarta.persistence.Column;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.MappedSuperclass;
+import jakarta.persistence.PrePersist;
+import jakarta.persistence.PreUpdate;
+
 import lombok.Getter;
 import lombok.Setter;
+
+import java.util.Date;
 
 /**
  * Base entity class that contains common fields for all entities. This class is used as a base
