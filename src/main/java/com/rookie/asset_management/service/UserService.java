@@ -1,6 +1,7 @@
 package com.rookie.asset_management.service;
 
 import com.rookie.asset_management.dto.request.UserFilterRequest;
+import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
@@ -34,4 +35,12 @@ public interface UserService {
    * @return a UserDetailDtoResponse containing the user's details
    */
   UserDetailDtoResponse getUserDetails(int userId);
+
+  /**
+   * create a new user
+   *
+   * @param request the creation user request
+   * @return the created user
+   */
+  UserDetailDtoResponse createUser(UserRequestDTO request);
 }

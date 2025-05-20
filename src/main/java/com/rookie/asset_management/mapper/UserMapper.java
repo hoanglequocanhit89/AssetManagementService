@@ -1,7 +1,9 @@
 package com.rookie.asset_management.mapper;
 
+import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import org.mapstruct.Mapper;
@@ -14,6 +16,19 @@ import org.mapstruct.Mapping;
  */
 @Mapper(componentModel = "spring")
 public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
+
+  /**
+   * Map the user creation request dto to entity
+   *
+   * @param dto the user creation request dto
+   * @return the user entity
+   */
+  @Mapping(target = "userProfile.firstName", source = "firstName")
+  @Mapping(target = "userProfile.lastName", source = "lastName")
+  @Mapping(target = "userProfile.dob", source = "dob")
+  @Mapping(target = "userProfile.gender", source = "gender")
+  @Mapping(target = "joinedDate", source = "joinedDate")
+  User toEntity(UserRequestDTO dto);
 
   /**
    * override to map the userProfile fields to the User DTO response. Converts a UserCreation DTO to
@@ -51,12 +66,30 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    * @param roleName the name of the role
    * @return the Role entity
    */
-  default Role map(String roleName) {
+  default Role mapRole(String roleName) {
     if (roleName == null) {
       return null;
     }
     Role role = new Role();
     role.setName(roleName);
     return role;
+  }
+
+  /**
+   * default method to map a location name to a {@link Location} entity. This helps to convert a
+   * location name string to a Location entity
+   *
+   * @param location the location name
+   * @return the Location entity
+   */
+  default Location mapLocation(String location) {
+    Location loc = new Location();
+    if (location == null || location.trim().isEmpty()) {
+      loc.setId(1);
+      loc.setName("HCM");
+    } else {
+      loc.setName(location.trim());
+    }
+    return loc;
   }
 }
