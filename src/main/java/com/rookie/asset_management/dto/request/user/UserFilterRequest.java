@@ -1,4 +1,4 @@
-package com.rookie.asset_management.dto.request;
+package com.rookie.asset_management.dto.request.user;
 
 import lombok.Builder;
 import lombok.Data;

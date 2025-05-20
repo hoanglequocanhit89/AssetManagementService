@@ -1,11 +1,13 @@
 package com.rookie.asset_management.service.impl;
 
-import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
+import com.rookie.asset_management.dto.request.UserFilterRequest;
+import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
@@ -26,6 +28,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implementation of the {@link UserService} interface, providing functionality related to user
@@ -41,8 +44,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
 
   // Autowired constructor for paging service implementation
   @Autowired
-  public UserServiceImpl(
-      UserRepository userRepository, UserMapper userMapper, RoleRepository roleRepository) {
+  public UserServiceImpl(UserRepository userRepository, UserMapper userMapper, RoleRepository roleRepository) {
     super(userMapper, userRepository);
     this.userRepository = userRepository;
     this.userMapper = userMapper;
@@ -164,13 +166,11 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     return finalUsername;
   }
 
-  @Transactional
   @Override
+  @Transactional
   public void updateUser(int userId, UpdateUserRequest request) {
-    User user =
-        userRepository
-            .findById(userId)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, ("User not found")));
+    User user = userRepository.findById(userId)
+        .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, ("User not found")));
 
     // Mapping non nullable from request to entity
     userMapper.updateUserFromDto(request, user);
@@ -186,9 +186,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     }
 
     // Validate joined date
-    if (user.getUserProfile().getDob() != null
-        && user.getJoinedDate() != null
-        && !user.getJoinedDate().isAfter(user.getUserProfile().getDob())) {
+    if (user.getUserProfile().getDob() != null && user.getJoinedDate() != null && !user.getJoinedDate().isAfter(user.getUserProfile().getDob())) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Joined date must be after date of birth.");
     }
 

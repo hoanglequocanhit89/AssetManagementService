@@ -1,11 +1,5 @@
 package com.rookie.asset_management.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
@@ -25,11 +19,16 @@ import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import static org.mockito.ArgumentMatchers.any;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -38,13 +37,17 @@ import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
-  @Mock private UserRepository userRepository;
+  @Mock
+  private UserRepository userRepository;
 
-  @Mock private RoleRepository roleRepository;
+  @Mock
+  private RoleRepository roleRepository;
 
-  @Mock private UserMapper userMapper;
+  @Mock
+  private UserMapper userMapper;
 
-  @InjectMocks private UserServiceImpl userService;
+  @InjectMocks
+  private UserServiceImpl userService;
 
   @Test
   @DisplayName("Test getAllUsers with valid request")
@@ -197,13 +200,11 @@ class UserServiceTest {
   void updateUser_SuccessfulUpdate() {
     // GIVEN
     int userId = 1;
-    UpdateUserRequest request =
-        UpdateUserRequest.builder()
-            .dob(LocalDate.of(2000, 1, 1))
-            .joinedDate(LocalDate.of(2025, 1, 1))
-            .gender(Gender.MALE)
-            .role("STAFF")
-            .build();
+    UpdateUserRequest request = UpdateUserRequest.builder()
+        .dob(LocalDate.of(2000, 1, 1))
+        .joinedDate(LocalDate.of(2025, 1, 1))
+        .gender(Gender.MALE).role("STAFF")
+        .build();
 
     User user = new User();
     Role role = new Role();
@@ -214,6 +215,7 @@ class UserServiceTest {
     UserProfile profile = new UserProfile();
     profile.setDob(LocalDate.of(1990, 1, 1));
     user.setUserProfile(profile);
+
 
     // WHEN
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
@@ -233,12 +235,9 @@ class UserServiceTest {
   void updateUser_UserNotFound_ShouldThrowException() {
     when(userRepository.findById(1)).thenReturn(Optional.empty());
 
-    AppException ex =
-        assertThrows(
-            AppException.class,
-            () -> {
-              userService.updateUser(1, UpdateUserRequest.builder().build());
-            });
+    AppException ex = assertThrows(AppException.class, () ->
+        userService.updateUser(1, UpdateUserRequest.builder().build())
+    );
 
     assertEquals(HttpStatus.NOT_FOUND, ex.getHttpStatusCode());
     assertEquals("User not found", ex.getMessage());
@@ -256,8 +255,9 @@ class UserServiceTest {
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     when(roleRepository.findByName("NON_EXISTENT_ROLE")).thenReturn(null);
 
-    AppException ex =
-        assertThrows(AppException.class, () -> userService.updateUser(userId, request));
+    AppException ex = assertThrows(AppException.class, () ->
+        userService.updateUser(userId, request)
+    );
 
     assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Role not found", ex.getMessage());
@@ -280,8 +280,9 @@ class UserServiceTest {
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    AppException ex =
-        assertThrows(AppException.class, () -> userService.updateUser(userId, request));
+    AppException ex = assertThrows(AppException.class, () ->
+        userService.updateUser(userId, request)
+    );
 
     assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Joined date must be after date of birth.", ex.getMessage());
