@@ -72,4 +72,13 @@ public class GlobalExceptionHandler {
     log.error(ex.getMessage(), ex);
     return ResponseEntity.status(500).body(response);
   }
+
+  // handle when other exception are thrown invalid request
+  @ExceptionHandler(IllegalArgumentException.class)
+  public ResponseEntity<ApiDtoResponse<Void>> handIllegalArgumentException(
+      IllegalArgumentException ex) {
+    ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
+    log.error(ex.getMessage(), ex);
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
 }
