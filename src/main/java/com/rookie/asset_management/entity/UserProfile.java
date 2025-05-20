@@ -1,6 +1,7 @@
 package com.rookie.asset_management.entity;
 
 import com.fasterxml.jackson.annotation.JsonIgnore;
+import com.rookie.asset_management.enums.Gender;
 import jakarta.persistence.*;
 import java.time.LocalDate;
 import lombok.Getter;
@@ -25,7 +26,9 @@ public class UserProfile {
   @DateTimeFormat(pattern = "dd-MM-yyyy") // format for date input
   private LocalDate dob;
 
-  private Boolean gender;
+  @Enumerated(EnumType.STRING)
+  @Column(length = 10)
+  private Gender gender;
 
   @OneToOne
   @MapsId
