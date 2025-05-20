@@ -15,4 +15,10 @@ public interface UserRepository extends SpecificationRepository<User, Integer> {
    * @return Optional user entity
    */
   Optional<User> findByIdAndDisabledFalse(Integer id);
+
+  /**
+   * @param username
+   * @return
+   */
+  boolean existsByUsername(String username);
 }

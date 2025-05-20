@@ -1,9 +1,12 @@
 package com.rookie.asset_management.service.impl;
 
 import com.rookie.asset_management.dto.request.UserFilterRequest;
+import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.UserMapper;
@@ -11,6 +14,8 @@ import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.UserService;
 import com.rookie.asset_management.service.specification.UserSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
+import java.text.Normalizer;
+import java.util.regex.Pattern;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,6 +23,7 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 /**
  * Implementation of the {@link UserService} interface, providing functionality related to user
@@ -38,6 +44,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     this.userMapper = userMapper;
   }
 
+  @Transactional
   @Override
   public PagingDtoResponse<UserDtoResponse> getAllUsers(
       Integer adminId,
@@ -82,5 +89,73 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, ("User not found")));
 
     return userMapper.toUserDetailsDto(user);
+  }
+
+  @Transactional
+  @Override
+  public UserDetailDtoResponse createUser(UserRequestDTO request) {
+    // Map DTO to Entity
+    User user = userMapper.toEntity(request);
+    user.getUserProfile().setUser(user);
+
+    // Set Location (same as Admin, HCM = 1)
+    Location location = new Location();
+    location.setId(1); // Hardcode for now (Admin's location)
+    location.setName("HCM");
+    user.setLocation(location);
+
+    // Set Role (Admin = 1, Staff = 2, default Staff)
+    boolean isAdmin = "Admin".equalsIgnoreCase(request.getType());
+    Role role = new Role();
+    role.setId(isAdmin ? 1 : 2);
+    role.setName(isAdmin ? "ADMIN" : "STAFF");
+    user.setRole(role);
+
+    // Set default values
+    user.setDisabled(false);
+    user.setFirstLogin(true);
+
+    // Generate username
+    String username = generateUsername(request.getFirstName(), request.getLastName());
+    if (userRepository.existsByUsername(username)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Username already exists");
+    }
+    user.setUsername(username);
+    user.setStaffCode("SDTEMP");
+
+    // Save again to update staffCode
+    user = userRepository.save(user);
+
+    return userMapper.toUserDetailsDto(user);
+  }
+
+  /**
+   * Generate unique username from firstName and lastName by adding a number if it already exists
+   */
+  private String generateUsername(String firstName, String lastName) {
+    String[] lastNameParts = lastName.trim().split("\\s+");
+    StringBuilder lastInitials = new StringBuilder();
+    for (String part : lastNameParts) {
+      if (!part.isEmpty()) {
+        lastInitials.append(part.charAt(0));
+      }
+    }
+
+    String base = (firstName + lastInitials).toLowerCase();
+
+    String normalized = Normalizer.normalize(base, Normalizer.Form.NFD);
+    Pattern pattern = Pattern.compile("\\p{InCombiningDiacriticalMarks}+");
+    String withoutDiacritics = pattern.matcher(normalized).replaceAll("");
+    String baseUsername = withoutDiacritics.replaceAll("[^a-z0-9]", "");
+
+    String finalUsername = baseUsername;
+    int counter = 1;
+
+    while (userRepository.existsByUsername(finalUsername)) {
+      finalUsername = baseUsername + counter;
+      counter++;
+    }
+
+    return finalUsername;
   }
 }
