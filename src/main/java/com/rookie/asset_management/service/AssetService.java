@@ -1,5 +1,7 @@
 package com.rookie.asset_management.service;
 
+import com.rookie.asset_management.dto.request.CreateNewAssetDtoRequest;
+import com.rookie.asset_management.dto.response.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
 import com.rookie.asset_management.enums.AssetStatus;
@@ -15,4 +17,6 @@ public interface AssetService {
       Integer categoryId,
       List<AssetStatus> states,
       Pageable pageable);
+
+  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, String username);
 }

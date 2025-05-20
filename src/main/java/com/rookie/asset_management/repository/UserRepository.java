@@ -16,6 +16,8 @@ public interface UserRepository extends SpecificationRepository<User, Integer> {
    */
   Optional<User> findByIdAndDisabledFalse(Integer id);
 
+  Optional<User> findByUsername(String username);
+
   /**
    * @param username
    * @return
