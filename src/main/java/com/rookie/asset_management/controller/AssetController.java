@@ -1,6 +1,8 @@
 package com.rookie.asset_management.controller;
 
+import com.rookie.asset_management.dto.request.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
+import com.rookie.asset_management.dto.response.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
 import com.rookie.asset_management.enums.AssetStatus;
@@ -10,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,7 +22,7 @@ import org.springframework.web.bind.annotation.*;
  * "/api/v1/asset" base path.
  */
 @RestController
-@RequestMapping("/api/v1/asset")
+@RequestMapping("api/v1/asset")
 public class AssetController {
 
   @Autowired private AssetService assetService;
@@ -68,5 +71,24 @@ public class AssetController {
             .message("Assets retrieved successfully.")
             .data(result)
             .build());
+  }
+
+  /**
+   * This endpoint accepts a JSON payload representing asset details and the username of the user
+   * who is performing the creation. It delegates the creation logic to the AssetService and returns
+   * the newly created asset in the response.
+   *
+   * @param dto the asset data sent from the client
+   * @param username the username of the currently authenticated user
+   * @return ResponseEntity containing the created asset and HTTP 201 status
+   */
+  @PostMapping
+  public ResponseEntity<CreateNewAssetDtoResponse> createAsset(
+      @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("username") String username) {
+    // Call the service layer to handle asset creation logic
+    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, username);
+
+    // Return HTTP 201 Created with the asset details in response body
+    return ResponseEntity.status(HttpStatus.CREATED).body(createdAsset);
   }
 }
