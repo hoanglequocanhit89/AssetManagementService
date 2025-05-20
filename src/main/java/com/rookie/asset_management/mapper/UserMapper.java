@@ -1,20 +1,26 @@
 package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.request.UserRequestDTO;
+import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.entity.UserProfile;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
+import org.mapstruct.MappingTarget;
+import org.mapstruct.NullValuePropertyMappingStrategy;
 
 /**
  * Mapper interface for converting between User entity and UserDtoResponse DTO. This interface
  * extends PagingMapper to provide pagination support. Should be annotated with @Mapper to enable
  * MapStruct code generation.
  */
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    nullValuePropertyMappingStrategy = NullValuePropertyMappingStrategy.IGNORE)
 public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
 
   /**
@@ -66,7 +72,7 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    * @param roleName the name of the role
    * @return the Role entity
    */
-  default Role mapRole(String roleName) {
+  default Role map(String roleName) {
     if (roleName == null) {
       return null;
     }
@@ -74,6 +80,23 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
     role.setName(roleName);
     return role;
   }
+
+  /**
+   * Updates the fields of a user entity from an updateUserRequest DTO, ignoring the role field.
+   *
+   * @param dto the updateUserRequest DTO containing the new user details
+   * @param user the user entity to update
+   */
+  @Mapping(target = "role", ignore = true)
+  void updateUserFromDto(UpdateUserRequest dto, @MappingTarget User user);
+
+  /**
+   * Updates the fields of a user profile entity from an updateUserRequest DTO.
+   *
+   * @param dto the updateUserRequest DTO containing the new user profile details
+   * @param profile the user profile entity to update
+   */
+  void updateUserProfileFromDto(UpdateUserRequest dto, @MappingTarget UserProfile profile);
 
   /**
    * default method to map a location name to a {@link Location} entity. This helps to convert a
