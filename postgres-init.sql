@@ -174,3 +174,8 @@ ALTER TABLE "users"
 ALTER TABLE "returning_requests"
     ADD FOREIGN KEY("accepted_by") REFERENCES "users"("id")
         ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+-- DROP TYPE asset_status;
+-- DROP TYPE RETURNING_STATUS;
+-- DROP TYPE ASSIGNMENT_STATUS;
+
