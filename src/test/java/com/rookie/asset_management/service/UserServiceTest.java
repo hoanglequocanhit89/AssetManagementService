@@ -7,12 +7,10 @@ import static org.mockito.Mockito.when;
 import com.rookie.asset_management.dto.request.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.UserDtoResponse;
-import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.UserServiceImpl;
 import java.util.List;
-import java.util.Optional;
 import java.util.function.Function;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -47,12 +45,6 @@ class UserServiceTest {
             .staffCode("SD1234")
             .type("Admin")
             .build();
-
-    User adminUser = new User();
-    adminUser.setId(adminId);
-    adminUser.setStaffCode("SD3211");
-
-    when(userRepository.findById(adminId)).thenReturn(Optional.of(adminUser));
 
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(mockUserDtoResponse)));
