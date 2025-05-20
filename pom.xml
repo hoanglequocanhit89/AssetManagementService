@@ -145,6 +145,7 @@
 					</execution>
 				</executions>
 				<configuration>
+					<lineEndings>UNIX</lineEndings>
 					<java>
 						<googleJavaFormat>
 							<version>1.17.0</version>

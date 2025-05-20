@@ -15,9 +15,6 @@ public class Role {
   @GeneratedValue(strategy = GenerationType.IDENTITY)
   private Integer id;
 
-  @Column(unique = true, nullable = false)
-  private String name;
-
   @JsonIgnore // to prevent circular reference
   @OneToMany(mappedBy = "role")
   private List<User> users;

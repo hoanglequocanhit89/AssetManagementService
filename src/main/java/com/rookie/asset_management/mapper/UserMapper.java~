@@ -1,0 +1,19 @@
+package com.rookie.asset_management.mapper;
+
+import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
+import com.rookie.asset_management.entity.User;
+import org.mapstruct.Mapper;
+import org.mapstruct.Mapping;
+
+@Mapper(componentModel = "spring")
+public interface UserMapper {
+  @Mapping(target = "location", source = "location.name")
+  @Mapping(target = "role", source = "role.name")
+  @Mapping(
+      target = "fullName",
+      expression =
+          "java(user.getUserProfile().getFullName())")
+  @Mapping(target = "dob", source = "user.userProfile.dob")
+  @Mapping(target = "gender", source = "user.userProfile.gender")
+  UserDetailDtoResponse toUserDetailsDto(User user);
+}
