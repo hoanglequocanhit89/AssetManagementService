@@ -1,4 +1,4 @@
-package com.rookie.asset_management.dto.request;
+package com.rookie.asset_management.dto.request.asset;
 
 import com.rookie.asset_management.enums.AssetStatus;
 import java.time.LocalDate;
