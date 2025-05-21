@@ -74,4 +74,8 @@ public class UserSpecification {
     return (root, query, criteriaBuilder) ->
         criteriaBuilder.equal(root.get("role").get("name"), type);
   }
+
+  public static Specification<User> excludeDisabled() {
+    return (root, query, criteriaBuilder) -> criteriaBuilder.isFalse(root.get("disabled"));
+  }
 }

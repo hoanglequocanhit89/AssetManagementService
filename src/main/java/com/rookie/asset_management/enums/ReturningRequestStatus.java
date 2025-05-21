@@ -4,7 +4,7 @@ import lombok.Getter;
 
 @Getter
 public enum ReturningRequestStatus {
-  WAITING_FOR_RETURNING("Waiting for Returning"),
+  WAITING("Waiting for Returning"),
   COMPLETED("Completed");
 
   private final String status;

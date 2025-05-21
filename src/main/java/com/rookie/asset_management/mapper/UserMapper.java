@@ -60,6 +60,8 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    */
   @Mapping(target = "location", source = "location.name")
   @Mapping(target = "role", source = "role.name")
+  @Mapping(target = "firstName", source = "userProfile.firstName")
+  @Mapping(target = "lastName", source = "userProfile.lastName")
   @Mapping(target = "fullName", expression = "java(user.getUserProfile().getFullName())")
   @Mapping(target = "dob", source = "userProfile.dob")
   @Mapping(target = "gender", source = "userProfile.gender")

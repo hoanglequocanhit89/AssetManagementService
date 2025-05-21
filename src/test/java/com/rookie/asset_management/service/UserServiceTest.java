@@ -11,11 +11,15 @@ import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.entity.UserProfile;
+import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.Gender;
+import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
@@ -165,7 +169,9 @@ class UserServiceTest {
             LocalDate.of(2023, 5, 1),
             "DN",
             "Admin",
-            "Nhat Nguyen",
+            "Nhat",
+            "Nguyen Lam",
+            "Nhat Nguyen Lam",
             LocalDate.of(1995, 8, 12),
             "Male");
     // WHEN
@@ -259,7 +265,7 @@ class UserServiceTest {
     AppException ex =
         assertThrows(AppException.class, () -> userService.updateUser(userId, request));
 
-    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals(HttpStatus.NOT_FOUND, ex.getHttpStatusCode());
     assertEquals("Role not found", ex.getMessage());
   }
 
@@ -285,5 +291,129 @@ class UserServiceTest {
 
     assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Joined date must be after date of birth.", ex.getMessage());
+  }
+
+  @Test
+  @DisplayName("deleteUser should delete user successfully")
+  void deleteUser_shouldDeleteUserSuccessfully() {
+    int userId = 1;
+    User user = new User();
+    user.setId(userId);
+    user.setDisabled(false);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    userService.deleteUser(userId);
+    verify(userRepository).delete(user);
+  }
+
+  @Test
+  @DisplayName("deleteUser should throw AppException when user not found")
+  void deleteUser_shouldThrowException_whenUserNotFound() {
+    int userId = 99;
+    when(userRepository.findById(userId)).thenReturn(Optional.empty());
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> {
+              userService.deleteUser(userId);
+            });
+    assertEquals("User not found", exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("deleteUser should throw AppException when user is already disabled")
+  void deleteUser_shouldThrowException_whenUserAlreadyDisabled() {
+    int userId = 1;
+    User user = new User();
+    user.setId(userId);
+    user.setDisabled(true);
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> {
+              userService.deleteUser(userId);
+            });
+    assertEquals("User is already disabled", exception.getMessage());
+  }
+
+
+  @Test
+  @DisplayName("deleteUser should throw AppException when user has accepted assignments without returning requests")
+  void deleteUser_shouldThrowException_whenUserHasAcceptedAssignmentsWithoutReturningRequests() {
+    int userId = 1;
+    User user = new User();
+    user.setId(userId);
+    user.setDisabled(false);
+
+    Assignment assignment = new Assignment();
+    assignment.setAssignedTo(user);
+    assignment.setStatus(AssignmentStatus.ACCEPTED);
+    // No returning request set
+
+    user.setAssignments(List.of(assignment));
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    AppException exception = assertThrows(
+        AppException.class,
+        () -> userService.deleteUser(userId)
+    );
+
+    assertEquals("User has not returned the asset yet", exception.getMessage());
+  }
+
+  @Test
+  @DisplayName("Should throw AppException when user has accepted assignments with incomplete returning requests")
+  void deleteUser_shouldThrowException_whenUserHasAcceptedAssignmentsWithIncompleteReturningRequests() {
+    int userId = 1;
+    User user = new User();
+    user.setId(userId);
+    user.setDisabled(false);
+
+    Assignment assignment = new Assignment();
+    assignment.setAssignedTo(user);
+    assignment.setStatus(AssignmentStatus.ACCEPTED);
+
+    ReturningRequest returningRequest = new ReturningRequest();
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+    assignment.setReturningRequest(returningRequest);
+
+    user.setAssignments(List.of(assignment));
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    AppException exception = assertThrows(
+        AppException.class,
+        () -> userService.deleteUser(userId)
+    );
+
+    assertEquals("User has pending returning requests, cannot be deleted, please cancel the request first",
+        exception.getMessage());
+  }
+
+
+  @Test
+  @DisplayName("Should delete user successfully when all assignments are returned and completed")
+  void deleteUser_shouldDeleteUserSuccessfully_whenAllAssignmentsAreReturnedAndCompleted() {
+    int userId = 1;
+    User user = new User();
+    user.setId(userId);
+    user.setDisabled(false);
+
+    Assignment assignment = new Assignment();
+    assignment.setAssignedTo(user);
+    assignment.setStatus(AssignmentStatus.ACCEPTED);
+
+    ReturningRequest returningRequest = new ReturningRequest();
+    returningRequest.setStatus(ReturningRequestStatus.COMPLETED);
+    assignment.setReturningRequest(returningRequest);
+
+    user.setAssignments(List.of(assignment));
+
+    when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+
+    userService.deleteUser(userId);
+
+    verify(userRepository).delete(user);
   }
 }

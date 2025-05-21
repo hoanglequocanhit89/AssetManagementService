@@ -14,6 +14,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
@@ -35,7 +37,8 @@ public class UserProfile {
   private LocalDate dob;
 
   @Enumerated(EnumType.STRING)
-  @Column(length = 10)
+  @Column(columnDefinition = "GENDER")
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   private Gender gender;
 
   @OneToOne

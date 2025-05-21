@@ -15,12 +15,14 @@ import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.SQLDelete;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
+@SQLDelete(sql = "UPDATE users SET disabled = true WHERE id = ?")
 public class User extends BaseEntityAudit {
   @Column(unique = true, nullable = false)
   private String username;
@@ -31,7 +33,10 @@ public class User extends BaseEntityAudit {
   @JoinColumn(name = "role_id")
   private Role role;
 
-  @OneToOne(mappedBy = "user", cascade = CascadeType.ALL)
+  // exclude cascadeType remove and detach for soft delete without removing the user profile
+  @OneToOne(
+      mappedBy = "user",
+      cascade = {CascadeType.PERSIST, CascadeType.MERGE, CascadeType.REFRESH})
   private UserProfile userProfile;
 
   @Column(
@@ -56,11 +61,12 @@ public class User extends BaseEntityAudit {
   @DateTimeFormat(pattern = "dd-MM-yyyy")
   private LocalDate joinedDate;
 
-  @OneToMany(mappedBy = "assignedBy", fetch = FetchType.LAZY)
+  @OneToMany(mappedBy = "assignedTo", fetch = FetchType.LAZY)
   private List<Assignment> assignments;
 
-  // No need to add assignmentTo here, because it is already in the Assignment entity
-  // and at the user side, it is not necessary to have a list of assignments assigned to the user
+  // No need to add assignmentBy here, because it is already in the Assignment entity
+  // and at the user side, it is not necessary to have a list of assignments assigned to the other
+  // user
 
   @OneToMany(mappedBy = "requestedBy", fetch = FetchType.LAZY)
   private List<ReturningRequest> returningRequests;
@@ -71,6 +77,8 @@ public class User extends BaseEntityAudit {
   @Override
   public void prePersist() {
     super.prePersist();
+    this.disabled = false;
+    this.firstLogin = true;
     this.generatePassword();
   }
 
