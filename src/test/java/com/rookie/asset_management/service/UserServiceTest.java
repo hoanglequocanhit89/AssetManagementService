@@ -336,9 +336,9 @@ class UserServiceTest {
     assertEquals("User is already disabled", exception.getMessage());
   }
 
-
   @Test
-  @DisplayName("deleteUser should throw AppException when user has accepted assignments without returning requests")
+  @DisplayName(
+      "deleteUser should throw AppException when user has accepted assignments without returning requests")
   void deleteUser_shouldThrowException_whenUserHasAcceptedAssignmentsWithoutReturningRequests() {
     int userId = 1;
     User user = new User();
@@ -354,17 +354,16 @@ class UserServiceTest {
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    AppException exception = assertThrows(
-        AppException.class,
-        () -> userService.deleteUser(userId)
-    );
+    AppException exception = assertThrows(AppException.class, () -> userService.deleteUser(userId));
 
     assertEquals("User has not returned the asset yet", exception.getMessage());
   }
 
   @Test
-  @DisplayName("Should throw AppException when user has accepted assignments with incomplete returning requests")
-  void deleteUser_shouldThrowException_whenUserHasAcceptedAssignmentsWithIncompleteReturningRequests() {
+  @DisplayName(
+      "Should throw AppException when user has accepted assignments with incomplete returning requests")
+  void
+      deleteUser_shouldThrowException_whenUserHasAcceptedAssignmentsWithIncompleteReturningRequests() {
     int userId = 1;
     User user = new User();
     user.setId(userId);
@@ -382,15 +381,12 @@ class UserServiceTest {
 
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
 
-    AppException exception = assertThrows(
-        AppException.class,
-        () -> userService.deleteUser(userId)
-    );
+    AppException exception = assertThrows(AppException.class, () -> userService.deleteUser(userId));
 
-    assertEquals("User has pending returning requests, cannot be deleted, please cancel the request first",
+    assertEquals(
+        "User has pending returning requests, cannot be deleted, please cancel the request first",
         exception.getMessage());
   }
-
 
   @Test
   @DisplayName("Should delete user successfully when all assignments are returned and completed")

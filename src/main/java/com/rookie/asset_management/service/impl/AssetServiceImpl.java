@@ -89,22 +89,18 @@ public class AssetServiceImpl implements AssetService {
     // Execute the query with built specifications and pagination/sorting
     Page<Asset> pageAssets = assetRepository.findAll(specBuilder.build(), pageable);
 
-    // If no results found, throw a 404 exception
-    if (pageAssets.isEmpty()) {
-      throw new AppException(HttpStatus.NOT_FOUND, "No Assets found");
-    }
-
     // Map each Asset entity to a simplified DTO for response
     List<ViewAssetListDtoResponse> content =
         pageAssets.stream()
             .map(
                 asset ->
                     ViewAssetListDtoResponse.builder()
+                        .assetId(asset.getId())
                         .assetCode(asset.getAssetCode())
                         .assetName(asset.getName())
                         .installedDate(asset.getInstalledDate())
                         .categoryName(asset.getCategory().getName())
-                        .status(asset.getStatus())
+                        .state(asset.getStatus())
                         .locationName(asset.getLocation().getName())
                         .build())
             .toList();
