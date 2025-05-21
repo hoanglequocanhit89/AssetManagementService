@@ -10,15 +10,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 /**
- * REST controller for managing categories in the asset management system.
- * Provides endpoints for retrieving category names and creating new categories.
+ * REST controller for managing categories in the asset management system. Provides endpoints for
+ * retrieving category names and creating new categories.
  */
 @RestController
 @RequestMapping("api/v1/category")
 public class CategoryController {
 
-  @Autowired
-  CategoryService categoryService;
+  @Autowired CategoryService categoryService;
 
   /**
    * Retrieves the list of all existing category names.

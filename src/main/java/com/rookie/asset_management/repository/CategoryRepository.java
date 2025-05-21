@@ -5,8 +5,8 @@ import org.springframework.stereotype.Repository;
 
 /**
  * Repository interface for managing {@link Category} entities.
- * <p>
- * Provides methods for checking the existence of categories by name and prefix.
+ *
+ * <p>Provides methods for checking the existence of categories by name and prefix.
  */
 @Repository
 public interface CategoryRepository extends BaseRepository<Category, Integer> {

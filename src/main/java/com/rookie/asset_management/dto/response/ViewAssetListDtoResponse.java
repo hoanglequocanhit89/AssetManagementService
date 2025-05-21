@@ -16,10 +16,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ViewAssetListDtoResponse {
+  private Integer assetId;
   private String assetCode;
   private String assetName;
   private LocalDate installedDate;
   private String categoryName;
-  private AssetStatus status;
+  private AssetStatus state;
   private String locationName;
 }

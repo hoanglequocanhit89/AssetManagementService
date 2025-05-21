@@ -11,14 +11,13 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
 /**
- * Implementation of {@link CategoryService} that provides business logic
- * for managing categories such as retrieving category names and creating new categories.
+ * Implementation of {@link CategoryService} that provides business logic for managing categories
+ * such as retrieving category names and creating new categories.
  */
 @Service
 public class CategoryServiceImpl implements CategoryService {
 
-  @Autowired
-  private CategoryRepository categoryRepository;
+  @Autowired private CategoryRepository categoryRepository;
 
   /**
    * Retrieves the list of all category names in the system.
@@ -43,7 +42,7 @@ public class CategoryServiceImpl implements CategoryService {
   /**
    * Creates a new category with the specified name and prefix.
    *
-   * @param name   the name of the new category
+   * @param name the name of the new category
    * @param prefix the unique prefix associated with the category
    * @return the created {@link Category} entity
    * @throws AppException if the category name or prefix already exists

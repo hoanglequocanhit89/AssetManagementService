@@ -43,7 +43,7 @@ public class AssetServiceImpl implements AssetService {
    *
    * @param locationId the ID of the location to filter assets (required)
    * @param keyword search term to match asset name or asset code (optional)
-   * @param categoryId ID of the category to filter assets by (optional)
+   * @param categoryName ID of the category to filter assets by (optional)
    * @param states list of asset statuses to filter by (optional)
    * @param pageable pagination and sorting information
    * @return paginated list of matching assets in simplified DTO format
@@ -100,11 +100,12 @@ public class AssetServiceImpl implements AssetService {
             .map(
                 asset ->
                     ViewAssetListDtoResponse.builder()
+                        .assetId(asset.getId())
                         .assetCode(asset.getAssetCode())
                         .assetName(asset.getName())
                         .installedDate(asset.getInstalledDate())
                         .categoryName(asset.getCategory().getName())
-                        .status(asset.getStatus())
+                        .state(asset.getStatus())
                         .locationName(asset.getLocation().getName())
                         .build())
             .toList();
