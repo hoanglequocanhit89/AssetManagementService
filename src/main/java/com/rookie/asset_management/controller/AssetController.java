@@ -82,7 +82,7 @@ public class AssetController {
    * the newly created asset in the response.
    *
    * @param dto the asset data sent from the client
-   * @param username the username of the currently authenticated user
+   * @param adminId the username of the currently authenticated user
    * @return ResponseEntity containing the created asset and HTTP 201 status
    */
   @PostMapping
@@ -103,17 +103,17 @@ public class AssetController {
    *
    * @param assetId the ID of the asset to be updated
    * @param dto the DTO containing updated asset information
-   * @param username the username of the admin performing the update
+   * @param adminId the username of the admin performing the update
    * @return ResponseEntity containing the updated asset information
    */
   @PutMapping("/{assetId}")
   public ResponseEntity<EditAssetDtoResponse> editAsset(
       @PathVariable Integer assetId,
       @RequestBody @Valid EditAssetDtoRequest dto,
-      @RequestParam("username") String username) {
+      @RequestParam("adminId") Integer adminId) {
 
     // Call the service layer to perform the update
-    EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto, username);
+    EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto, adminId);
 
     // Call the service layer to perform the update
     return ResponseEntity.ok(updatedAsset);

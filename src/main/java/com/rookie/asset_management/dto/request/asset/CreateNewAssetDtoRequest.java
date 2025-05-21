@@ -12,7 +12,6 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class CreateNewAssetDtoRequest {
-  private String username;
   private String name;
   private Integer categoryId;
   private String specification;

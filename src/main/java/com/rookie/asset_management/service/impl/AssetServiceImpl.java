@@ -245,7 +245,6 @@ public class AssetServiceImpl implements AssetService {
         .state(savedAsset.getStatus())
         .categoryName(savedAsset.getCategory().getName())
         .locationName(savedAsset.getLocation().getName())
-        .createdByUsername(savedAsset.getCreatedBy().getUsername())
         .createdAt(savedAsset.getCreatedAt())
         .build();
   }
@@ -259,12 +258,12 @@ public class AssetServiceImpl implements AssetService {
    *
    * @param assetId the ID of the asset to edit
    * @param dto the request object containing updated asset information
-   * @param username the username of the admin performing the update
+   * @param adminId the username of the admin performing the update
    * @return an {@link EditAssetDtoResponse} containing the updated asset details
    * @throws AppException if the asset is not found, is assigned, or validation fails
    */
   @Override
-  public EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, String username) {
+  public EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, Integer adminId) {
 
     // Fetch asset by ID or throw if not found
     Asset asset =
@@ -307,13 +306,13 @@ public class AssetServiceImpl implements AssetService {
       throw new AppException(HttpStatus.BAD_REQUEST, "Invalid asset state");
     }
 
-    // Fetch the user and their location
-    User user =
+    // Get admin user by ID
+    User admin =
         userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "User not found"));
+            .findById(adminId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
 
-    Location location = user.getLocation();
+    Location location = admin.getLocation();
 
     if (!asset.getName().equalsIgnoreCase(dto.getName())
         && assetRepository.existsByNameAndLocation(dto.getName(), location)) {
@@ -326,7 +325,7 @@ public class AssetServiceImpl implements AssetService {
     asset.setInstalledDate(dto.getInstalledDate());
     asset.setStatus(dto.getState());
 
-    asset.setUpdatedBy(user);
+    asset.setUpdatedBy(admin);
     asset.setUpdatedAt(new Date());
 
     asset = assetRepository.save(asset);
@@ -341,7 +340,6 @@ public class AssetServiceImpl implements AssetService {
         .state(asset.getStatus())
         .categoryName(asset.getCategory().getName())
         .locationName(asset.getLocation().getName())
-        .updatedByUsername(asset.getUpdatedBy().getUsername())
         .updatedAt(asset.getUpdatedAt())
         .build();
   }

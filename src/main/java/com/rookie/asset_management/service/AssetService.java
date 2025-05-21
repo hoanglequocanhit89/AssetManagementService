@@ -50,8 +50,8 @@ public interface AssetService {
    *
    * @param assetId the ID of the asset to be edited
    * @param dto the DTO containing updated asset information
-   * @param username the username of the admin performing the update
+   * @param adminId the adminId of the admin performing the update
    * @return the response DTO containing the updated asset details
    */
-  EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, String username);
+  EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, Integer adminId);
 }
