@@ -4,7 +4,7 @@ import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
-import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
+import com.rookie.asset_management.dto.response.asset.ViewAssetListDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
 import com.rookie.asset_management.enums.AssetStatus;
@@ -26,7 +26,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("api/v1/assets")
-public class AssetController {
+public class AssetController extends ApiV1Controller{
 
   @Autowired private AssetService assetService;
 
