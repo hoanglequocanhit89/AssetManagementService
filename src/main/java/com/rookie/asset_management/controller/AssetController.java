@@ -25,7 +25,7 @@ import org.springframework.web.bind.annotation.*;
  * "/api/v1/asset" base path.
  */
 @RestController
-@RequestMapping("api/v1/asset")
+@RequestMapping("api/v1/assets")
 public class AssetController {
 
   @Autowired private AssetService assetService;
