@@ -87,9 +87,9 @@ public class AssetController {
    */
   @PostMapping
   public ResponseEntity<CreateNewAssetDtoResponse> createAsset(
-      @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("username") String username) {
+      @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("adminId") Integer adminId) {
     // Call the service layer to handle asset creation logic
-    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, username);
+    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, adminId);
 
     // Return HTTP 201 Created with the asset details in response body
     return ResponseEntity.status(HttpStatus.CREATED).body(createdAsset);

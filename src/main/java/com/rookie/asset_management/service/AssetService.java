@@ -39,10 +39,10 @@ public interface AssetService {
    * asset code is auto-generated based on the category prefix and a sequence number.
    *
    * @param dto the DTO containing the new asset information
-   * @param username the username of the admin creating the asset
+   * @param adminId the username of the admin creating the asset
    * @return the response DTO containing the created asset details
    */
-  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, String username);
+  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, Integer adminId);
 
   /**
    * Edits an existing asset if it is not assigned. Allows updates to name, specification, installed

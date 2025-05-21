@@ -132,11 +132,11 @@ public class AssetServiceImpl implements AssetService {
    * validations and mapping before saving to the database.
    *
    * @param dto the request data for creating a new asset
-   * @param username the username of the user performing the creation
+   * @param adminId the adminId of the user performing the creation
    * @return response DTO containing created asset details
    */
   @Override
-  public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, String username) {
+  public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, Integer adminId) {
 
     // Validate asset state
     if (dto.getState() != AssetStatus.AVAILABLE && dto.getState() != AssetStatus.NOT_AVAILABLE) {
@@ -181,16 +181,16 @@ public class AssetServiceImpl implements AssetService {
             .findById(dto.getCategoryId())
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Category not found"));
 
-    // Retrieve user by username
-    User user =
+    // Get admin user by ID
+    User admin =
         userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "User not found"));
+            .findById(adminId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
 
-    // Get the user's associated location
-    Location location = user.getLocation();
+    // Get location from admin
+    Location location = admin.getLocation();
 
-    // Check if asset name already exists in this location (must be unique per location)
+    // Check for asset name conflict within the same location
     if (assetRepository.existsByNameAndLocation(dto.getName(), location)) {
       throw new AppException(
           HttpStatus.CONFLICT,
@@ -205,13 +205,16 @@ public class AssetServiceImpl implements AssetService {
     asset.setStatus(dto.getState());
     asset.setCategory(category);
     asset.setLocation(location);
-    asset.setCreatedBy(user);
-    asset.setUpdatedBy(user);
+    asset.setCreatedBy(admin);
+    asset.setUpdatedBy(admin);
 
     // Set creation and update timestamps
     Date now = new Date();
     asset.setCreatedAt(now);
     asset.setUpdatedAt(now);
+
+    // Set asset_code avoid NOT NULL
+    asset.setAssetCode("PENDING");
 
     // Save first time to get id
     Asset savedAsset = assetRepository.save(asset);
