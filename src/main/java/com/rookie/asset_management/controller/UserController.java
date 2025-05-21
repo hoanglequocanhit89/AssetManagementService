@@ -70,7 +70,7 @@ public class UserController extends ApiV1Controller {
   @PostMapping
   public ResponseEntity<ApiDtoResponse<UserDetailDtoResponse>> createUser(
       @Valid @RequestBody UserRequestDTO request) {
-    UserDetailDtoResponse response = userService.createUser(request);
+    UserDetailDtoResponse response = userService.createUser(request, request.getAdminId());
     ApiDtoResponse<UserDetailDtoResponse> apiResponse =
         ApiDtoResponse.<UserDetailDtoResponse>builder()
             .message("User created successfully")

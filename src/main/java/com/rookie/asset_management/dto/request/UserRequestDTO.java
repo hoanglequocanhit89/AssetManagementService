@@ -38,5 +38,10 @@ public class UserRequestDTO {
   @NotWeekend
   private LocalDate joinedDate;
 
-  private String type; // "Admin" or "Staff", default "Staff"
+  private String type;
+
+  private String location;
+
+  @NotNull(message = "Admin ID is required")
+  private Integer adminId;
 }

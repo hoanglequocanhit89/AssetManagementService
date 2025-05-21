@@ -51,6 +51,7 @@ public class Asset extends BaseEntityAudit {
   @JoinColumn(name = "location_id")
   private Location location;
 
+  @Column(name = "disabled", nullable = false)
   private Boolean disabled;
 
   @ManyToOne
@@ -70,6 +71,9 @@ public class Asset extends BaseEntityAudit {
   public void postPersist() {
     // generate asset code after the entity is persisted
     this.generateAssetCode();
+    if (this.disabled == null) {
+      this.disabled = false; // Đảm bảo giá trị mặc định
+    }
   }
 
   private void generateAssetCode() {
