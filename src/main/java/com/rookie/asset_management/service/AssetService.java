@@ -54,4 +54,13 @@ public interface AssetService {
    * @return the response DTO containing the updated asset details
    */
   EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, String username);
+
+  /**
+   * Deletes an asset using soft delete (marks it as deleted). The asset can only be deleted if it
+   * has no associated assignments and is not in the ASSIGNED state.
+   *
+   * @param assetId the ID of the asset to delete
+   * @throws com.rookie.asset_management.exception.AppException if the asset cannot be deleted
+   */
+  void deleteAsset(Integer assetId);
 }

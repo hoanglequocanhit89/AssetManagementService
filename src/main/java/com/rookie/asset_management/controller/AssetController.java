@@ -8,6 +8,7 @@ import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
 import com.rookie.asset_management.enums.AssetStatus;
+import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.service.AssetService;
 import jakarta.validation.Valid;
 import java.util.List;
@@ -117,5 +118,36 @@ public class AssetController {
 
     // Call the service layer to perform the update
     return ResponseEntity.ok(updatedAsset);
+  }
+
+  /**
+   * Deletes an asset by its ID using soft delete. The asset can only be deleted if it has no
+   * associated assignments and is not in the ASSIGNED state.
+   *
+   * @param assetId the ID of the asset to delete
+   * @return ResponseEntity containing a success message wrapped in ApiDtoResponse
+   * @throws AppException if the asset cannot be deleted (not found, assigned, or has assignments)
+   */
+  @DeleteMapping("/{assetId}")
+  public ResponseEntity<ApiDtoResponse<String>> deleteAsset(@PathVariable Integer assetId) {
+    try {
+      // Call the service layer to perform the soft delete
+      assetService.deleteAsset(assetId);
+
+      // Return success response with HTTP 200 OK status
+      return ResponseEntity.ok(
+          ApiDtoResponse.<String>builder()
+              .message("Asset deleted successfully.")
+              .data(null)
+              .build());
+    } catch (AppException e) {
+      // Handle specific error cases based on HTTP status
+      if (e.getHttpStatusCode() == HttpStatus.BAD_REQUEST) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            .body(ApiDtoResponse.<String>builder().message(e.getMessage()).data(null).build());
+      }
+      return ResponseEntity.status(HttpStatus.NOT_FOUND)
+          .body(ApiDtoResponse.<String>builder().message("Asset not found.").data(null).build());
+    }
   }
 }
