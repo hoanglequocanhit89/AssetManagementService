@@ -63,6 +63,9 @@ public class AssetServiceImpl implements AssetService {
     // Mandatory filter: Filter by location ID
     specBuilder.add((root, query, cb) -> cb.equal(root.get("location").get("id"), locationId));
 
+    // Mandatory filter: Only fetch assets that are not disabled
+    specBuilder.add((root, query, cb) -> cb.isFalse(root.get("disabled")));
+
     // Optional keyword search: Match asset name or asset code (case-insensitive)
     if (keyword != null && !keyword.isBlank()) {
       specBuilder.add(
