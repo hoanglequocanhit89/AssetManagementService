@@ -3,9 +3,10 @@ package com.rookie.asset_management.service;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
-import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
+import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
+import com.rookie.asset_management.dto.response.asset.ViewAssetListDtoResponse;
 import com.rookie.asset_management.enums.AssetStatus;
 import java.util.List;
 import org.springframework.data.domain.Pageable;
@@ -39,10 +40,10 @@ public interface AssetService {
    * asset code is auto-generated based on the category prefix and a sequence number.
    *
    * @param dto the DTO containing the new asset information
-   * @param username the username of the admin creating the asset
+   * @param adminId the username of the admin creating the asset
    * @return the response DTO containing the created asset details
    */
-  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, String username);
+  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, Integer adminId);
 
   /**
    * Edits an existing asset if it is not assigned. Allows updates to name, specification, installed
@@ -50,10 +51,18 @@ public interface AssetService {
    *
    * @param assetId the ID of the asset to be edited
    * @param dto the DTO containing updated asset information
-   * @param username the username of the admin performing the update
+   * @param adminId the adminId of the admin performing the update
    * @return the response DTO containing the updated asset details
    */
-  EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, String username);
+  EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, Integer adminId);
+
+  /**
+   * Get the detail of asset information
+   *
+   * @param assetId id key to find asset
+   * @return the detail information of asset including history
+   */
+  AssetDetailDtoResponse getAssetDetail(Integer assetId);
 
   /**
    * Deletes an asset using soft delete (marks it as deleted). The asset can only be deleted if it

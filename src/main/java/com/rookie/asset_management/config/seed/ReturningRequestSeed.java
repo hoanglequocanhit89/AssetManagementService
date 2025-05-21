@@ -8,6 +8,7 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -35,16 +36,18 @@ public class ReturningRequestSeed implements CommandLineRunner {
     List<User> users = userRepository.findAll();
     List<Assignment> assignments = assignmentRepository.findAll();
 
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
     ReturningRequest returningRequest1 = new ReturningRequest();
     returningRequest1.setStatus(ReturningRequestStatus.WAITING);
-    returningRequest1.setReturnedDate(LocalDate.now());
+    returningRequest1.setReturnedDate(LocalDate.parse("04-02-2025", formatter));
     returningRequest1.setRequestedBy(users.get(2));
     returningRequest1.setAcceptedBy(null);
     returningRequest1.setAssignment(assignments.get(1));
 
     ReturningRequest returningRequest2 = new ReturningRequest();
     returningRequest2.setStatus(ReturningRequestStatus.COMPLETED);
-    returningRequest2.setReturnedDate(LocalDate.now());
+    returningRequest2.setReturnedDate(LocalDate.parse("01-01-2025", formatter));
     returningRequest2.setRequestedBy(users.get(2));
     returningRequest2.setAcceptedBy(users.get(0));
     returningRequest2.setAssignment(assignments.get(2));

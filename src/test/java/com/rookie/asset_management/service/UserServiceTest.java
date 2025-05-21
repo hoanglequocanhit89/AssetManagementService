@@ -827,7 +827,7 @@ class UserServiceTest {
     user.setDisabled(false);
     when(userRepository.findById(userId)).thenReturn(Optional.of(user));
     userService.deleteUser(userId);
-    verify(userRepository).delete(user);
+    verify(userRepository).save(user);
   }
 
   @Test
@@ -935,6 +935,6 @@ class UserServiceTest {
 
     userService.deleteUser(userId);
 
-    verify(userRepository).delete(user);
+    verify(userRepository).save(user);
   }
 }
