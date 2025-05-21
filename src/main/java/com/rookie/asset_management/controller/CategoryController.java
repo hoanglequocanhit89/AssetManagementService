@@ -1,6 +1,8 @@
 package com.rookie.asset_management.controller;
 
 import com.rookie.asset_management.dto.request.CreateCategoryRequest;
+import com.rookie.asset_management.dto.response.ApiDtoResponse;
+import com.rookie.asset_management.dto.response.CategoryDtoResponse;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.service.CategoryService;
 import java.util.List;
@@ -14,8 +16,8 @@ import org.springframework.web.bind.annotation.*;
  * retrieving category names and creating new categories.
  */
 @RestController
-@RequestMapping("api/v1/category")
-public class CategoryController {
+@RequestMapping("api/v1/categories")
+public class CategoryController extends ApiV1Controller {
 
   @Autowired CategoryService categoryService;
 
@@ -25,8 +27,13 @@ public class CategoryController {
    * @return a list of category names
    */
   @GetMapping
-  public List<String> getCategoryNames() {
-    return categoryService.getAllCategoryNames();
+  public ResponseEntity<ApiDtoResponse<List<CategoryDtoResponse>>> getAllCategory() {
+    List<CategoryDtoResponse> categories = categoryService.getAllCategory();
+    return ResponseEntity.ok(
+        ApiDtoResponse.<List<CategoryDtoResponse>>builder()
+            .message("Category names retrieved successfully.")
+            .data(categories)
+            .build());
   }
 
   /**
