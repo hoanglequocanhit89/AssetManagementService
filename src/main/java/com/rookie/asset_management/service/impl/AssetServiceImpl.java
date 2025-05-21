@@ -86,8 +86,8 @@ public class AssetServiceImpl implements AssetService {
       specBuilder.add((root, query, cb) -> root.get("status").in(states));
     }
 
-        // Execute the query with built specifications and pagination/sorting
-        Page<Asset> pageAssets = assetRepository.findAll(specBuilder.build(), pageable);
+    // Execute the query with built specifications and pagination/sorting
+    Page<Asset> pageAssets = assetRepository.findAll(specBuilder.build(), pageable);
 
     // Map each Asset entity to a simplified DTO for response
     List<ViewAssetListDtoResponse> content =

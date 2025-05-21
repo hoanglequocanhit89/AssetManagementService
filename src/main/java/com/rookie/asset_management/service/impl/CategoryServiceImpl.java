@@ -33,10 +33,6 @@ public class CategoryServiceImpl implements CategoryService {
         categoryRepository.findAll().stream()
             .map(c -> new CategoryDtoResponse(c.getId(), c.getName()))
             .collect(Collectors.toList());
-    // Throw exception if list is empty
-    if (categories.isEmpty()) {
-      throw new AppException(HttpStatus.NOT_FOUND, "No categories found");
-    }
 
     return categories;
   }
