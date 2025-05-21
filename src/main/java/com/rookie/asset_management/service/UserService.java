@@ -43,7 +43,7 @@ public interface UserService {
    * @param request the creation user request
    * @return the created user
    */
-  UserDetailDtoResponse createUser(UserRequestDTO request);
+  UserDetailDtoResponse createUser(UserRequestDTO request, Integer adminId);
 
   /**
    * Updates the details of an existing user.
