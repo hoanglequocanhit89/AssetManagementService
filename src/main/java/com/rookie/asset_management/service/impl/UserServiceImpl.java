@@ -7,7 +7,6 @@ import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
-import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
@@ -104,23 +103,45 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
 
   @Transactional
   @Override
-  public UserDetailDtoResponse createUser(UserRequestDTO request) {
+  public UserDetailDtoResponse createUser(UserRequestDTO request, Integer adminId) {
+    // Validate adminId
+    if (adminId == null) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Admin ID is required to create a user");
+    }
+
+    User admin =
+        userRepository
+            .findByIdAndDisabledFalse(adminId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
+
+    if (!"ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can create users");
+    }
+
     // Map DTO to Entity
     User user = userMapper.toEntity(request);
     user.getUserProfile().setUser(user);
 
-    // Set Location (same as Admin, HCM = 1)
-    Location location = new Location();
-    location.setId(1); // Hardcode for now (Admin's location)
-    location.setName("HCM");
-    user.setLocation(location);
-
-    // Set Role (Admin = 1, Staff = 2, default Staff)
     boolean isAdmin = "Admin".equalsIgnoreCase(request.getType());
+    if (isAdmin) {
+      if (request.getLocation() == null || request.getLocation().trim().isEmpty()) {
+        throw new AppException(
+            HttpStatus.BAD_REQUEST, "Location is required when creating an Admin account");
+      }
+    } else {
+
+      request.setLocation(null);
+      user.setLocation(admin.getLocation());
+    }
+
     Role role = new Role();
     role.setId(isAdmin ? 1 : 2);
     role.setName(isAdmin ? "ADMIN" : "STAFF");
     user.setRole(role);
+
+    // Set audit fields
+    user.setCreatedBy(admin);
+    user.setUpdatedBy(admin);
 
     // Set default values
     user.setDisabled(false);
@@ -134,15 +155,12 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     user.setUsername(username);
     user.setStaffCode("SDTEMP");
 
-    // Save again to update staffCode
+    // Save user to persist and generate staffCode
     user = userRepository.save(user);
 
     return userMapper.toUserDetailsDto(user);
   }
 
-  /**
-   * Generate unique username from firstName and lastName by adding a number if it already exists
-   */
   private String generateUsername(String firstName, String lastName) {
     String[] lastNameParts = lastName.trim().split("\\s+");
     StringBuilder lastInitials = new StringBuilder();

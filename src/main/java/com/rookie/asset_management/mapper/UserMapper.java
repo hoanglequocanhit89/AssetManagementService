@@ -34,6 +34,7 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
   @Mapping(target = "userProfile.dob", source = "dob")
   @Mapping(target = "userProfile.gender", source = "gender")
   @Mapping(target = "joinedDate", source = "joinedDate")
+  @Mapping(target = "location", source = "location")
   User toEntity(UserRequestDTO dto);
 
   /**
@@ -109,11 +110,31 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    */
   default Location mapLocation(String location) {
     Location loc = new Location();
+    // Nếu location không được gửi (Staff), mặc định là HCM
     if (location == null || location.trim().isEmpty()) {
       loc.setId(1);
       loc.setName("HCM");
     } else {
-      loc.setName(location.trim());
+      // Validate location: chỉ chấp nhận HCM, HN, DN
+      String trimmedLocation = location.trim().toUpperCase();
+      if (!trimmedLocation.equals("HCM")
+          && !trimmedLocation.equals("HN")
+          && !trimmedLocation.equals("DN")) {
+        throw new IllegalArgumentException("Invalid location. Must be one of: HCM, HN, DN");
+      }
+      // Gán ID tương ứng (giả định ID đã có sẵn trong DB)
+      loc.setName(trimmedLocation);
+      switch (trimmedLocation) {
+        case "HCM":
+          loc.setId(1);
+          break;
+        case "HN":
+          loc.setId(2);
+          break;
+        case "DN":
+          loc.setId(3);
+          break;
+      }
     }
     return loc;
   }

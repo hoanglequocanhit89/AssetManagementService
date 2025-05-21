@@ -346,4 +346,38 @@ public class AssetServiceImpl implements AssetService {
         .updatedAt(asset.getUpdatedAt())
         .build();
   }
+
+  /**
+   * Deletes an asset using soft delete (marks it as deleted). The asset can only be deleted if it
+   * has no associated assignments and is not in the ASSIGNED state.
+   *
+   * @param assetId the ID of the asset to delete
+   * @throws AppException if the asset cannot be deleted (not found, assigned, or has assignments)
+   */
+  @Override
+  public void deleteAsset(Integer assetId) {
+    // Fetch asset by ID or throw if not found or deleted
+    Asset asset =
+        assetRepository
+            .findByIdAndDisabledFalse(assetId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Asset not found"));
+
+    // Check if the asset is in ASSIGNED state — cannot be deleted if assigned
+    if (AssetStatus.ASSIGNED.equals(asset.getStatus())) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Cannot delete asset with Assigned status");
+    }
+
+    // Check if the asset has any historical assignments
+    boolean hasAssignments = assetRepository.existsAssignmentByAssetId(assetId);
+    if (hasAssignments) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          "Cannot delete the asset because it belongs to one or more historical assignments. "
+              + "If the asset is not able to be used anymore, please update its state in Edit Asset page");
+    }
+
+    // Perform soft delete
+    asset.setDisabled(true);
+    assetRepository.save(asset);
+  }
 }
