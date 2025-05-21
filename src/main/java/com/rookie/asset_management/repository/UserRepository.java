@@ -16,11 +16,19 @@ public interface UserRepository extends SpecificationRepository<User, Integer> {
    */
   Optional<User> findByIdAndDisabledFalse(Integer id);
 
+  /**
+   * find user by id
+   *
+   * @param username username of the user to find
+   * @return Optional user entity
+   */
   Optional<User> findByUsername(String username);
 
   /**
-   * @param username
-   * @return
+   * Checks if a user with the given username exists (case-insensitive).
+   *
+   * @param username username of the user to check
+   * @return true if a user with the given username exists, false otherwise
    */
   boolean existsByUsername(String username);
 }

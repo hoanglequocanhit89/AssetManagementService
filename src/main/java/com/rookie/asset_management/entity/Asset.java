@@ -9,17 +9,22 @@ import jakarta.persistence.FetchType;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.OneToMany;
+import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Table(name = "assets")
 @Getter
 @Setter
+@SQLDelete(sql = "UPDATE users SET disabled = true WHERE id = ?")
 public class Asset extends BaseEntityAudit {
   private String name;
   private String specification;
@@ -38,11 +43,15 @@ public class Asset extends BaseEntityAudit {
   private LocalDate installedDate;
 
   @Enumerated(EnumType.STRING)
+  @Column(columnDefinition = "ASSET_STATUS")
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   private AssetStatus status;
 
   @ManyToOne
   @JoinColumn(name = "location_id")
   private Location location;
+
+  private Boolean disabled;
 
   @ManyToOne
   @JoinColumn(name = "category_id")
@@ -54,6 +63,12 @@ public class Asset extends BaseEntityAudit {
   @Override
   public void prePersist() {
     super.prePersist();
+    this.disabled = false;
+  }
+
+  @PostPersist
+  public void postPersist() {
+    // generate asset code after the entity is persisted
     this.generateAssetCode();
   }
 

@@ -6,9 +6,13 @@ import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.enums.AssignmentStatus;
+import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
@@ -18,6 +22,7 @@ import com.rookie.asset_management.service.specification.UserSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
 import java.text.Normalizer;
+import java.util.List;
 import java.util.regex.Pattern;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
@@ -82,6 +87,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
             .addIfNotNull(type, UserSpecification.hasType(type))
             .addIfNotNull(adminId, UserSpecification.hasSameLocationAs(adminId))
             .addIfNotNull(adminId, UserSpecification.excludeAdmin(adminId))
+            .add(UserSpecification.excludeDisabled())
             .build();
     return getMany(spec, pageable);
   }
@@ -123,7 +129,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     // Generate username
     String username = generateUsername(request.getFirstName(), request.getLastName());
     if (userRepository.existsByUsername(username)) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Username already exists");
+      throw new AppException(HttpStatus.CONFLICT, "Username already exists");
     }
     user.setUsername(username);
     user.setStaffCode("SDTEMP");
@@ -180,7 +186,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     if (request.getRole() != null) {
       Role role = roleRepository.findByName(request.getRole());
       if (role == null) {
-        throw new AppException(HttpStatus.BAD_REQUEST, "Role not found");
+        throw new AppException(HttpStatus.NOT_FOUND, "Role not found");
       }
       user.setRole(role);
     }
@@ -193,5 +199,60 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     }
 
     userRepository.save(user);
+  }
+
+  @Transactional
+  @Override
+  public void deleteUser(int userId) {
+    User user =
+        userRepository
+            .findById(userId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, ("User not found")));
+
+    // check if the user is already disabled
+    if (Boolean.TRUE.equals(user.getDisabled())) {
+      throw new AppException(HttpStatus.CONFLICT, "User is already disabled");
+    }
+
+    // check if the user has any assignments
+    List<Assignment> assignments = user.getAssignments();
+    if (assignments != null && !assignments.isEmpty()) {
+      assignments.forEach(
+          assignment -> {
+            boolean isAccepted = assignment.getStatus() == AssignmentStatus.ACCEPTED;
+            boolean isWaiting = assignment.getStatus() == AssignmentStatus.WAITING;
+            // if the user has any assignments that are waiting, throw exception
+            if (isWaiting) {
+              throw new AppException(
+                  HttpStatus.CONFLICT,
+                  "User has pending assignments, cannot be deleted, please cancel the assignment first");
+            }
+
+            // if the user has any assignments that are accepted, check if the user has any
+            // returning requests
+            // if the user has any returning requests that are not completed, throw exception
+            if (isAccepted && !isAssigmentReturned(assignment)) {
+              throw new AppException(
+                  HttpStatus.CONFLICT,
+                  "User has pending returning requests, cannot be deleted, please cancel the request first");
+            }
+          });
+    }
+
+    // the user have no assignments, or all assignments are completed (accepted and has been
+    // returned)
+    // set the user to disabled
+    userRepository.delete(user);
+  }
+
+  private boolean isAssigmentReturned(Assignment assignment) {
+    // check if the user has any returning requests
+    // if the user has no returning requests, that means the user has not returned the asset yet
+    // then throw exception
+    ReturningRequest returningRequest = assignment.getReturningRequest();
+    if (returningRequest == null) {
+      throw new AppException(HttpStatus.CONFLICT, "User has not returned the asset yet");
+    }
+    return returningRequest.getStatus() == ReturningRequestStatus.COMPLETED;
   }
 }

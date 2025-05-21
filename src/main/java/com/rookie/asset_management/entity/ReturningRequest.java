@@ -15,6 +15,8 @@ import jakarta.persistence.Table;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
@@ -27,7 +29,7 @@ public class ReturningRequest {
   private Integer id;
 
   @OneToOne
-  @JoinColumn(name = "assigment_id", nullable = false)
+  @JoinColumn(name = "assignment_id", nullable = false)
   private Assignment assignment;
 
   @ManyToOne
@@ -35,13 +37,15 @@ public class ReturningRequest {
   private User requestedBy;
 
   @ManyToOne
-  @JoinColumn(name = "accepted_by", nullable = false)
+  @JoinColumn(name = "accepted_by")
   private User acceptedBy;
 
-  @Column(name = "requested_date")
+  @Column(name = "returned_date")
   @DateTimeFormat(pattern = "dd-MM-yyyy")
   private LocalDate returnedDate;
 
   @Enumerated(EnumType.STRING)
+  @Column(columnDefinition = "RETURNING_STATUS")
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   private ReturningRequestStatus status;
 }

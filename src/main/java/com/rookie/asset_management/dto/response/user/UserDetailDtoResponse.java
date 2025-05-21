@@ -17,6 +17,8 @@ public class UserDetailDtoResponse {
   LocalDate joinedDate;
   String location;
   String role;
+  String firstName;
+  String lastName;
   String fullName;
   LocalDate dob;
   String gender;

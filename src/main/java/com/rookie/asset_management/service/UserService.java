@@ -52,4 +52,11 @@ public interface UserService {
    * @param request an UpdateUserRequest containing the new details for the user
    */
   void updateUser(int userId, UpdateUserRequest request);
+
+  /**
+   * Deletes a user by their unique identifier.
+   *
+   * @param userId the unique identifier of the user to delete
+   */
+  void deleteUser(int userId);
 }

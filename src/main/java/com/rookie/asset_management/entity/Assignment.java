@@ -10,10 +10,13 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
@@ -44,5 +47,10 @@ public class Assignment {
   private LocalDate assignedDate;
 
   @Enumerated(EnumType.STRING)
+  @Column(columnDefinition = "ASSIGNMENT_STATUS")
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   private AssignmentStatus status;
+
+  @OneToOne(mappedBy = "assignment")
+  private ReturningRequest returningRequest;
 }

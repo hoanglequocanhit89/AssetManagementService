@@ -7,7 +7,7 @@ public enum AssetStatus {
   AVAILABLE("Available"),
   NOT_AVAILABLE("Not Available"),
   ASSIGNED("Assigned"),
-  WAITING_FOR_RECYCLING("Waiting for Recycling"),
+  WAITING("waiting for recycling"),
   RECYCLED("Recycled");
 
   private final String status;
