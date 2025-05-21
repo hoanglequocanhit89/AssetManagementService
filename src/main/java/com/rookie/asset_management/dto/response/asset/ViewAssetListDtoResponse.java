@@ -1,4 +1,4 @@
-package com.rookie.asset_management.dto.response;
+package com.rookie.asset_management.dto.response.asset;
 
 import com.rookie.asset_management.enums.AssetStatus;
 import java.time.LocalDate;
@@ -16,10 +16,11 @@ import lombok.NoArgsConstructor;
 @NoArgsConstructor
 @AllArgsConstructor
 public class ViewAssetListDtoResponse {
+  private Integer assetId;
   private String assetCode;
   private String assetName;
   private LocalDate installedDate;
   private String categoryName;
-  private AssetStatus status;
+  private AssetStatus state;
   private String locationName;
 }

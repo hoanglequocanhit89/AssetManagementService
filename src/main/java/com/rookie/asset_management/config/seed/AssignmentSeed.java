@@ -8,6 +8,7 @@ import com.rookie.asset_management.repository.AssetRepository;
 import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,26 +39,28 @@ public class AssignmentSeed implements CommandLineRunner {
     List<User> users = userRepository.findAll();
     List<Asset> assets = assetRepository.findAll();
 
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("dd-MM-yyyy");
+
     // Create and save assignments here
     Assignment assignment1 = new Assignment();
     assignment1.setAssignedBy(users.get(0));
     assignment1.setAssignedTo(users.get(1));
     assignment1.setAsset(assets.get(0));
-    assignment1.setAssignedDate(LocalDate.now());
+    assignment1.setAssignedDate(LocalDate.parse("01-02-2023", formatter));
     assignment1.setStatus(AssignmentStatus.WAITING);
 
     Assignment assignment2 = new Assignment();
     assignment2.setAssignedBy(users.get(1));
     assignment2.setAssignedTo(users.get(2));
     assignment2.setAsset(assets.get(1));
-    assignment2.setAssignedDate(LocalDate.now());
+    assignment2.setAssignedDate(LocalDate.parse("04-05-2022", formatter));
     assignment2.setStatus(AssignmentStatus.ACCEPTED);
 
     Assignment assignment3 = new Assignment();
     assignment3.setAssignedBy(users.get(0));
     assignment3.setAssignedTo(users.get(2));
     assignment3.setAsset(assets.get(2));
-    assignment3.setAssignedDate(LocalDate.now());
+    assignment3.setAssignedDate(LocalDate.parse("06-07-2021", formatter));
     assignment3.setStatus(AssignmentStatus.ACCEPTED);
 
     // Save assignments
