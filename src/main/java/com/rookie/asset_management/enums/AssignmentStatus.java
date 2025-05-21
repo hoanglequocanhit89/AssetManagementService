@@ -4,8 +4,9 @@ import lombok.Getter;
 
 @Getter
 public enum AssignmentStatus {
-  WAITING_FOR_ACCEPTANCE("Waiting for Acceptance"),
-  ACCEPTED("Accepted");
+  WAITING("waiting for acceptance"),
+  ACCEPTED("accepted"),
+  ;
 
   private final String status;
 

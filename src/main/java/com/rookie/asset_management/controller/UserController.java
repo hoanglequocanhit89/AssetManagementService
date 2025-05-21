@@ -10,12 +10,14 @@ import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.service.UserService;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -83,6 +85,14 @@ public class UserController extends ApiV1Controller {
     userService.updateUser(userId, request);
     ApiDtoResponse<Void> response =
         ApiDtoResponse.<Void>builder().message("User updated successfully").build();
+    return ResponseEntity.ok(response);
+  }
+
+  @DeleteMapping("/{userId}")
+  public ResponseEntity<ApiDtoResponse<Void>> deleteUser(@PathVariable @NotNull int userId) {
+    userService.deleteUser(userId);
+    ApiDtoResponse<Void> response =
+        ApiDtoResponse.<Void>builder().message("User deleted successfully").build();
     return ResponseEntity.ok(response);
   }
 }
