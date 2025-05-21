@@ -4,9 +4,10 @@ import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
-import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
+import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
+import com.rookie.asset_management.dto.response.asset.ViewAssetListDtoResponse;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.service.AssetService;
@@ -26,24 +27,11 @@ import org.springframework.web.bind.annotation.*;
  * "/api/v1/asset" base path.
  */
 @RestController
-@RequestMapping("api/v1/asset")
-public class AssetController {
+@RequestMapping("api/v1/assets")
+public class AssetController extends ApiV1Controller {
 
   @Autowired private AssetService assetService;
 
-  /**
-   * API to get a list of assets filtered, searched, and sorted
-   *
-   * @param locationId mandatory location ID of the assets
-   * @param keyword optional search the keyword
-   * @param categoryName optional asset categoryName
-   * @param states optional list of asset statuses to filter
-   * @param page page number for pagination (default 0)
-   * @param size page size for pagination (default 20)
-   * @param sortBy sortBy field to sort by (default "assetCode")
-   * @param sortDir sort direction: asc or desc (default asc)
-   * @return paginated and filtered list of assets
-   */
   @GetMapping
   public ResponseEntity<ApiDtoResponse<PagingDtoResponse<ViewAssetListDtoResponse>>>
       getAssetsByFilterSearchAndSort(
@@ -77,57 +65,29 @@ public class AssetController {
             .build());
   }
 
-  /**
-   * This endpoint accepts a JSON payload representing asset details and the username of the user
-   * who is performing the creation. It delegates the creation logic to the AssetService and returns
-   * the newly created asset in the response.
-   *
-   * @param dto the asset data sent from the client
-   * @param username the username of the currently authenticated user
-   * @return ResponseEntity containing the created asset and HTTP 201 status
-   */
   @PostMapping
   public ResponseEntity<CreateNewAssetDtoResponse> createAsset(
-      @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("username") String username) {
+      @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("adminId") Integer adminId) {
     // Call the service layer to handle asset creation logic
-    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, username);
+    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, adminId);
 
     // Return HTTP 201 Created with the asset details in response body
     return ResponseEntity.status(HttpStatus.CREATED).body(createdAsset);
   }
 
-  /**
-   * Handles HTTP PUT request to update an existing asset by its ID. Only unassigned assets can be
-   * edited. The editable fields include: - name - specification - installed date - state
-   *
-   * <p>The asset name must be unique within the same location. The category cannot be changed.
-   *
-   * @param assetId the ID of the asset to be updated
-   * @param dto the DTO containing updated asset information
-   * @param username the username of the admin performing the update
-   * @return ResponseEntity containing the updated asset information
-   */
   @PutMapping("/{assetId}")
   public ResponseEntity<EditAssetDtoResponse> editAsset(
       @PathVariable Integer assetId,
       @RequestBody @Valid EditAssetDtoRequest dto,
-      @RequestParam("username") String username) {
+      @RequestParam("adminId") Integer adminId) {
 
     // Call the service layer to perform the update
-    EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto, username);
+    EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto, adminId);
 
     // Call the service layer to perform the update
     return ResponseEntity.ok(updatedAsset);
   }
 
-  /**
-   * Deletes an asset by its ID using soft delete. The asset can only be deleted if it has no
-   * associated assignments and is not in the ASSIGNED state.
-   *
-   * @param assetId the ID of the asset to delete
-   * @return ResponseEntity containing a success message wrapped in ApiDtoResponse
-   * @throws AppException if the asset cannot be deleted (not found, assigned, or has assignments)
-   */
   @DeleteMapping("/{assetId}")
   public ResponseEntity<ApiDtoResponse<String>> deleteAsset(@PathVariable Integer assetId) {
     try {
@@ -149,5 +109,19 @@ public class AssetController {
       return ResponseEntity.status(HttpStatus.NOT_FOUND)
           .body(ApiDtoResponse.<String>builder().message("Asset not found.").data(null).build());
     }
+  }
+
+  @GetMapping("/{assetId}")
+  public ResponseEntity<ApiDtoResponse<AssetDetailDtoResponse>> getAssetDetails(
+      @PathVariable Integer assetId) {
+    // Call the service layer to fetch asset details
+    AssetDetailDtoResponse assetDetails = assetService.getAssetDetail(assetId);
+
+    // Return the response wrapped in ApiDtoResponse with a success message
+    return ResponseEntity.ok(
+        ApiDtoResponse.<AssetDetailDtoResponse>builder()
+            .message("Asset details retrieved successfully.")
+            .data(assetDetails)
+            .build());
   }
 }

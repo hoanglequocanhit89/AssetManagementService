@@ -4,10 +4,13 @@ import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.entity.UserProfile;
+import com.rookie.asset_management.enums.AssignmentStatus;
+import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
@@ -47,9 +50,7 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
   @Override
   @Mapping(target = "fullName", expression = "java(user.getUserProfile().getFullName())")
   @Mapping(source = "role.name", target = "role")
-  @Mapping(
-      target = "canDisable",
-      expression = "java(user.getAssignments().size() > 0 ? false : true)")
+  @Mapping(target = "canDisable", expression = "java(canDisable(user.getAssignments()))")
   // map canDisable to true if no assignments
   UserDtoResponse toDto(User user);
 
@@ -137,5 +138,21 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
       }
     }
     return loc;
+  }
+
+  /**
+   * default method to check if the user can be disabled. A user can be disabled if all their
+   * assignments are not in WAITING status.
+   *
+   * @param assignments the list of assignments
+   * @return true if the user can be disabled, false otherwise
+   */
+  default boolean canDisable(List<Assignment> assignments) {
+    for (Assignment assignment : assignments) {
+      if (assignment.getStatus() == AssignmentStatus.WAITING) {
+        return false;
+      }
+    }
+    return true;
   }
 }

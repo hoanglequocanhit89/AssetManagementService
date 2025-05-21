@@ -17,6 +17,5 @@ public class CreateNewAssetDtoResponse {
   private AssetStatus state;
   private String categoryName;
   private String locationName;
-  private String createdByUsername;
   private Date createdAt;
 }

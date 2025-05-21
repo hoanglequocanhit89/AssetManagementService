@@ -237,10 +237,8 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     if (assignments != null && !assignments.isEmpty()) {
       assignments.forEach(
           assignment -> {
-            boolean isAccepted = assignment.getStatus() == AssignmentStatus.ACCEPTED;
-            boolean isWaiting = assignment.getStatus() == AssignmentStatus.WAITING;
             // if the user has any assignments that are waiting, throw exception
-            if (isWaiting) {
+            if (isHavePendingAssignment(assignments)) {
               throw new AppException(
                   HttpStatus.CONFLICT,
                   "User has pending assignments, cannot be deleted, please cancel the assignment first");
@@ -249,6 +247,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
             // if the user has any assignments that are accepted, check if the user has any
             // returning requests
             // if the user has any returning requests that are not completed, throw exception
+            boolean isAccepted = assignment.getStatus() == AssignmentStatus.ACCEPTED;
             if (isAccepted && !isAssigmentReturned(assignment)) {
               throw new AppException(
                   HttpStatus.CONFLICT,
@@ -260,7 +259,8 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     // the user have no assignments, or all assignments are completed (accepted and has been
     // returned)
     // set the user to disabled
-    userRepository.delete(user);
+    user.setDisabled(true);
+    userRepository.save(user);
   }
 
   private boolean isAssigmentReturned(Assignment assignment) {
@@ -272,5 +272,14 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
       throw new AppException(HttpStatus.CONFLICT, "User has not returned the asset yet");
     }
     return returningRequest.getStatus() == ReturningRequestStatus.COMPLETED;
+  }
+
+  private boolean isHavePendingAssignment(List<Assignment> assignments) {
+    for (Assignment assignment : assignments) {
+      if (assignment.getStatus() == AssignmentStatus.WAITING) {
+        return true;
+      }
+    }
+    return false;
   }
 }

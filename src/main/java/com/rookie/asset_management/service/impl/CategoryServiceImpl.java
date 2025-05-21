@@ -1,5 +1,6 @@
 package com.rookie.asset_management.service.impl;
 
+import com.rookie.asset_management.dto.response.CategoryDtoResponse;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.repository.CategoryRepository;
@@ -26,17 +27,14 @@ public class CategoryServiceImpl implements CategoryService {
    * @throws AppException if no categories are found in the database
    */
   @Override
-  public List<String> getAllCategoryNames() {
+  public List<CategoryDtoResponse> getAllCategory() {
     // Fetch all categories and extract their names
-    List<String> names =
-        categoryRepository.findAll().stream().map(Category::getName).collect(Collectors.toList());
+    List<CategoryDtoResponse> categories =
+        categoryRepository.findAll().stream()
+            .map(c -> new CategoryDtoResponse(c.getId(), c.getName()))
+            .collect(Collectors.toList());
 
-    // Throw exception if list is empty
-    if (names.isEmpty()) {
-      throw new AppException(HttpStatus.NOT_FOUND, "No categories found");
-    }
-
-    return names;
+    return categories;
   }
 
   /**

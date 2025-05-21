@@ -21,6 +21,5 @@ public class EditAssetDtoResponse {
   private AssetStatus state;
   private String categoryName;
   private String locationName;
-  private String updatedByUsername;
   private Date updatedAt;
 }

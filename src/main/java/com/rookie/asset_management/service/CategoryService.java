@@ -1,5 +1,6 @@
 package com.rookie.asset_management.service;
 
+import com.rookie.asset_management.dto.response.CategoryDtoResponse;
 import com.rookie.asset_management.entity.Category;
 import java.util.List;
 
@@ -13,7 +14,7 @@ public interface CategoryService {
    *
    * @return a list of category names
    */
-  List<String> getAllCategoryNames();
+  List<CategoryDtoResponse> getAllCategory();
 
   /**
    * Creates a new category with the given name and prefix.

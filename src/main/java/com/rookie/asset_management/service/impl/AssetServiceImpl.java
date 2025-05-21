@@ -3,12 +3,15 @@ package com.rookie.asset_management.service.impl;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
-import com.rookie.asset_management.dto.response.ViewAssetListDtoResponse;
+import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
+import com.rookie.asset_management.dto.response.asset.ViewAssetListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.exception.AppException;
@@ -20,7 +23,7 @@ import com.rookie.asset_management.util.SpecificationBuilder;
 import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.HttpStatus;
@@ -30,25 +33,14 @@ import org.springframework.stereotype.Service;
  * Service implementation for asset management operations. Handles logic for creating a new asset.
  */
 @Service
+@RequiredArgsConstructor
 public class AssetServiceImpl implements AssetService {
-  @Autowired private AssetRepository assetRepository;
+  private final AssetRepository assetRepository;
 
-  @Autowired private CategoryRepository categoryRepository;
+  private final CategoryRepository categoryRepository;
 
-  @Autowired private UserRepository userRepository;
+  private final UserRepository userRepository;
 
-  /**
-   * Retrieves a paginated list of assets based on provided filters, search keyword, and sorting
-   * options.
-   *
-   * @param locationId the ID of the location to filter assets (required)
-   * @param keyword search term to match asset name or asset code (optional)
-   * @param categoryName name of the category to filter assets by (optional)
-   * @param states list of asset statuses to filter by (optional)
-   * @param pageable pagination and sorting information
-   * @return paginated list of matching assets in simplified DTO format
-   * @throws AppException if no assets are found
-   */
   @Override
   public PagingDtoResponse<ViewAssetListDtoResponse> searchFilterAndSortAssets(
       Integer locationId,
@@ -62,6 +54,9 @@ public class AssetServiceImpl implements AssetService {
 
     // Mandatory filter: Filter by location ID
     specBuilder.add((root, query, cb) -> cb.equal(root.get("location").get("id"), locationId));
+
+    // Mandatory filter: Only fetch assets that are not disabled
+    specBuilder.add((root, query, cb) -> cb.isFalse(root.get("disabled")));
 
     // Optional keyword search: Match asset name or asset code (case-insensitive)
     if (keyword != null && !keyword.isBlank()) {
@@ -89,22 +84,18 @@ public class AssetServiceImpl implements AssetService {
     // Execute the query with built specifications and pagination/sorting
     Page<Asset> pageAssets = assetRepository.findAll(specBuilder.build(), pageable);
 
-    // If no results found, throw a 404 exception
-    if (pageAssets.isEmpty()) {
-      throw new AppException(HttpStatus.NOT_FOUND, "No Assets found");
-    }
-
     // Map each Asset entity to a simplified DTO for response
     List<ViewAssetListDtoResponse> content =
         pageAssets.stream()
             .map(
                 asset ->
                     ViewAssetListDtoResponse.builder()
+                        .assetId(asset.getId())
                         .assetCode(asset.getAssetCode())
                         .assetName(asset.getName())
                         .installedDate(asset.getInstalledDate())
                         .categoryName(asset.getCategory().getName())
-                        .status(asset.getStatus())
+                        .state(asset.getStatus())
                         .locationName(asset.getLocation().getName())
                         .build())
             .toList();
@@ -119,28 +110,12 @@ public class AssetServiceImpl implements AssetService {
         pageAssets.isEmpty());
   }
 
-  /**
-   * Generates an asset code using the category prefix and asset ID. The format is PREFIX + 6-digit
-   * zero-padded ID (e.g., "LA000123").
-   *
-   * @param prefix the prefix defined by the category
-   * @param id the ID of the asset
-   * @return formatted asset code
-   */
   private String generateAssetCode(String prefix, long id) {
     return String.format("%s%06d", prefix, id);
   }
 
-  /**
-   * Creates a new asset based on the provided DTO and current username. Performs all necessary
-   * validations and mapping before saving to the database.
-   *
-   * @param dto the request data for creating a new asset
-   * @param username the username of the user performing the creation
-   * @return response DTO containing created asset details
-   */
   @Override
-  public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, String username) {
+  public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, Integer adminId) {
 
     // Validate asset state
     if (dto.getState() != AssetStatus.AVAILABLE && dto.getState() != AssetStatus.NOT_AVAILABLE) {
@@ -185,16 +160,16 @@ public class AssetServiceImpl implements AssetService {
             .findById(dto.getCategoryId())
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Category not found"));
 
-    // Retrieve user by username
-    User user =
+    // Get admin user by ID
+    User admin =
         userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "User not found"));
+            .findById(adminId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
 
-    // Get the user's associated location
-    Location location = user.getLocation();
+    // Get location from admin
+    Location location = admin.getLocation();
 
-    // Check if asset name already exists in this location (must be unique per location)
+    // Check for asset name conflict within the same location
     if (assetRepository.existsByNameAndLocation(dto.getName(), location)) {
       throw new AppException(
           HttpStatus.CONFLICT,
@@ -209,13 +184,16 @@ public class AssetServiceImpl implements AssetService {
     asset.setStatus(dto.getState());
     asset.setCategory(category);
     asset.setLocation(location);
-    asset.setCreatedBy(user);
-    asset.setUpdatedBy(user);
+    asset.setCreatedBy(admin);
+    asset.setUpdatedBy(admin);
 
     // Set creation and update timestamps
     Date now = new Date();
     asset.setCreatedAt(now);
     asset.setUpdatedAt(now);
+
+    // Set asset_code avoid NOT NULL
+    asset.setAssetCode("PENDING");
 
     // Save first time to get id
     Asset savedAsset = assetRepository.save(asset);
@@ -246,26 +224,12 @@ public class AssetServiceImpl implements AssetService {
         .state(savedAsset.getStatus())
         .categoryName(savedAsset.getCategory().getName())
         .locationName(savedAsset.getLocation().getName())
-        .createdByUsername(savedAsset.getCreatedBy().getUsername())
         .createdAt(savedAsset.getCreatedAt())
         .build();
   }
 
-  /**
-   * Updates the details of an existing asset that has not been assigned to any user.
-   *
-   * <p>Only allows updating the following fields: name, specification, installed date, and state.
-   * Category is not allowed to be changed. The asset name must be unique within the user's
-   * location.
-   *
-   * @param assetId the ID of the asset to edit
-   * @param dto the request object containing updated asset information
-   * @param username the username of the admin performing the update
-   * @return an {@link EditAssetDtoResponse} containing the updated asset details
-   * @throws AppException if the asset is not found, is assigned, or validation fails
-   */
   @Override
-  public EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, String username) {
+  public EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, Integer adminId) {
 
     // Fetch asset by ID or throw if not found
     Asset asset =
@@ -308,13 +272,13 @@ public class AssetServiceImpl implements AssetService {
       throw new AppException(HttpStatus.BAD_REQUEST, "Invalid asset state");
     }
 
-    // Fetch the user and their location
-    User user =
+    // Get admin user by ID
+    User admin =
         userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "User not found"));
+            .findById(adminId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
 
-    Location location = user.getLocation();
+    Location location = admin.getLocation();
 
     if (!asset.getName().equalsIgnoreCase(dto.getName())
         && assetRepository.existsByNameAndLocation(dto.getName(), location)) {
@@ -327,7 +291,7 @@ public class AssetServiceImpl implements AssetService {
     asset.setInstalledDate(dto.getInstalledDate());
     asset.setStatus(dto.getState());
 
-    asset.setUpdatedBy(user);
+    asset.setUpdatedBy(admin);
     asset.setUpdatedAt(new Date());
 
     asset = assetRepository.save(asset);
@@ -342,18 +306,47 @@ public class AssetServiceImpl implements AssetService {
         .state(asset.getStatus())
         .categoryName(asset.getCategory().getName())
         .locationName(asset.getLocation().getName())
-        .updatedByUsername(asset.getUpdatedBy().getUsername())
         .updatedAt(asset.getUpdatedAt())
         .build();
   }
 
-  /**
-   * Deletes an asset using soft delete (marks it as deleted). The asset can only be deleted if it
-   * has no associated assignments and is not in the ASSIGNED state.
-   *
-   * @param assetId the ID of the asset to delete
-   * @throws AppException if the asset cannot be deleted (not found, assigned, or has assignments)
-   */
+  @Override
+  public AssetDetailDtoResponse getAssetDetail(Integer assetId) {
+    // Fetch asset by ID or throw if not found
+    Asset asset =
+        assetRepository
+            .findById(assetId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Asset not found"));
+
+    AssetDetailDtoResponse response = new AssetDetailDtoResponse();
+    response.setId(asset.getId());
+    response.setAssetCode(asset.getAssetCode());
+    response.setName(asset.getName());
+    response.setSpecification(asset.getSpecification());
+    response.setInstalledDate(asset.getInstalledDate());
+    response.setCategory(asset.getCategory().getName());
+    response.setLocation(asset.getLocation().getName());
+    response.setStatus(asset.getStatus());
+    // map the history
+    List<AssignmentDtoResponse> history =
+        asset.getAssignments().stream()
+            .map(
+                assignment -> {
+                  AssignmentDtoResponse historyItem = new AssignmentDtoResponse();
+                  historyItem.setAssignedTo(assignment.getAssignedTo().getUsername());
+                  historyItem.setAssignedBy(assignment.getAssignedBy().getUsername());
+                  historyItem.setAssignedDate(assignment.getAssignedDate());
+                  ReturningRequest returningRequest = assignment.getReturningRequest();
+                  if (returningRequest != null && returningRequest.getReturnedDate() != null) {
+                    historyItem.setReturnedDate(returningRequest.getReturnedDate());
+                  }
+                  return historyItem;
+                })
+            .toList();
+    response.setAssignments(history);
+    return response;
+  }
+
   @Override
   public void deleteAsset(Integer assetId) {
     // Fetch asset by ID or throw if not found or deleted
