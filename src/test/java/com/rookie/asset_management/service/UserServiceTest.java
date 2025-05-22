@@ -183,6 +183,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     UserDetailDtoResponse expectedDto =
         new UserDetailDtoResponse(
+            1,
             "SD1234",
             "nhatnl",
             LocalDate.of(2023, 5, 1),
@@ -342,6 +343,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto =
         new UserDetailDtoResponse(
+            1,
             "SD0001",
             "anhnv",
             LocalDate.of(2025, 5, 21),
@@ -399,6 +401,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto =
         new UserDetailDtoResponse(
+            1,
             "SD0002",
             "letbn",
             LocalDate.of(2025, 5, 21),
@@ -456,6 +459,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto =
         new UserDetailDtoResponse(
+            1,
             "SD0003",
             "tranm",
             LocalDate.of(2025, 5, 21),
@@ -513,6 +517,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto1 =
         new UserDetailDtoResponse(
+            1,
             "SD0001",
             "anhnv",
             LocalDate.of(2025, 5, 21),
@@ -563,6 +568,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto2 =
         new UserDetailDtoResponse(
+            1,
             "SD0002",
             "anhnv1",
             LocalDate.of(2025, 5, 21),
@@ -614,6 +620,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto3 =
         new UserDetailDtoResponse(
+            1,
             "SD0003",
             "anhnv2",
             LocalDate.of(2025, 5, 21),
@@ -675,6 +682,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto =
         new UserDetailDtoResponse(
+            1,
             "SD0001",
             "anhnv",
             LocalDate.of(2025, 5, 21),
@@ -730,6 +738,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto =
         new UserDetailDtoResponse(
+            1,
             "SD0001",
             "anhnv",
             LocalDate.of(2025, 5, 21),
@@ -785,6 +794,7 @@ class UserServiceTest {
 
     UserDetailDtoResponse responseDto =
         new UserDetailDtoResponse(
+            1,
             "SD0001",
             "anhnv",
             LocalDate.of(2025, 5, 21),
