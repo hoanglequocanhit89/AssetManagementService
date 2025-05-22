@@ -4,7 +4,7 @@ import org.springframework.web.bind.annotation.CrossOrigin;
 import org.springframework.web.bind.annotation.RequestMethod;
 
 @CrossOrigin(
-    origins = "http://localhost:3000",
+    origins = {"http://localhost:3000", "https://proud-smoke-06841df00.6.azurestaticapps.net"},
     allowCredentials = "true",
     allowedHeaders = "*",
     methods = {
