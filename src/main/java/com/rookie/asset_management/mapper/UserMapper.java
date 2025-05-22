@@ -60,6 +60,7 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    * @param user the user entity
    * @return the user details dto response
    */
+  @Mapping(target = "id", source = "id")
   @Mapping(target = "location", source = "location.name")
   @Mapping(target = "role", source = "role.name")
   @Mapping(target = "firstName", source = "userProfile.firstName")
@@ -111,19 +112,16 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    */
   default Location mapLocation(String location) {
     Location loc = new Location();
-    // Nếu location không được gửi (Staff), mặc định là HCM
     if (location == null || location.trim().isEmpty()) {
       loc.setId(1);
       loc.setName("HCM");
     } else {
-      // Validate location: chỉ chấp nhận HCM, HN, DN
       String trimmedLocation = location.trim().toUpperCase();
       if (!trimmedLocation.equals("HCM")
           && !trimmedLocation.equals("HN")
           && !trimmedLocation.equals("DN")) {
         throw new IllegalArgumentException("Invalid location. Must be one of: HCM, HN, DN");
       }
-      // Gán ID tương ứng (giả định ID đã có sẵn trong DB)
       loc.setName(trimmedLocation);
       switch (trimmedLocation) {
         case "HCM":
