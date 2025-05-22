@@ -23,4 +23,5 @@ public class ViewAssetListDtoResponse {
   private String categoryName;
   private AssetStatus state;
   private String locationName;
+  private Boolean canDelete;
 }
