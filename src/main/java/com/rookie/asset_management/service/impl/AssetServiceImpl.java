@@ -20,7 +20,6 @@ import com.rookie.asset_management.repository.CategoryRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.AssetService;
 import com.rookie.asset_management.util.SpecificationBuilder;
-import java.time.LocalDate;
 import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
@@ -42,7 +41,7 @@ public class AssetServiceImpl implements AssetService {
   private final UserRepository userRepository;
 
   @Override
-  public PagingDtoResponse<ViewAssetListDtoResponse> searchFilterAndSortAssets(
+  public PagingDtoResponse<ViewAssetListDtoResponse> getAllAssets(
       Integer locationId,
       String keyword,
       String categoryName,
@@ -88,16 +87,19 @@ public class AssetServiceImpl implements AssetService {
     List<ViewAssetListDtoResponse> content =
         pageAssets.stream()
             .map(
-                asset ->
-                    ViewAssetListDtoResponse.builder()
-                        .id(asset.getId())
-                        .assetCode(asset.getAssetCode())
-                        .name(asset.getName())
-                        .installedDate(asset.getInstalledDate())
-                        .categoryName(asset.getCategory().getName())
-                        .state(asset.getStatus())
-                        .locationName(asset.getLocation().getName())
-                        .build())
+                asset -> {
+                  boolean hasAssignment = assetRepository.existsAssignmentByAssetId(asset.getId());
+                  return ViewAssetListDtoResponse.builder()
+                      .id(asset.getId())
+                      .assetCode(asset.getAssetCode())
+                      .name(asset.getName())
+                      .installedDate(asset.getInstalledDate())
+                      .categoryName(asset.getCategory().getName())
+                      .state(asset.getStatus())
+                      .locationName(asset.getLocation().getName())
+                      .canDelete(!hasAssignment)
+                      .build();
+                })
             .toList();
 
     // Return paginated response with metadata
@@ -249,12 +251,6 @@ public class AssetServiceImpl implements AssetService {
     // Validate installed date
     if (dto.getInstalledDate() == null) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Installed date is required");
-    }
-
-    // Installed date must be today or in the future
-    if (dto.getInstalledDate().isBefore(LocalDate.now())) {
-      throw new AppException(
-          HttpStatus.BAD_REQUEST, "Installed date must be today or a future date");
     }
 
     // Validate state

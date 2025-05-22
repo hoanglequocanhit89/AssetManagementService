@@ -55,7 +55,7 @@ public class AssetController extends ApiV1Controller {
 
     // Call service method to fetch filtered, searched, sorted, and paginated asset list
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(locationId, keyword, categoryName, states, pageable);
+        assetService.getAllAssets(locationId, keyword, categoryName, states, pageable);
 
     // Return the response wrapped in ApiDtoResponse with a success message
     return ResponseEntity.ok(
