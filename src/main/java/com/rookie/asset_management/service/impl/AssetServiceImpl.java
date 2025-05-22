@@ -76,7 +76,14 @@ public class AssetServiceImpl implements AssetService {
     }
 
     // Optional filter: Filter by asset status (can be one or multiple statuses)
-    if (states != null && !states.isEmpty()) {
+    if (states == null || states.isEmpty()) {
+      specBuilder.add(
+          (root, query, cb) ->
+              root.get("status")
+                  .in(
+                      List.of(
+                          AssetStatus.AVAILABLE, AssetStatus.NOT_AVAILABLE, AssetStatus.ASSIGNED)));
+    } else {
       specBuilder.add((root, query, cb) -> root.get("status").in(states));
     }
 
