@@ -105,7 +105,7 @@ class AssetServiceTest {
     ViewAssetListDtoResponse response = content.get(0);
 
     assertEquals("LA0001", response.getAssetCode());
-    assertEquals("Laptop Dell", response.getAssetName());
+    assertEquals("Laptop Dell", response.getName());
     assertEquals("Laptop", response.getCategoryName());
     assertEquals(AssetStatus.AVAILABLE, response.getState());
     assertEquals("HCM", response.getLocationName());

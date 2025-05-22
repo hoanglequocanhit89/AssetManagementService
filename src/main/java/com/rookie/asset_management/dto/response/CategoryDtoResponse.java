@@ -12,4 +12,5 @@ import lombok.NoArgsConstructor;
 public class CategoryDtoResponse {
   private Integer id;
   private String name;
+  private String prefix;
 }
