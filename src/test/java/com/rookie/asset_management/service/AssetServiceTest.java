@@ -94,8 +94,7 @@ class AssetServiceTest {
 
     // Act
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(
-            1, "laptop", "Laptop", List.of(AssetStatus.AVAILABLE), pageable);
+        assetService.getAllAssets(1, "laptop", "Laptop", List.of(AssetStatus.AVAILABLE), pageable);
 
     // Assert
     assertNotNull(result);
@@ -121,7 +120,7 @@ class AssetServiceTest {
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(1, null, null, null, pageable);
+        assetService.getAllAssets(1, null, null, null, pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -136,7 +135,7 @@ class AssetServiceTest {
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(1, "laptop", null, null, pageable);
+        assetService.getAllAssets(1, "laptop", null, null, pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -151,7 +150,7 @@ class AssetServiceTest {
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(1, null, "Laptop", null, pageable);
+        assetService.getAllAssets(1, null, "Laptop", null, pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -166,8 +165,7 @@ class AssetServiceTest {
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(
-            1, null, null, List.of(AssetStatus.AVAILABLE), pageable);
+        assetService.getAllAssets(1, null, null, List.of(AssetStatus.AVAILABLE), pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -182,7 +180,7 @@ class AssetServiceTest {
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(1, "   ", "", List.of(), pageable);
+        assetService.getAllAssets(1, "   ", "", List.of(), pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
