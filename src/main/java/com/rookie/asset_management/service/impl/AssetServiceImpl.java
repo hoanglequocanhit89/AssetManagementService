@@ -90,9 +90,9 @@ public class AssetServiceImpl implements AssetService {
             .map(
                 asset ->
                     ViewAssetListDtoResponse.builder()
-                        .assetId(asset.getId())
+                        .id(asset.getId())
                         .assetCode(asset.getAssetCode())
-                        .assetName(asset.getName())
+                        .name(asset.getName())
                         .installedDate(asset.getInstalledDate())
                         .categoryName(asset.getCategory().getName())
                         .state(asset.getStatus())
@@ -135,12 +135,6 @@ public class AssetServiceImpl implements AssetService {
     // Validate installed date
     if (dto.getInstalledDate() == null) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Installed date is required");
-    }
-
-    // Installed date must be today or a future date
-    if (dto.getInstalledDate().isBefore(LocalDate.now())) {
-      throw new AppException(
-          HttpStatus.BAD_REQUEST, "Installed date must be today or a future date");
     }
 
     // Validate category ID

@@ -31,7 +31,7 @@ public class CategoryServiceImpl implements CategoryService {
     // Fetch all categories and extract their names
     List<CategoryDtoResponse> categories =
         categoryRepository.findAll().stream()
-            .map(c -> new CategoryDtoResponse(c.getId(), c.getName()))
+            .map(c -> new CategoryDtoResponse(c.getId(), c.getName(), c.getPrefix()))
             .collect(Collectors.toList());
 
     return categories;
