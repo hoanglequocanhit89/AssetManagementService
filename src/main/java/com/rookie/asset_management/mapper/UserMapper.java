@@ -6,10 +6,12 @@ import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.entity.UserProfile;
 import com.rookie.asset_management.enums.AssignmentStatus;
+import com.rookie.asset_management.enums.ReturningRequestStatus;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -147,7 +149,14 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    */
   default boolean canDisable(List<Assignment> assignments) {
     for (Assignment assignment : assignments) {
-      if (assignment.getStatus() == AssignmentStatus.WAITING) {
+      AssignmentStatus assignmentStatus = assignment.getStatus();
+      if (assignmentStatus == AssignmentStatus.WAITING) {
+        return false;
+      }
+      ReturningRequest returningRequest = assignment.getReturningRequest();
+      if (assignmentStatus == AssignmentStatus.ACCEPTED
+          && returningRequest != null
+          && returningRequest.getStatus() == ReturningRequestStatus.WAITING) {
         return false;
       }
     }
