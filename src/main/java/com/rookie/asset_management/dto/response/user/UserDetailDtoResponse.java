@@ -12,6 +12,7 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 public class UserDetailDtoResponse {
+  private Integer id;
   String staffCode;
   String username;
   LocalDate joinedDate;
