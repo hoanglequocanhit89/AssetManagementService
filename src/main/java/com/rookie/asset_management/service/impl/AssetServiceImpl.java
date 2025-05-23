@@ -102,7 +102,7 @@ public class AssetServiceImpl implements AssetService {
                       .name(asset.getName())
                       .installedDate(asset.getInstalledDate())
                       .categoryName(asset.getCategory().getName())
-                      .state(asset.getStatus())
+                      .status(asset.getStatus())
                       .locationName(asset.getLocation().getName())
                       .canDelete(!hasAssignment)
                       .build();
