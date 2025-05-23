@@ -55,7 +55,7 @@ public class AssetController extends ApiV1Controller {
 
     // Call service method to fetch filtered, searched, sorted, and paginated asset list
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.searchFilterAndSortAssets(locationId, keyword, categoryName, states, pageable);
+        assetService.getAllAssets(locationId, keyword, categoryName, states, pageable);
 
     // Return the response wrapped in ApiDtoResponse with a success message
     return ResponseEntity.ok(
@@ -66,17 +66,22 @@ public class AssetController extends ApiV1Controller {
   }
 
   @PostMapping
-  public ResponseEntity<CreateNewAssetDtoResponse> createAsset(
+  public ResponseEntity<ApiDtoResponse<CreateNewAssetDtoResponse>> createAsset(
       @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("adminId") Integer adminId) {
     // Call the service layer to handle asset creation logic
     CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, adminId);
 
     // Return HTTP 201 Created with the asset details in response body
-    return ResponseEntity.status(HttpStatus.CREATED).body(createdAsset);
+    return ResponseEntity.status(HttpStatus.CREATED)
+        .body(
+            ApiDtoResponse.<CreateNewAssetDtoResponse>builder()
+                .message("Asset created successfully.")
+                .data(createdAsset)
+                .build());
   }
 
   @PutMapping("/{assetId}")
-  public ResponseEntity<EditAssetDtoResponse> editAsset(
+  public ResponseEntity<ApiDtoResponse<EditAssetDtoResponse>> editAsset(
       @PathVariable Integer assetId,
       @RequestBody @Valid EditAssetDtoRequest dto,
       @RequestParam("adminId") Integer adminId) {
@@ -85,7 +90,12 @@ public class AssetController extends ApiV1Controller {
     EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto, adminId);
 
     // Call the service layer to perform the update
-    return ResponseEntity.ok(updatedAsset);
+    return ResponseEntity.ok()
+        .body(
+            ApiDtoResponse.<EditAssetDtoResponse>builder()
+                .message("Asset updated successfully.")
+                .data(updatedAsset)
+                .build());
   }
 
   @DeleteMapping("/{assetId}")

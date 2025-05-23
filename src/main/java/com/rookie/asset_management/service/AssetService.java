@@ -28,7 +28,7 @@ public interface AssetService {
    * @param pageable pagination and sorting information
    * @return a paginated response of asset list items
    */
-  PagingDtoResponse<ViewAssetListDtoResponse> searchFilterAndSortAssets(
+  PagingDtoResponse<ViewAssetListDtoResponse> getAllAssets(
       Integer locationId,
       String keyword,
       String categoryName,

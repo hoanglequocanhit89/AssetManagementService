@@ -43,8 +43,18 @@ public class CategoryController extends ApiV1Controller {
    * @return a ResponseEntity containing the created category and HTTP status 201 (CREATED)
    */
   @PostMapping
-  public ResponseEntity<Category> createCategory(@RequestBody CreateCategoryRequest request) {
+  public ResponseEntity<ApiDtoResponse<CategoryDtoResponse>> createCategory(
+      @RequestBody CreateCategoryRequest request) {
     Category category = categoryService.createCategory(request.getName(), request.getPrefix());
-    return new ResponseEntity<>(category, HttpStatus.CREATED);
+
+    CategoryDtoResponse dto =
+        new CategoryDtoResponse(category.getId(), category.getName(), category.getPrefix());
+
+    return new ResponseEntity<>(
+        ApiDtoResponse.<CategoryDtoResponse>builder()
+            .message("Category created successfully.")
+            .data(dto)
+            .build(),
+        HttpStatus.CREATED);
   }
 }
