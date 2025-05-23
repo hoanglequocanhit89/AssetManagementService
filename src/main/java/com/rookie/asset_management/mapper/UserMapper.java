@@ -6,10 +6,12 @@ import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.entity.UserProfile;
 import com.rookie.asset_management.enums.AssignmentStatus;
+import com.rookie.asset_management.enums.ReturningRequestStatus;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -140,14 +142,22 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
 
   /**
    * default method to check if the user can be disabled. A user can be disabled if all their
-   * assignments are not in WAITING status.
+   * assignments are not in WAITING status
+   * If their assignment is in ACCEPTED status, the returning request must not be in WAITING
    *
    * @param assignments the list of assignments
    * @return true if the user can be disabled, false otherwise
    */
   default boolean canDisable(List<Assignment> assignments) {
     for (Assignment assignment : assignments) {
-      if (assignment.getStatus() == AssignmentStatus.WAITING) {
+      AssignmentStatus assignmentStatus = assignment.getStatus();
+      if (assignmentStatus == AssignmentStatus.WAITING) {
+        return false;
+      }
+      ReturningRequest returningRequest = assignment.getReturningRequest();
+      if (assignmentStatus == AssignmentStatus.ACCEPTED
+          && returningRequest != null
+          && returningRequest.getStatus() == ReturningRequestStatus.WAITING) {
         return false;
       }
     }
