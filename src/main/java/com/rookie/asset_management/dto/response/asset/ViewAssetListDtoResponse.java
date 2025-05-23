@@ -21,7 +21,7 @@ public class ViewAssetListDtoResponse {
   private String name;
   private LocalDate installedDate;
   private String categoryName;
-  private AssetStatus state;
+  private AssetStatus status;
   private String locationName;
   private Boolean canDelete;
 }

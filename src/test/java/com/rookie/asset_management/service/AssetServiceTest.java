@@ -106,7 +106,7 @@ class AssetServiceTest {
     assertEquals("LA0001", response.getAssetCode());
     assertEquals("Laptop Dell", response.getName());
     assertEquals("Laptop", response.getCategoryName());
-    assertEquals(AssetStatus.AVAILABLE, response.getState());
+    assertEquals(AssetStatus.AVAILABLE, response.getStatus());
     assertEquals("HCM", response.getLocationName());
 
     verify(assetRepository, times(1)).findAll(any(Specification.class), eq(pageable));
