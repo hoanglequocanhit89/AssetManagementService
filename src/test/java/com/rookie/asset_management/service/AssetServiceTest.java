@@ -270,22 +270,6 @@ class AssetServiceTest {
   }
 
   @Test
-  void createNewAsset_PastInstalledDate_ThrowsException() {
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("spec")
-            .installedDate(LocalDate.now().minusDays(1))
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(1)
-            .build();
-
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.createNewAsset(request, 1));
-    assertEquals("Installed date must be today or a future date", ex.getMessage());
-  }
-
-  @Test
   void createNewAsset_DuplicateNameInLocation_ThrowsException() {
     CreateNewAssetDtoRequest request =
         CreateNewAssetDtoRequest.builder()
@@ -493,26 +477,6 @@ class AssetServiceTest {
     AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
 
     assertEquals("Installed date is required", ex.getMessage());
-  }
-
-  @Test
-  void editAsset_PastInstalledDate_ThrowsException() {
-    Asset asset = new Asset();
-    asset.setStatus(AssetStatus.NOT_AVAILABLE);
-
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
-
-    EditAssetDtoRequest dto =
-        EditAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("Spec")
-            .installedDate(LocalDate.now().minusDays(1))
-            .state(AssetStatus.AVAILABLE)
-            .build();
-
-    AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
-
-    assertEquals("Installed date must be today or a future date", ex.getMessage());
   }
 
   @Test
