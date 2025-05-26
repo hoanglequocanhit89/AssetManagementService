@@ -129,8 +129,6 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
             HttpStatus.BAD_REQUEST, "Location is required when creating an Admin account");
       }
     } else {
-
-      request.setLocation(null);
       user.setLocation(admin.getLocation());
     }
 
