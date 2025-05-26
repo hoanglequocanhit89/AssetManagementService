@@ -6,10 +6,12 @@ import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.entity.UserProfile;
 import com.rookie.asset_management.enums.AssignmentStatus;
+import com.rookie.asset_management.enums.ReturningRequestStatus;
 import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
@@ -37,7 +39,7 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
   @Mapping(target = "userProfile.dob", source = "dob")
   @Mapping(target = "userProfile.gender", source = "gender")
   @Mapping(target = "joinedDate", source = "joinedDate")
-  @Mapping(target = "location", source = "location")
+  @Mapping(target = "location", expression = "java(mapLocation(dto.getLocation(), dto.getType()))")
   User toEntity(UserRequestDTO dto);
 
   /**
@@ -110,32 +112,32 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    * @param location the location name
    * @return the Location entity
    */
-  default Location mapLocation(String location) {
-    Location loc = new Location();
-    if (location == null || location.trim().isEmpty()) {
-      loc.setId(1);
-      loc.setName("HCM");
-    } else {
+  default Location mapLocation(String location, String type) {
+    if ("Admin".equalsIgnoreCase(type) && location != null && !location.trim().isEmpty()) {
+      // Validate and map location from request for Admin
       String trimmedLocation = location.trim().toUpperCase();
       if (!trimmedLocation.equals("HCM")
           && !trimmedLocation.equals("HN")
           && !trimmedLocation.equals("DN")) {
         throw new IllegalArgumentException("Invalid location. Must be one of: HCM, HN, DN");
       }
+      Location loc = new Location();
       loc.setName(trimmedLocation);
       switch (trimmedLocation) {
         case "HCM":
-          loc.setId(1);
+          loc.setId(3);
           break;
         case "HN":
           loc.setId(2);
           break;
         case "DN":
-          loc.setId(3);
+          loc.setId(1);
           break;
       }
+      return loc;
     }
-    return loc;
+    // For Staff or when location is not provided, return null to be handled by service
+    return null;
   }
 
   /**
@@ -147,7 +149,14 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    */
   default boolean canDisable(List<Assignment> assignments) {
     for (Assignment assignment : assignments) {
-      if (assignment.getStatus() == AssignmentStatus.WAITING) {
+      AssignmentStatus assignmentStatus = assignment.getStatus();
+      if (assignmentStatus == AssignmentStatus.WAITING) {
+        return false;
+      }
+      ReturningRequest returningRequest = assignment.getReturningRequest();
+      if (assignmentStatus == AssignmentStatus.ACCEPTED
+          && returningRequest != null
+          && returningRequest.getStatus() == ReturningRequestStatus.WAITING) {
         return false;
       }
     }
