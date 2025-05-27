@@ -3,6 +3,7 @@ package com.rookie.asset_management.entity;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
@@ -17,12 +18,15 @@ import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Table(name = "returning_requests")
 @Getter
 @Setter
+@EntityListeners(AuditingEntityListener.class)
 public class ReturningRequest {
   @Id
   @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -32,6 +36,7 @@ public class ReturningRequest {
   @JoinColumn(name = "assignment_id", nullable = false)
   private Assignment assignment;
 
+  @CreatedBy
   @ManyToOne
   @JoinColumn(name = "requested_by", nullable = false)
   private User requestedBy;

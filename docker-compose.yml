@@ -31,6 +31,7 @@ services:
       - ./.env:/app/.env # Mount the .env file
       - ./mvnw:/app/mvnw # Mount the Maven wrapper script
       - ./mvnw.cmd:/app/mvnw.cmd # Mount the Maven wrapper script for Windows
+      - ./logs:/app/logs # Mount the logs directory
       - maven_cache:/root/.m2 # Cache Maven dependencies
     working_dir: /app
     ports:
@@ -43,6 +44,11 @@ services:
         postgres:
             condition: service_healthy
     command: ["mvn", "spring-boot:run"]
+    healthcheck:
+      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
 
 volumes:
   postgres_data:

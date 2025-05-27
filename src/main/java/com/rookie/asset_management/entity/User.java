@@ -12,18 +12,19 @@ import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
+import java.util.Collection;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.SQLDelete;
 import org.springframework.format.annotation.DateTimeFormat;
+import org.springframework.security.core.GrantedAuthority;
+import org.springframework.security.core.userdetails.UserDetails;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@SQLDelete(sql = "UPDATE users SET disabled = true WHERE id = ?")
-public class User extends BaseEntityAudit {
+public class User extends BaseEntityAudit implements UserDetails {
   @Column(unique = true, nullable = false)
   private String username;
 
@@ -114,5 +115,12 @@ public class User extends BaseEntityAudit {
     }
     staffCodeBuilder.append(this.getId());
     this.staffCode = staffCodeBuilder.toString();
+  }
+
+  @Override
+  public Collection<? extends GrantedAuthority> getAuthorities() {
+    return this.role.getName().equalsIgnoreCase("ADMIN")
+        ? List.of(() -> "ROLE_ADMIN")
+        : List.of(() -> "ROLE_USER");
   }
 }
