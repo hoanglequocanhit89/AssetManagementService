@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.exception.AppException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.MissingServletRequestParameterException;
@@ -72,5 +73,12 @@ public class GlobalExceptionHandler {
       IllegalArgumentException ex) {
     ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
+  }
+
+  // handle exception for password encoder
+  @ExceptionHandler(BadCredentialsException.class)
+  public ResponseEntity<ApiDtoResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
+    ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
+    return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
   }
 }

@@ -41,7 +41,4 @@ public class UserRequestDTO {
   private String type;
 
   private String location;
-
-  @NotNull(message = "Admin ID is required")
-  private Integer adminId;
 }

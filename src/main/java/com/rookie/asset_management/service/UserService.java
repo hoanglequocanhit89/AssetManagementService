@@ -4,8 +4,10 @@ import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
+import java.util.List;
 
 /** Service interface for managing User entities. layer related to user management. */
 public interface UserService {
@@ -13,7 +15,6 @@ public interface UserService {
   /**
    * Method to get all users with pagination and filtering.
    *
-   * @param adminId the id of admin to view user by location
    * @param userFilterRequest the filter criteria for users
    * @param page the page number to retrieve
    * @param size the number of users per page
@@ -22,12 +23,7 @@ public interface UserService {
    * @return a PagingDtoResponse containing a list of UserDtoResponse
    */
   PagingDtoResponse<UserDtoResponse> getAllUsers(
-      Integer adminId,
-      UserFilterRequest userFilterRequest,
-      int page,
-      int size,
-      String sortBy,
-      String sortDir);
+      UserFilterRequest userFilterRequest, int page, int size, String sortBy, String sortDir);
 
   /**
    * Retrieves the details of a user by their unique identifier.
@@ -43,7 +39,7 @@ public interface UserService {
    * @param request the creation user request
    * @return the created user
    */
-  UserDetailDtoResponse createUser(UserRequestDTO request, Integer adminId);
+  UserDetailDtoResponse createUser(UserRequestDTO request);
 
   /**
    * Updates the details of an existing user.
@@ -59,4 +55,14 @@ public interface UserService {
    * @param userId the unique identifier of the user to delete
    */
   void deleteUser(int userId);
+
+  /**
+   * Retrieves a paginated and filtered list of brief user information.
+   *
+   * @param query a search query to filter users (staff code or first name)
+   * @param sortBy the field to sort by
+   * @param sortDir the direction to sort (asc or desc)
+   * @return a PagingDtoResponse containing a list of UserBriefDtoResponse
+   */
+  List<UserBriefDtoResponse> getAllUserBrief(String query, String sortBy, String sortDir);
 }

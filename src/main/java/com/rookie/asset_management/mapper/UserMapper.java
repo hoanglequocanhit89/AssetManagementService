@@ -2,6 +2,7 @@ package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
+import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
@@ -162,4 +163,14 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
     }
     return true;
   }
+
+  /**
+   * Converts a User entity to a UserBriefDtoResponse.
+   *
+   * @param user the user entity
+   * @return the user brief dto response
+   */
+  @Mapping(target = "role", source = "role.name")
+  @Mapping(target = "fullName", expression = "java(user.getUserProfile().getFullName())")
+  UserBriefDtoResponse toUserBriefDto(User user);
 }

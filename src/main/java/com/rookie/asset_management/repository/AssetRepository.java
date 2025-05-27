@@ -2,9 +2,11 @@ package com.rookie.asset_management.repository;
 
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Location;
+import java.util.List;
 import java.util.Optional;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
@@ -50,4 +52,14 @@ public interface AssetRepository extends BaseRepository<Asset, Integer> {
    */
   @Query("SELECT COUNT(a) > 0 FROM Assignment a WHERE a.asset.id = :assetId")
   boolean existsAssignmentByAssetId(Integer assetId);
+
+  /**
+   * Finds all assets that match the given specification and returns them sorted by the provided
+   * sort criteria.
+   *
+   * @param build the specification to filter assets
+   * @param sort the sorting criteria
+   * @return a list of assets that match the specification and are sorted accordingly
+   */
+  List<Asset> findAll(Specification<Asset> build, Sort sort);
 }
