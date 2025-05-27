@@ -16,7 +16,6 @@ import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
 import org.hibernate.annotations.JdbcTypeCode;
-import org.hibernate.annotations.SQLDelete;
 import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -24,7 +23,6 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Table(name = "assets")
 @Getter
 @Setter
-@SQLDelete(sql = "UPDATE users SET disabled = true WHERE id = ?")
 public class Asset extends BaseEntityAudit {
   private String name;
   private String specification;

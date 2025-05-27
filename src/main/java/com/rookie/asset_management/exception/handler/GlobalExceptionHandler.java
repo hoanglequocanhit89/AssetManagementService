@@ -2,7 +2,6 @@ package com.rookie.asset_management.exception.handler;
 
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.exception.AppException;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -16,7 +15,6 @@ import org.springframework.web.servlet.resource.NoResourceFoundException;
  * Global exception handler for handling exceptions in the application. This class uses
  * Spring's @RestControllerAdvice annotation to handle exceptions
  */
-@Slf4j
 @RestControllerAdvice
 public class GlobalExceptionHandler {
 
@@ -24,7 +22,6 @@ public class GlobalExceptionHandler {
   @ExceptionHandler(AppException.class)
   public ResponseEntity<ApiDtoResponse<Void>> handleAppException(AppException ex) {
     ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
-    log.error(ex.getMessage(), ex);
     return ResponseEntity.status(ex.getHttpStatusCode()).body(response);
   }
 
@@ -38,7 +35,6 @@ public class GlobalExceptionHandler {
             .orElse("Validation error");
     ApiDtoResponse<String> response =
         ApiDtoResponse.<String>builder().message(errorMessage).build();
-    log.error("Validation error: {}", errorMessage, ex);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 
@@ -50,7 +46,6 @@ public class GlobalExceptionHandler {
         ApiDtoResponse.<Void>builder()
             .message(String.format("Missing request parameter: %s", ex.getParameterName()))
             .build();
-    log.error(ex.getMessage(), ex);
     return ResponseEntity.status(400).body(response);
   }
 
@@ -60,7 +55,6 @@ public class GlobalExceptionHandler {
       NoResourceFoundException ex) {
     ApiDtoResponse<Void> response =
         ApiDtoResponse.<Void>builder().message("Resource not found").build();
-    log.error(ex.getMessage(), ex);
     return ResponseEntity.status(404).body(response);
   }
 
@@ -69,7 +63,6 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiDtoResponse<Void>> handleException(Exception ex) {
     ApiDtoResponse<Void> response =
         ApiDtoResponse.<Void>builder().message("Internal server error").build();
-    log.error(ex.getMessage(), ex);
     return ResponseEntity.status(500).body(response);
   }
 
@@ -78,7 +71,6 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiDtoResponse<Void>> handIllegalArgumentException(
       IllegalArgumentException ex) {
     ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
-    log.error(ex.getMessage(), ex);
     return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 }
