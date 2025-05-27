@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
@@ -16,6 +17,7 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
+import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.UserService;
 import com.rookie.asset_management.service.specification.UserSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
@@ -29,6 +31,7 @@ import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -46,6 +49,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   RoleRepository roleRepository;
   UserMapper userMapper;
   PasswordEncoder passwordEncoder;
+  JwtService jwtService;
 
   // Autowired constructor for paging service implementation
   @Autowired
@@ -53,27 +57,26 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
       UserRepository userRepository,
       UserMapper userMapper,
       RoleRepository roleRepository,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      JwtService jwtService) {
     super(userMapper, userRepository);
     this.userRepository = userRepository;
     this.userMapper = userMapper;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
+    this.jwtService = jwtService;
   }
 
   @Transactional
   @Override
   public PagingDtoResponse<UserDtoResponse> getAllUsers(
-      Integer adminId,
-      UserFilterRequest userFilterRequest,
-      int page,
-      int size,
-      String sortBy,
-      String sortDir) {
-    if (adminId == null) {
-      throw new AppException(
-          HttpStatus.BAD_REQUEST, "Admin ID is required to get user list based on admin location");
-    }
+      UserFilterRequest userFilterRequest, int page, int size, String sortBy, String sortDir) {
+    // Get the user from JWT token
+    String username = jwtService.extractUsername();
+    User admin =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
     // check if the sortBy is sort by firstName or lastName
     // must set to related.property because of the join
     if (sortBy != null && sortBy.equals("firstName")) {
@@ -92,8 +95,8 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
         new SpecificationBuilder<User>()
             .addIfNotNull(query, UserSpecification.hasNameOrCodeLike(query))
             .addIfNotNull(type, UserSpecification.hasType(type))
-            .addIfNotNull(adminId, UserSpecification.hasSameLocationAs(adminId))
-            .addIfNotNull(adminId, UserSpecification.excludeAdmin(adminId))
+            .addIfNotNull(admin.getId(), UserSpecification.hasSameLocationAs(admin.getId()))
+            .addIfNotNull(admin.getId(), UserSpecification.excludeAdmin(admin.getId()))
             .add(UserSpecification.excludeDisabled())
             .build();
     return getMany(spec, pageable);
@@ -111,16 +114,13 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
 
   @Transactional
   @Override
-  public UserDetailDtoResponse createUser(UserRequestDTO request, Integer adminId) {
-    // Validate adminId
-    if (adminId == null) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Admin ID is required to create a user");
-    }
-
+  public UserDetailDtoResponse createUser(UserRequestDTO request) {
+    // Get the user from JWT token
+    String currentUsername = jwtService.extractUsername();
     User admin =
         userRepository
-            .findByIdAndDisabledFalse(adminId)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
+            .findByUsername(currentUsername)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
     if (!"ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
       throw new AppException(HttpStatus.FORBIDDEN, "Only admins can create users");
@@ -284,6 +284,43 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     // set the user to disabled
     user.setDisabled(true);
     userRepository.save(user);
+  }
+
+  @Override
+  @Transactional
+  public List<UserBriefDtoResponse> getAllUserBrief(String query, String sortBy, String sortDir) {
+    // Get the username from JWT token
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+    // check if the sortBy is sort by firstName or lastName
+    // must set to related.property because of the join
+    if (sortBy != null && sortBy.equals("firstName")) {
+      sortBy = "userProfile.firstName";
+    }
+    if (sortBy != null && sortBy.equals("lastName")) {
+      sortBy = "userProfile.lastName";
+    }
+    // Create a specification based on the filter request
+    Specification<User> spec =
+        new SpecificationBuilder<User>()
+            .addIfNotNull(query, UserSpecification.hasNameOrCodeLike(query))
+            .addIfNotNull(user.getId(), UserSpecification.hasSameLocationAs(user.getId()))
+            .addIfNotNull(user.getId(), UserSpecification.excludeAdmin(user.getId()))
+            .add(UserSpecification.excludeDisabled())
+            .build();
+
+    // Create sorting object
+    Sort sort =
+        "asc".equalsIgnoreCase(sortDir)
+            ? Sort.by(sortBy).ascending()
+            : Sort.by(sortBy).descending();
+
+    // Retrieve users and map to DTOs
+    List<User> users = userRepository.findAll(spec, sort);
+    return users.stream().map(userMapper::toUserBriefDto).toList();
   }
 
   private boolean isAssigmentReturned(Assignment assignment) {

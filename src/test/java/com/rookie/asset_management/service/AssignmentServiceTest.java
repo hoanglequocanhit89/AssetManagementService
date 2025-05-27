@@ -1,0 +1,202 @@
+package com.rookie.asset_management.service;
+
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignmentRequest;
+import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
+import com.rookie.asset_management.entity.Asset;
+import com.rookie.asset_management.entity.Assignment;
+import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.enums.AssetStatus;
+import com.rookie.asset_management.enums.AssignmentStatus;
+import com.rookie.asset_management.exception.AppException;
+import com.rookie.asset_management.mapper.AssignmentMapper;
+import com.rookie.asset_management.repository.AssetRepository;
+import com.rookie.asset_management.repository.AssignmentRepository;
+import com.rookie.asset_management.repository.UserRepository;
+import com.rookie.asset_management.service.impl.AssignmentServiceImpl;
+import java.time.LocalDate;
+import java.util.Optional;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+
+@ExtendWith(MockitoExtension.class)
+public class AssignmentServiceTest {
+
+  @Mock private AssignmentRepository assignmentRepository;
+
+  @Mock private AssignmentMapper assignmentMapper;
+
+  @Mock private UserRepository userRepository;
+
+  @Mock private AssetRepository assetRepository;
+
+  @Mock private JwtService jwtService;
+
+  @InjectMocks private AssignmentServiceImpl assignmentService;
+
+  @Test
+  void createAssignment_Success() {
+    // Arrange
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(1);
+    request.setAssetId(1);
+    request.setAssignedDate(LocalDate.now());
+    request.setNote("Test Note");
+
+    Location location = new Location();
+    location.setId(1);
+
+    User assignee = new User();
+    assignee.setId(1);
+    assignee.setLocation(location);
+
+    User assigner = new User();
+    assigner.setId(2);
+    assigner.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+
+    Assignment assignment =
+        Assignment.builder()
+            .asset(asset)
+            .assignedTo(assignee)
+            .assignedDate(request.getAssignedDate())
+            .note(request.getNote())
+            .assignedBy(assigner)
+            .status(AssignmentStatus.WAITING)
+            .build();
+
+    AssignmentListDtoResponse response = new AssignmentListDtoResponse();
+
+    when(userRepository.findById(1)).thenReturn(Optional.of(assignee));
+    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("assigner");
+    when(userRepository.findByUsername("assigner")).thenReturn(Optional.of(assigner));
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
+    when(assignmentMapper.toDto(any(Assignment.class))).thenReturn(response);
+
+    // Act
+    AssignmentListDtoResponse result = assignmentService.createAssignment(request);
+
+    // Assert
+    assertNotNull(result);
+    verify(assignmentRepository, times(1)).save(any(Assignment.class));
+  }
+
+  @Test
+  void createAssignment_UserNotFound_ThrowsException() {
+    // Arrange
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(1);
+
+    when(userRepository.findById(1)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.createAssignment(request));
+    assertEquals("User Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void createAssignment_AssetNotFound_ThrowsException() {
+    // Arrange
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(1);
+    request.setAssetId(1);
+
+    User assignee = new User();
+    assignee.setId(1);
+
+    when(userRepository.findById(1)).thenReturn(Optional.of(assignee));
+    when(assetRepository.findById(1)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.createAssignment(request));
+    assertEquals("Asset Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void createAssignment_AssetNotAvailable_ThrowsException() {
+    // Arrange
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(1);
+    request.setAssetId(1);
+
+    Location location = new Location();
+    location.setId(1);
+
+    User assignee = new User();
+    assignee.setId(1);
+    assignee.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.ASSIGNED);
+    asset.setLocation(location);
+
+    when(userRepository.findById(1)).thenReturn(Optional.of(assignee));
+    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.createAssignment(request));
+    assertEquals("Asset is not available for assignment", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void createAssignment_LocationMismatch_ThrowsException() {
+    // Arrange
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(1);
+    request.setAssetId(1);
+
+    Location location1 = new Location();
+    location1.setId(1);
+
+    Location location2 = new Location();
+    location2.setId(2);
+
+    User assignee = new User();
+    assignee.setId(1);
+    assignee.setLocation(location1);
+
+    User assigner = new User();
+    assigner.setId(2);
+    assigner.setLocation(location2);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location1);
+
+    when(userRepository.findById(1)).thenReturn(Optional.of(assignee));
+    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("assigner");
+    when(userRepository.findByUsername("assigner")).thenReturn(Optional.of(assigner));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.createAssignment(request));
+    assertEquals("Assigner and assignee must be in the same location", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+}

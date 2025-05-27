@@ -58,7 +58,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
-    if (passwordEncoder.matches(changePasswordRequestDTO.getOldPassword(), user.getPassword())) {
+    if (!passwordEncoder.matches(changePasswordRequestDTO.getOldPassword(), user.getPassword())) {
       throw new AppException(HttpStatus.CONFLICT, "Incorrect password!");
     }
     if (passwordEncoder.matches(changePasswordRequestDTO.getNewPassword(), user.getPassword())) {

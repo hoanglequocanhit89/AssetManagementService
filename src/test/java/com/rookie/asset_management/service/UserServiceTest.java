@@ -40,6 +40,7 @@ import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
 class UserServiceTest {
@@ -48,6 +49,10 @@ class UserServiceTest {
   @Mock private RoleRepository roleRepository;
 
   @Mock private UserMapper userMapper;
+
+  @Mock private JwtService jwtService;
+
+  @Mock private PasswordEncoder passwordEncoder;
 
   @InjectMocks private UserServiceImpl userService;
 
@@ -74,8 +79,6 @@ class UserServiceTest {
   void testGetAllUsers() {
     UserFilterRequest userFilterRequest = UserFilterRequest.builder().build();
 
-    int adminId = 2;
-
     UserDtoResponse mockUserDtoResponse =
         UserDtoResponse.builder()
             .id(1)
@@ -84,6 +87,10 @@ class UserServiceTest {
             .role("Admin")
             .build();
 
+    // Mock JWT service
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(adminUser));
+
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(mockUserDtoResponse)));
 
@@ -91,7 +98,7 @@ class UserServiceTest {
         .thenReturn(new PagingDtoResponse<>(List.of(mockUserDtoResponse), 1, 1, 1, 1, false));
 
     PagingDtoResponse<UserDtoResponse> result =
-        userService.getAllUsers(adminId, userFilterRequest, 0, 10, "id", "asc");
+        userService.getAllUsers(userFilterRequest, 0, 10, "id", "asc");
 
     assertEquals(1, result.getTotalElements());
     assertEquals(
@@ -103,6 +110,10 @@ class UserServiceTest {
   void testGetAllUsersEmptyResult() {
     UserFilterRequest userFilterRequest = UserFilterRequest.builder().build();
 
+    // Mock JWT service
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(adminUser));
+
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of()));
 
@@ -110,24 +121,27 @@ class UserServiceTest {
         .thenReturn(new PagingDtoResponse<>(List.of(), 0, 0, 0, 0, true));
 
     PagingDtoResponse<UserDtoResponse> result =
-        userService.getAllUsers(1, userFilterRequest, 0, 10, "id", "asc");
+        userService.getAllUsers(userFilterRequest, 0, 10, "id", "asc");
 
     assertEquals(0, result.getTotalElements());
     assertEquals(true, result.getEmpty());
   }
 
   @Test
-  @DisplayName("Test getAllUsers with invalid adminId")
-  void testGetAllUsersWithInvalidAdminId() {
+  @DisplayName("Test getAllUsers with user not found")
+  void testGetAllUsersWithUserNotFound() {
     UserFilterRequest userFilterRequest = UserFilterRequest.builder().build();
+
+    // Mock JWT service to return username but user not found
+    when(jwtService.extractUsername()).thenReturn("nonexistent");
+    when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
 
     AppException exception =
         assertThrows(
             AppException.class,
-            () -> userService.getAllUsers(null, userFilterRequest, 0, 10, "id", "asc"));
+            () -> userService.getAllUsers(userFilterRequest, 0, 10, "id", "asc"));
 
-    assertEquals(
-        "Admin ID is required to get user list based on admin location", exception.getMessage());
+    assertEquals("User Not Found", exception.getMessage());
   }
 
   @Test
@@ -144,6 +158,10 @@ class UserServiceTest {
     UserDtoResponse third =
         UserDtoResponse.builder().id(3).fullName("C C").staffCode("SD1234").role("Admin").build();
 
+    // Mock JWT service
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(adminUser));
+
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(first, second, third)));
 
@@ -151,7 +169,7 @@ class UserServiceTest {
         .thenReturn(new PagingDtoResponse<>(List.of(first, second, third), 1, 3, 1, 1, false));
 
     PagingDtoResponse<UserDtoResponse> result =
-        userService.getAllUsers(1, userFilterRequest, 0, 10, null, null);
+        userService.getAllUsers(userFilterRequest, 0, 10, null, null);
 
     assertEquals(3, result.getTotalElements());
     assertEquals("A A", result.getContent().stream().toList().getFirst().getFullName());
@@ -325,7 +343,6 @@ class UserServiceTest {
     request.setDob(LocalDate.of(1995, 1, 1));
     request.setJoinedDate(LocalDate.of(2025, 5, 21));
     request.setType("Staff");
-    request.setAdminId(1); // Thêm adminId
 
     User user = new User();
     UserProfile profile = new UserProfile();
@@ -336,6 +353,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     user.setJoinedDate(LocalDate.of(2025, 5, 21));
     user.setId(1);
+    user.setUsername("anhnv");
     user.setLocation(adminUser.getLocation()); // Location from admin for Staff
     Role staffRole = new Role();
     staffRole.setName("STAFF");
@@ -355,14 +373,18 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Male");
 
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    // Mock JWT and PasswordEncoder
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request)).thenReturn(user);
     when(userRepository.existsByUsername("anhnv")).thenReturn(false);
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request, request.getAdminId());
+    UserDetailDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("SD0001", result.getStaffCode());
@@ -370,6 +392,7 @@ class UserServiceTest {
     assertEquals("HCM", result.getLocation());
     assertEquals("Staff", result.getRole());
     verify(userRepository).save(any(User.class));
+    verify(passwordEncoder).encode(anyString());
   }
 
   @Test
@@ -383,7 +406,6 @@ class UserServiceTest {
     request.setDob(LocalDate.of(1995, 1, 1));
     request.setJoinedDate(LocalDate.of(2025, 5, 21));
     request.setType("Staff");
-    request.setAdminId(1); // Thêm adminId
 
     User user = new User();
     UserProfile profile = new UserProfile();
@@ -394,6 +416,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     user.setJoinedDate(LocalDate.of(2025, 5, 21));
     user.setId(2);
+    user.setUsername("letbn");
     user.setLocation(adminUser.getLocation()); // Location from admin for Staff
     Role staffRole = new Role();
     staffRole.setName("STAFF");
@@ -413,14 +436,18 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Female");
 
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    // Mock JWT and PasswordEncoder
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request)).thenReturn(user);
     when(userRepository.existsByUsername("letbn")).thenReturn(false);
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request, request.getAdminId());
+    UserDetailDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("SD0002", result.getStaffCode());
@@ -428,6 +455,7 @@ class UserServiceTest {
     assertEquals("HCM", result.getLocation());
     assertEquals("Staff", result.getRole());
     verify(userRepository).save(any(User.class));
+    verify(passwordEncoder).encode(anyString());
   }
 
   @Test
@@ -441,7 +469,6 @@ class UserServiceTest {
     request.setDob(LocalDate.of(1995, 1, 1));
     request.setJoinedDate(LocalDate.of(2025, 5, 21));
     request.setType("Staff");
-    request.setAdminId(1); // Thêm adminId
 
     User user = new User();
     UserProfile profile = new UserProfile();
@@ -452,6 +479,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     user.setJoinedDate(LocalDate.of(2025, 5, 21));
     user.setId(3);
+    user.setUsername("tranm");
     user.setLocation(adminUser.getLocation()); // Location from admin for Staff
     Role staffRole = new Role();
     staffRole.setName("STAFF");
@@ -471,14 +499,18 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Male");
 
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    // Mock JWT and PasswordEncoder
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request)).thenReturn(user);
     when(userRepository.existsByUsername("tranm")).thenReturn(false);
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request, request.getAdminId());
+    UserDetailDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("SD0003", result.getStaffCode());
@@ -486,6 +518,7 @@ class UserServiceTest {
     assertEquals("HCM", result.getLocation());
     assertEquals("Staff", result.getRole());
     verify(userRepository).save(any(User.class));
+    verify(passwordEncoder).encode(anyString());
   }
 
   @Test
@@ -499,7 +532,6 @@ class UserServiceTest {
     request1.setDob(LocalDate.of(1995, 1, 1));
     request1.setJoinedDate(LocalDate.of(2025, 5, 21));
     request1.setType("Staff");
-    request1.setAdminId(1); // Thêm adminId
 
     User user1 = new User();
     UserProfile profile1 = new UserProfile();
@@ -510,6 +542,7 @@ class UserServiceTest {
     user1.setUserProfile(profile1);
     user1.setJoinedDate(LocalDate.of(2025, 5, 21));
     user1.setId(1);
+    user1.setUsername("anhnv");
     user1.setLocation(adminUser.getLocation()); // Location from admin
     Role staffRole = new Role();
     staffRole.setName("STAFF");
@@ -530,21 +563,25 @@ class UserServiceTest {
             "Male");
 
     // Mock for user 1
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request1)).thenReturn(user1);
     when(userRepository.existsByUsername("anhnv")).thenReturn(false);
     when(userRepository.save(user1)).thenReturn(user1);
     when(userMapper.toUserDetailsDto(user1)).thenReturn(responseDto1);
 
     // WHEN
-    UserDetailDtoResponse result1 = userService.createUser(request1, request1.getAdminId());
+    UserDetailDtoResponse result1 = userService.createUser(request1);
 
     // THEN
     assertEquals("anhnv", result1.getUsername());
     verify(userRepository).save(user1);
+    verify(passwordEncoder).encode(anyString());
 
     // Reset mocks for user 2
-    reset(userRepository);
+    reset(userRepository, userMapper, jwtService, passwordEncoder);
     UserRequestDTO request2 = new UserRequestDTO();
     request2.setFirstName("anh");
     request2.setLastName("nguyen van");
@@ -552,8 +589,6 @@ class UserServiceTest {
     request2.setDob(LocalDate.of(1995, 1, 1));
     request2.setJoinedDate(LocalDate.of(2025, 5, 21));
     request2.setType("Staff");
-    request2.setAdminId(1); // Thêm adminId
-
     User user2 = new User();
     UserProfile profile2 = new UserProfile();
     profile2.setFirstName("anh");
@@ -563,6 +598,7 @@ class UserServiceTest {
     user2.setUserProfile(profile2);
     user2.setJoinedDate(LocalDate.of(2025, 5, 21));
     user2.setId(2);
+    user2.setUsername("anhnv1");
     user2.setLocation(adminUser.getLocation()); // Location from admin
     user2.setRole(staffRole);
 
@@ -581,7 +617,10 @@ class UserServiceTest {
             "Male");
 
     // Mock for user 2
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request2)).thenReturn(user2);
     when(userRepository.existsByUsername("anhnv")).thenReturn(true);
     when(userRepository.existsByUsername("anhnv1")).thenReturn(false);
@@ -589,14 +628,15 @@ class UserServiceTest {
     when(userMapper.toUserDetailsDto(user2)).thenReturn(responseDto2);
 
     // WHEN
-    UserDetailDtoResponse result2 = userService.createUser(request2, request2.getAdminId());
+    UserDetailDtoResponse result2 = userService.createUser(request2);
 
     // THEN
     assertEquals("anhnv1", result2.getUsername());
     verify(userRepository).save(user2);
+    verify(passwordEncoder).encode(anyString());
 
     // Reset mocks for user 3
-    reset(userRepository);
+    reset(userRepository, userMapper, jwtService, passwordEncoder);
     UserRequestDTO request3 = new UserRequestDTO();
     request3.setFirstName("anh");
     request3.setLastName("nguyen van");
@@ -604,7 +644,6 @@ class UserServiceTest {
     request3.setDob(LocalDate.of(1995, 1, 1));
     request3.setJoinedDate(LocalDate.of(2025, 5, 21));
     request3.setType("Staff");
-    request3.setAdminId(1); // Thêm adminId
 
     User user3 = new User();
     UserProfile profile3 = new UserProfile();
@@ -615,6 +654,7 @@ class UserServiceTest {
     user3.setUserProfile(profile3);
     user3.setJoinedDate(LocalDate.of(2025, 5, 21));
     user3.setId(3);
+    user3.setUsername("anhnv2");
     user3.setLocation(adminUser.getLocation()); // Location from admin
     user3.setRole(staffRole);
 
@@ -633,7 +673,10 @@ class UserServiceTest {
             "Male");
 
     // Mock for user 3
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request3)).thenReturn(user3);
     when(userRepository.existsByUsername("anhnv")).thenReturn(true);
     when(userRepository.existsByUsername("anhnv1")).thenReturn(true);
@@ -642,11 +685,12 @@ class UserServiceTest {
     when(userMapper.toUserDetailsDto(user3)).thenReturn(responseDto3);
 
     // WHEN
-    UserDetailDtoResponse result3 = userService.createUser(request3, request3.getAdminId());
+    UserDetailDtoResponse result3 = userService.createUser(request3);
 
     // THEN
     assertEquals("anhnv2", result3.getUsername());
     verify(userRepository).save(user3);
+    verify(passwordEncoder).encode(anyString());
   }
 
   @Test
@@ -661,7 +705,6 @@ class UserServiceTest {
     request.setJoinedDate(LocalDate.of(2025, 5, 21));
     request.setType("Admin");
     request.setLocation("HN"); // Custom location for Admin
-    request.setAdminId(1); // Thêm adminId
 
     User user = new User();
     UserProfile profile = new UserProfile();
@@ -672,6 +715,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     user.setJoinedDate(LocalDate.of(2025, 5, 21));
     user.setId(1);
+    user.setUsername("anhnv");
     Location customLocation = new Location();
     customLocation.setId(2);
     customLocation.setName("HN");
@@ -686,7 +730,7 @@ class UserServiceTest {
             "SD0001",
             "anhnv",
             LocalDate.of(2025, 5, 21),
-            "HCM",
+            "HN",
             "Admin",
             "anh",
             "nguyen van",
@@ -694,19 +738,26 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Male");
 
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    // Mock JWT service
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+    // Mock password encoder
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request)).thenReturn(user);
     when(userRepository.existsByUsername("anhnv")).thenReturn(false);
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request, request.getAdminId());
+    UserDetailDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("Admin", result.getRole());
-    assertEquals("HCM", result.getLocation());
+    assertEquals("HN", result.getLocation());
     verify(userRepository).save(any(User.class));
+    verify(passwordEncoder).encode(anyString());
   }
 
   @Test
@@ -720,7 +771,6 @@ class UserServiceTest {
     request.setDob(LocalDate.of(1995, 1, 1));
     request.setJoinedDate(LocalDate.of(2025, 5, 21));
     request.setType("Staff");
-    request.setAdminId(1); // Thêm adminId
 
     User user = new User();
     UserProfile profile = new UserProfile();
@@ -731,6 +781,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     user.setJoinedDate(LocalDate.of(2025, 5, 21));
     user.setId(1);
+    user.setUsername("anhnv");
     user.setLocation(adminUser.getLocation()); // Location from admin
     Role staffRole = new Role();
     staffRole.setName("STAFF");
@@ -750,19 +801,26 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Male");
 
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    // Mock JWT service
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+    // Mock password encoder
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(request)).thenReturn(user);
     when(userRepository.existsByUsername("anhnv")).thenReturn(false);
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request, request.getAdminId());
+    UserDetailDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("Staff", result.getRole());
     assertEquals("HCM", result.getLocation());
     verify(userRepository).save(any(User.class));
+    verify(passwordEncoder).encode(anyString());
   }
 
   @Test
@@ -776,7 +834,6 @@ class UserServiceTest {
     request.setDob(LocalDate.of(1995, 1, 1));
     request.setJoinedDate(LocalDate.of(2025, 5, 21));
     request.setType("Staff");
-    request.setAdminId(1); // Thêm adminId
 
     User user = new User();
     UserProfile profile = new UserProfile();
@@ -787,6 +844,7 @@ class UserServiceTest {
     user.setUserProfile(profile);
     user.setJoinedDate(LocalDate.of(2025, 5, 21));
     user.setId(1);
+    user.setUsername("anhnv");
     user.setLocation(adminUser.getLocation()); // Location from admin
     Role staffRole = new Role();
     staffRole.setName("STAFF");
@@ -806,13 +864,20 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Male");
 
-    when(userRepository.findByIdAndDisabledFalse(1)).thenReturn(Optional.of(adminUser));
+    // Mock JWT service
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+    // Mock password encoder
+    when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
+
     when(userMapper.toEntity(any(UserRequestDTO.class))).thenReturn(user);
     when(userRepository.existsByUsername("anhnv")).thenReturn(false);
     when(userRepository.save(any(User.class)))
         .thenAnswer(
             invocation -> {
               User savedUser = invocation.getArgument(0);
+              // Simulate setting default values in service
               savedUser.setDisabled(false);
               savedUser.setFirstLogin(true);
               return savedUser;
@@ -820,10 +885,11 @@ class UserServiceTest {
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
     // WHEN
-    userService.createUser(request, request.getAdminId());
+    userService.createUser(request);
 
     // THEN
     verify(userRepository).save(any(User.class));
+    verify(passwordEncoder).encode(anyString());
     assertEquals(false, user.getDisabled());
     assertEquals(true, user.getFirstLogin());
   }
