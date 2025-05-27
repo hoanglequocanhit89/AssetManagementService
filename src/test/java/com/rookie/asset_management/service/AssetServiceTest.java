@@ -31,6 +31,7 @@ import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.AssetServiceImpl;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Date;
 import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
@@ -56,6 +57,7 @@ class AssetServiceTest {
   @Mock private CategoryRepository categoryRepository;
   @Mock private UserRepository userRepository;
   @InjectMocks private AssetServiceImpl assetService;
+  @Mock private JwtService jwtService;
 
   private Asset asset;
   private Category category;
@@ -189,6 +191,7 @@ class AssetServiceTest {
 
   @Test
   void createNewAsset_Success() {
+    // Arrange
     CreateNewAssetDtoRequest request =
         CreateNewAssetDtoRequest.builder()
             .name("Laptop Dell")
@@ -221,9 +224,359 @@ class AssetServiceTest {
     savedAsset.setLocation(location);
     savedAsset.setStatus(request.getState());
     savedAsset.setAssetCode("LA000123");
+    savedAsset.setCreatedAt(new Date());
 
+    // Mock JWT service to return username
+    when(jwtService.extractUsername()).thenReturn("admin1");
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findById(1)).thenReturn(Optional.of(admin));
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
+    when(assetRepository.save(any(Asset.class)))
+        .thenAnswer(
+            invocation -> {
+              Asset a = invocation.getArgument(0);
+              if (a.getId() == null) {
+                a.setId(123); // Set ID for first save (when assetCode is "PENDING")
+              }
+              return a;
+            });
+
+    // Act
+    CreateNewAssetDtoResponse response = assetService.createNewAsset(request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals("LA000123", response.getAssetCode());
+    assertEquals("Laptop Dell", response.getName());
+    assertEquals("i7, 16GB RAM", response.getSpecification());
+    assertEquals(request.getInstalledDate(), response.getInstalledDate());
+    assertEquals(AssetStatus.AVAILABLE, response.getState());
+    assertEquals("Laptop", response.getCategoryName());
+    assertEquals("HCM", response.getLocationName());
+    assertEquals(123, response.getId());
+
+    // Verify interactions
+    verify(jwtService, times(1)).extractUsername();
+    verify(categoryRepository, times(1)).findById(1);
+    verify(userRepository, times(1)).findByUsername("admin1");
+    verify(assetRepository, times(1)).existsByNameAndLocation("Laptop Dell", location);
+    verify(assetRepository, times(2))
+        .save(
+            any(Asset.class)); // Called twice: first for ID generation, second for assetCode update
+  }
+
+  @Test
+  void createNewAsset_InvalidState_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.ASSIGNED) // Invalid state
+            .categoryId(1)
+            .build();
+
+    // Act & Assert
+    IllegalArgumentException ex =
+        assertThrows(IllegalArgumentException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals("Asset state must be AVAILABLE or NOT_AVAILABLE", ex.getMessage());
+
+    // Verify no interactions with repositories since validation fails early
+    verify(jwtService, never()).extractUsername();
+    verify(categoryRepository, never()).findById(any());
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_EmptyName_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("   ") // Empty name
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Asset name is required", ex.getMessage());
+
+    // Verify no interactions with repositories since validation fails early
+    verify(jwtService, never()).extractUsername();
+    verify(categoryRepository, never()).findById(any());
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_EmptySpecification_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("   ") // Empty specification
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Specification is required", ex.getMessage());
+
+    // Verify no interactions with repositories since validation fails early
+    verify(jwtService, never()).extractUsername();
+    verify(categoryRepository, never()).findById(any());
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_NullInstalledDate_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(null) // Null installed date
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Installed date is required", ex.getMessage());
+
+    // Verify no interactions with repositories since validation fails early
+    verify(jwtService, never()).extractUsername();
+    verify(categoryRepository, never()).findById(any());
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_NullCategoryId_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(null) // Null category ID
+            .build();
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Category ID is required", ex.getMessage());
+
+    // Verify no interactions with repositories since validation fails early
+    verify(jwtService, never()).extractUsername();
+    verify(categoryRepository, never()).findById(any());
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_CategoryNotFound_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(999) // Non-existent category
+            .build();
+
+    when(categoryRepository.findById(999)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.NOT_FOUND, ex.getHttpStatusCode());
+    assertEquals("Category not found", ex.getMessage());
+
+    // Verify limited interactions since category lookup fails
+    verify(jwtService, never()).extractUsername();
+    verify(categoryRepository, times(1)).findById(999);
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_UserNotFound_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+    category.setPrefix("LA");
+
+    when(jwtService.extractUsername()).thenReturn("nonexistent_user");
+    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+    when(userRepository.findByUsername("nonexistent_user")).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("User Not Found", ex.getMessage());
+
+    // Verify interactions up to user lookup
+    verify(jwtService, times(1)).extractUsername();
+    verify(categoryRepository, times(1)).findById(1);
+    verify(userRepository, times(1)).findByUsername("nonexistent_user");
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_DuplicateNameInLocation_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+    category.setPrefix("LA");
+
+    Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
+
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(true);
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.CONFLICT, ex.getHttpStatusCode());
+    assertTrue(ex.getMessage().contains("Asset name already exists in this location"));
+
+    // Verify all interactions up to duplicate check
+    verify(jwtService, times(1)).extractUsername();
+    verify(categoryRepository, times(1)).findById(1);
+    verify(userRepository, times(1)).findByUsername("admin1");
+    verify(assetRepository, times(1)).existsByNameAndLocation("Laptop Dell", location);
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void createNewAsset_CategoryPrefixMissing_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+    category.setPrefix(null); // Missing prefix
+
+    Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
+
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
+    when(assetRepository.save(any(Asset.class)))
+        .thenAnswer(
+            invocation -> {
+              Asset a = invocation.getArgument(0);
+              a.setId(123); // Set ID for first save
+              return a;
+            });
+
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Category prefix is missing", ex.getMessage());
+
+    // Verify interactions up to the point where prefix is checked
+    verify(jwtService, times(1)).extractUsername();
+    verify(categoryRepository, times(1)).findById(1);
+    verify(userRepository, times(1)).findByUsername("admin1");
+    verify(assetRepository, times(1)).existsByNameAndLocation("Laptop Dell", location);
+    verify(assetRepository, times(1)).save(any(Asset.class)); // First save to get ID
+  }
+
+  @Test
+  void createNewAsset_EmptyPrefix_ThrowsException() {
+    // Arrange
+    CreateNewAssetDtoRequest request =
+        CreateNewAssetDtoRequest.builder()
+            .name("Laptop Dell")
+            .specification("i7, 16GB RAM")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .categoryId(1)
+            .build();
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+    category.setPrefix("   "); // Empty prefix
+
+    Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
+
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
     when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
@@ -233,125 +586,69 @@ class AssetServiceTest {
               return a;
             });
 
-    CreateNewAssetDtoResponse response = assetService.createNewAsset(request, 1);
+    // Act & Assert
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
 
-    assertNotNull(response);
-    assertEquals("LA000123", response.getAssetCode());
-    assertEquals("Laptop Dell", response.getName());
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Category prefix is missing", ex.getMessage());
   }
 
   @Test
-  void createNewAsset_InvalidState_ThrowsException() {
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .state(AssetStatus.ASSIGNED) // Không hợp lệ
-            .build();
-
-    IllegalArgumentException ex =
-        assertThrows(IllegalArgumentException.class, () -> assetService.createNewAsset(request, 1));
-
-    assertEquals("Asset state must be AVAILABLE or NOT_AVAILABLE", ex.getMessage());
-  }
-
-  @Test
-  void createNewAsset_EmptyName_ThrowsException() {
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .state(AssetStatus.AVAILABLE)
-            .name(" ")
-            .specification("spec")
-            .installedDate(LocalDate.now())
-            .categoryId(1)
-            .build();
-
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.createNewAsset(request, 1));
-    assertEquals("Asset name is required", ex.getMessage());
-  }
-
-  @Test
-  void createNewAsset_DuplicateNameInLocation_ThrowsException() {
+  void createNewAsset_WithNotAvailableState_Success() {
+    // Arrange
     CreateNewAssetDtoRequest request =
         CreateNewAssetDtoRequest.builder()
             .name("Laptop Dell")
-            .specification("spec")
+            .specification("i7, 16GB RAM")
             .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(1)
-            .build();
-
-    Location location = new Location();
-    location.setId(1);
-    User admin = new User();
-    admin.setId(1);
-    admin.setLocation(location);
-
-    when(userRepository.findById(1)).thenReturn(Optional.of(admin));
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(new Category()));
-    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(true);
-
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.createNewAsset(request, 1));
-    assertTrue(ex.getMessage().contains("Asset name already exists in this location"));
-  }
-
-  @Test
-  void createNewAsset_CategoryNotFound_ThrowsException() {
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("spec")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(99)
-            .build();
-
-    when(categoryRepository.findById(99)).thenReturn(Optional.empty());
-
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.createNewAsset(request, 1));
-    assertEquals("Category not found", ex.getMessage());
-  }
-
-  @Test
-  void createNewAsset_CategoryPrefixMissing_ThrowsException() {
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("spec")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
+            .state(AssetStatus.NOT_AVAILABLE) // Test NOT_AVAILABLE state
             .categoryId(1)
             .build();
 
     Category category = new Category();
     category.setId(1);
-    category.setPrefix(null);
+    category.setName("Laptop");
+    category.setPrefix("LA");
 
     Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
     User admin = new User();
+    admin.setId(1);
+    admin.setUsername("admin1");
     admin.setLocation(location);
 
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findById(1)).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Asset", location)).thenReturn(false);
+    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
               Asset a = invocation.getArgument(0);
-              a.setId(123);
+              if (a.getId() == null) {
+                a.setId(123);
+              }
               return a;
             });
 
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.createNewAsset(request, 1));
-    assertEquals("Category prefix is missing", ex.getMessage());
+    // Act
+    CreateNewAssetDtoResponse response = assetService.createNewAsset(request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals(AssetStatus.NOT_AVAILABLE, response.getState());
+    assertEquals("LA000123", response.getAssetCode());
+    assertEquals("Laptop Dell", response.getName());
+
+    verify(assetRepository, times(2)).save(any(Asset.class));
   }
 
   @Test
   void editAsset_Success() {
+    // Arrange
     Integer assetId = 1;
-    Integer adminId = 2;
 
     EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
@@ -363,16 +660,20 @@ class AssetServiceTest {
 
     Location location = new Location();
     location.setId(1);
+    location.setName("HCM");
 
     Category category = new Category();
+    category.setId(1);
     category.setName("Laptop");
 
     User admin = new User();
-    admin.setId(adminId);
+    admin.setId(2);
+    admin.setUsername("admin1");
     admin.setLocation(location);
 
     Asset asset = new Asset();
     asset.setId(assetId);
+    asset.setAssetCode("LA0001");
     asset.setName("Old Laptop");
     asset.setSpecification("Old Specs");
     asset.setInstalledDate(LocalDate.now().minusDays(1));
@@ -381,179 +682,505 @@ class AssetServiceTest {
     asset.setLocation(location);
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
     when(assetRepository.existsByNameAndLocation("Updated Laptop", location)).thenReturn(false);
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
-    EditAssetDtoResponse response = assetService.editAsset(assetId, request, adminId);
+    // Act
+    EditAssetDtoResponse response = assetService.editAsset(assetId, request);
 
+    // Assert
     assertNotNull(response);
+    assertEquals(assetId, response.getId());
+    assertEquals("LA0001", response.getAssetCode());
     assertEquals("Updated Laptop", response.getName());
     assertEquals("Updated Specs", response.getSpecification());
+    assertEquals(request.getInstalledDate(), response.getInstalledDate());
     assertEquals(AssetStatus.NOT_AVAILABLE, response.getState());
+    assertEquals("Laptop", response.getCategoryName());
+    assertEquals("HCM", response.getLocationName());
+    assertNotNull(response.getUpdatedAt());
+
+    // Verify interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, times(1)).extractUsername();
+    verify(userRepository, times(1)).findByUsername("admin1");
+    verify(assetRepository, times(1)).existsByNameAndLocation("Updated Laptop", location);
+    verify(assetRepository, times(1)).save(asset);
   }
 
   @Test
   void editAsset_AssetNotFound_ThrowsException() {
-    when(assetRepository.findById(1)).thenReturn(Optional.empty());
+    // Arrange
+    Integer assetId = 999;
+    EditAssetDtoRequest request =
+        EditAssetDtoRequest.builder()
+            .name("Test Asset")
+            .specification("Test Spec")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .build();
 
+    when(assetRepository.findById(assetId)).thenReturn(Optional.empty());
+
+    // Act & Assert
     AppException ex =
-        assertThrows(
-            AppException.class, () -> assetService.editAsset(1, new EditAssetDtoRequest(), 1));
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
 
+    assertEquals(HttpStatus.NOT_FOUND, ex.getHttpStatusCode());
     assertEquals("Asset not found", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
   void editAsset_AssetAssigned_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
     Asset asset = new Asset();
+    asset.setId(assetId);
     asset.setStatus(AssetStatus.ASSIGNED);
 
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
+    EditAssetDtoRequest request =
+        EditAssetDtoRequest.builder()
+            .name("Test Asset")
+            .specification("Test Spec")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.AVAILABLE)
+            .build();
 
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+
+    // Act & Assert
     AppException ex =
-        assertThrows(
-            AppException.class, () -> assetService.editAsset(1, new EditAssetDtoRequest(), 1));
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
 
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Cannot edit assigned asset", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
   void editAsset_MissingName_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
     Asset asset = new Asset();
-    asset.setStatus(AssetStatus.NOT_AVAILABLE);
+    asset.setId(assetId);
+    asset.setStatus(AssetStatus.AVAILABLE);
 
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
-
-    EditAssetDtoRequest dto =
+    EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
-            .name("  ")
-            .specification("spec")
+            .name("   ") // Empty name
+            .specification("Test Spec")
             .installedDate(LocalDate.now())
             .state(AssetStatus.AVAILABLE)
             .build();
 
-    AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
 
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Asset name is required", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
   void editAsset_MissingSpecification_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
     Asset asset = new Asset();
+    asset.setId(assetId);
     asset.setStatus(AssetStatus.AVAILABLE);
 
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
-
-    EditAssetDtoRequest dto =
+    EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
-            .name("Asset")
-            .specification(" ")
+            .name("Test Asset")
+            .specification("  ") // Empty specification
             .installedDate(LocalDate.now())
             .state(AssetStatus.AVAILABLE)
             .build();
 
-    AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
 
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Specification is required", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
   void editAsset_MissingInstalledDate_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
     Asset asset = new Asset();
-    asset.setStatus(AssetStatus.NOT_AVAILABLE);
+    asset.setId(assetId);
+    asset.setStatus(AssetStatus.AVAILABLE);
 
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
-
-    EditAssetDtoRequest dto =
+    EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("Spec")
-            .installedDate(null)
+            .name("Test Asset")
+            .specification("Test Spec")
+            .installedDate(null) // Null installed date
             .state(AssetStatus.AVAILABLE)
             .build();
 
-    AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
 
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Installed date is required", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
   void editAsset_InvalidState_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
     Asset asset = new Asset();
+    asset.setId(assetId);
     asset.setStatus(AssetStatus.AVAILABLE);
 
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
-
-    EditAssetDtoRequest dto =
+    EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("Spec")
+            .name("Test Asset")
+            .specification("Test Spec")
             .installedDate(LocalDate.now())
-            .state(null)
+            .state(null) // Invalid state
             .build();
 
-    AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
 
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Invalid asset state", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
-  void editAsset_AdminNotFound_ThrowsException() {
+  void editAsset_InvalidStateAssigned_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
     Asset asset = new Asset();
+    asset.setId(assetId);
     asset.setStatus(AssetStatus.AVAILABLE);
 
-    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
-    when(userRepository.findById(1)).thenReturn(Optional.empty());
-
-    EditAssetDtoRequest dto =
+    EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
-            .name("Asset")
-            .specification("Spec")
+            .name("Test Asset")
+            .specification("Test Spec")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.ASSIGNED) // Invalid state for editing
+            .build();
+
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("Invalid asset state", ex.getMessage());
+
+    // Verify no further interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, never()).extractUsername();
+    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void editAsset_UserNotFound_ThrowsException() {
+    // Arrange
+    Integer assetId = 1;
+    Asset asset = new Asset();
+    asset.setId(assetId);
+    asset.setStatus(AssetStatus.AVAILABLE);
+
+    EditAssetDtoRequest request =
+        EditAssetDtoRequest.builder()
+            .name("Test Asset")
+            .specification("Test Spec")
             .installedDate(LocalDate.now())
             .state(AssetStatus.AVAILABLE)
             .build();
 
-    AppException ex = assertThrows(AppException.class, () -> assetService.editAsset(1, dto, 1));
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("nonexistent_user");
+    when(userRepository.findByUsername("nonexistent_user")).thenReturn(Optional.empty());
 
-    assertEquals("Admin not found", ex.getMessage());
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+    assertEquals("User Not Found", ex.getMessage());
+
+    // Verify interactions up to user lookup
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, times(1)).extractUsername();
+    verify(userRepository, times(1)).findByUsername("nonexistent_user");
+    verify(assetRepository, never()).existsByNameAndLocation(any(), any());
+    verify(assetRepository, never()).save(any());
   }
 
   @Test
   void editAsset_NameAlreadyExistsInLocation_ThrowsException() {
+    // Arrange
     Integer assetId = 1;
-    Integer adminId = 2;
 
     Location location = new Location();
     location.setId(1);
+    location.setName("HCM");
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+
+    User admin = new User();
+    admin.setId(2);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
 
     Asset asset = new Asset();
     asset.setId(assetId);
-    asset.setName("Old Name");
+    asset.setName("Old Asset Name");
     asset.setStatus(AssetStatus.AVAILABLE);
     asset.setLocation(location);
+    asset.setCategory(category);
 
-    User admin = new User();
-    admin.setId(adminId);
-    admin.setLocation(location);
-
-    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(userRepository.findById(adminId)).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("New Name", location)).thenReturn(true);
-
-    EditAssetDtoRequest dto =
+    EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
-            .name("New Name")
-            .specification("Spec")
+            .name("Existing Asset Name") // Different from current name
+            .specification("Test Spec")
             .installedDate(LocalDate.now())
             .state(AssetStatus.NOT_AVAILABLE)
             .build();
 
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.editAsset(assetId, dto, adminId));
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    when(assetRepository.existsByNameAndLocation("Existing Asset Name", location)).thenReturn(true);
 
+    // Act & Assert
+    AppException ex =
+        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+
+    assertEquals(HttpStatus.CONFLICT, ex.getHttpStatusCode());
     assertEquals("Asset name already exists in this location", ex.getMessage());
+
+    // Verify all interactions up to duplicate check
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, times(1)).extractUsername();
+    verify(userRepository, times(1)).findByUsername("admin1");
+    verify(assetRepository, times(1)).existsByNameAndLocation("Existing Asset Name", location);
+    verify(assetRepository, never()).save(any());
+  }
+
+  @Test
+  void editAsset_SameNameNoConflict_Success() {
+    // Arrange
+    Integer assetId = 1;
+
+    Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+
+    User admin = new User();
+    admin.setId(2);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(assetId);
+    asset.setAssetCode("LA0001");
+    asset.setName("Same Asset Name");
+    asset.setSpecification("Old Spec");
+    asset.setInstalledDate(LocalDate.now().minusDays(1));
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+    asset.setCategory(category);
+
+    EditAssetDtoRequest request =
+        EditAssetDtoRequest.builder()
+            .name("Same Asset Name") // Same as current name
+            .specification("Updated Spec")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.NOT_AVAILABLE)
+            .build();
+
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    // Note: existsByNameAndLocation should NOT be called when name is the same
+    when(assetRepository.save(any(Asset.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Act
+    EditAssetDtoResponse response = assetService.editAsset(assetId, request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals("Same Asset Name", response.getName());
+    assertEquals("Updated Spec", response.getSpecification());
+    assertEquals(AssetStatus.NOT_AVAILABLE, response.getState());
+
+    // Verify interactions
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(jwtService, times(1)).extractUsername();
+    verify(userRepository, times(1)).findByUsername("admin1");
+    verify(assetRepository, never()).existsByNameAndLocation(any(), any());
+    verify(assetRepository, times(1)).save(asset);
+  }
+
+  @Test
+  void editAsset_WithWaitingState_Success() {
+    // Arrange
+    Integer assetId = 1;
+
+    Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+
+    User admin = new User();
+    admin.setId(2);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(assetId);
+    asset.setAssetCode("LA0001");
+    asset.setName("Test Asset");
+    asset.setSpecification("Test Spec");
+    asset.setInstalledDate(LocalDate.now().minusDays(1));
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+    asset.setCategory(category);
+
+    EditAssetDtoRequest request =
+        EditAssetDtoRequest.builder()
+            .name("Test Asset")
+            .specification("Test Spec")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.WAITING) // Test WAITING state
+            .build();
+
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    when(assetRepository.save(any(Asset.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Act
+    EditAssetDtoResponse response = assetService.editAsset(assetId, request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals(AssetStatus.WAITING, response.getState());
+
+    verify(assetRepository, times(1)).save(asset);
+  }
+
+  @Test
+  void editAsset_WithRecycledState_Success() {
+    // Arrange
+    Integer assetId = 1;
+
+    Location location = new Location();
+    location.setId(1);
+    location.setName("HCM");
+
+    Category category = new Category();
+    category.setId(1);
+    category.setName("Laptop");
+
+    User admin = new User();
+    admin.setId(2);
+    admin.setUsername("admin1");
+    admin.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(assetId);
+    asset.setAssetCode("LA0001");
+    asset.setName("Test Asset");
+    asset.setSpecification("Test Spec");
+    asset.setInstalledDate(LocalDate.now().minusDays(1));
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+    asset.setCategory(category);
+
+    EditAssetDtoRequest request =
+        EditAssetDtoRequest.builder()
+            .name("Test Asset")
+            .specification("Test Spec")
+            .installedDate(LocalDate.now())
+            .state(AssetStatus.RECYCLED) // Test RECYCLED state
+            .build();
+
+    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
+    when(jwtService.extractUsername()).thenReturn("admin1");
+    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    when(assetRepository.save(any(Asset.class)))
+        .thenAnswer(invocation -> invocation.getArgument(0));
+
+    // Act
+    EditAssetDtoResponse response = assetService.editAsset(assetId, request);
+
+    // Assert
+    assertNotNull(response);
+    assertEquals(AssetStatus.RECYCLED, response.getState());
+
+    verify(assetRepository, times(1)).save(asset);
   }
 
   @Test

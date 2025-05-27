@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.asset.AssetBriefDtoResponse;
 import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
@@ -67,9 +68,9 @@ public class AssetController extends ApiV1Controller {
 
   @PostMapping
   public ResponseEntity<ApiDtoResponse<CreateNewAssetDtoResponse>> createAsset(
-      @RequestBody CreateNewAssetDtoRequest dto, @RequestParam("adminId") Integer adminId) {
+      @RequestBody CreateNewAssetDtoRequest dto) {
     // Call the service layer to handle asset creation logic
-    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto, adminId);
+    CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto);
 
     // Return HTTP 201 Created with the asset details in response body
     return ResponseEntity.status(HttpStatus.CREATED)
@@ -82,12 +83,10 @@ public class AssetController extends ApiV1Controller {
 
   @PutMapping("/{assetId}")
   public ResponseEntity<ApiDtoResponse<EditAssetDtoResponse>> editAsset(
-      @PathVariable Integer assetId,
-      @RequestBody @Valid EditAssetDtoRequest dto,
-      @RequestParam("adminId") Integer adminId) {
+      @PathVariable Integer assetId, @RequestBody @Valid EditAssetDtoRequest dto) {
 
     // Call the service layer to perform the update
-    EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto, adminId);
+    EditAssetDtoResponse updatedAsset = assetService.editAsset(assetId, dto);
 
     // Call the service layer to perform the update
     return ResponseEntity.ok()
@@ -132,6 +131,20 @@ public class AssetController extends ApiV1Controller {
         ApiDtoResponse.<AssetDetailDtoResponse>builder()
             .message("Asset details retrieved successfully.")
             .data(assetDetails)
+            .build());
+  }
+
+  @GetMapping("/all/brief")
+  public ResponseEntity<ApiDtoResponse<List<AssetBriefDtoResponse>>> getAllAssetBrief(
+      @RequestParam(defaultValue = "") String query,
+      @RequestParam(defaultValue = "assetCode") String sortBy,
+      @RequestParam(defaultValue = "asc") String sortDir) {
+    List<AssetBriefDtoResponse> assetBriefs =
+        assetService.getAllAvailableAssetBrief(query, sortBy, sortDir);
+    return ResponseEntity.ok(
+        ApiDtoResponse.<List<AssetBriefDtoResponse>>builder()
+            .message("Assets retrieved successfully.")
+            .data(assetBriefs)
             .build());
   }
 }
