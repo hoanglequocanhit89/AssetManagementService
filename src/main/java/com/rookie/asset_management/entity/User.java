@@ -11,19 +11,17 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.PostPersist;
 import jakarta.persistence.Table;
 import java.time.LocalDate;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
-import org.hibernate.annotations.SQLDelete;
 import org.springframework.format.annotation.DateTimeFormat;
 
 @Entity
 @Table(name = "users")
 @Getter
 @Setter
-@SQLDelete(sql = "UPDATE users SET disabled = true WHERE id = ?")
 public class User extends BaseEntityAudit {
+
   @Column(unique = true, nullable = false)
   private String username;
 
@@ -79,24 +77,12 @@ public class User extends BaseEntityAudit {
     super.prePersist();
     this.disabled = false;
     this.firstLogin = true;
-    this.generatePassword();
   }
 
   @PostPersist
   public void postPersist() {
     // generate staff code after the user is persisted
     this.generateStaffCode();
-  }
-
-  private void generatePassword() {
-    StringBuilder passwordBuilder = new StringBuilder();
-    // auto generate password from username and date of birth
-    passwordBuilder.append(this.username);
-    passwordBuilder.append("@");
-    // format the date of birth to ddMMyyyy
-    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
-    passwordBuilder.append(this.userProfile.getDob().format(formatter));
-    this.password = passwordBuilder.toString();
   }
 
   private void generateStaffCode() {
