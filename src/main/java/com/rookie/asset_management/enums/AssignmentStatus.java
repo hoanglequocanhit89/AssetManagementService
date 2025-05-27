@@ -6,6 +6,8 @@ import lombok.Getter;
 public enum AssignmentStatus {
   WAITING("waiting for acceptance"),
   ACCEPTED("accepted"),
+  DECLINED("declined"),
+  RETURNED("returned"),
   ;
 
   private final String status;
