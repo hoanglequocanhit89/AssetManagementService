@@ -21,6 +21,8 @@ import com.rookie.asset_management.service.specification.UserSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
 import java.text.Normalizer;
+import java.time.LocalDate;
+import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.regex.Pattern;
 import lombok.AccessLevel;
@@ -29,6 +31,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 /**
@@ -42,15 +45,20 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   UserRepository userRepository;
   RoleRepository roleRepository;
   UserMapper userMapper;
+  PasswordEncoder passwordEncoder;
 
   // Autowired constructor for paging service implementation
   @Autowired
   public UserServiceImpl(
-      UserRepository userRepository, UserMapper userMapper, RoleRepository roleRepository) {
+      UserRepository userRepository,
+      UserMapper userMapper,
+      RoleRepository roleRepository,
+      PasswordEncoder passwordEncoder) {
     super(userMapper, userRepository);
     this.userRepository = userRepository;
     this.userMapper = userMapper;
     this.roleRepository = roleRepository;
+    this.passwordEncoder = passwordEncoder;
   }
 
   @Transactional
@@ -150,9 +158,15 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     if (userRepository.existsByUsername(username)) {
       throw new AppException(HttpStatus.CONFLICT, "Username already exists");
     }
+
+    //    Bscrypt password
+    String hashedPassword =
+        passwordEncoder.encode(
+            generatePassword(user.getUsername(), user.getUserProfile().getDob()));
+
     user.setUsername(username);
     user.setStaffCode("SDTEMP");
-
+    user.setPassword(hashedPassword);
     // Save user to persist and generate staffCode
     user = userRepository.save(user);
 
@@ -184,6 +198,17 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     }
 
     return finalUsername;
+  }
+
+  public String generatePassword(String username, LocalDate dob) {
+    StringBuilder passwordBuilder = new StringBuilder();
+    // auto generate password from username and date of birth
+    passwordBuilder.append(username);
+    passwordBuilder.append("@");
+    // format the date of birth to ddMMyyyy
+    DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
+    passwordBuilder.append(dob.format(formatter));
+    return passwordBuilder.toString();
   }
 
   @Transactional
