@@ -1,6 +1,5 @@
 package com.rookie.asset_management.config.security;
 
-import com.rookie.asset_management.constant.ApiPaths;
 import com.rookie.asset_management.constant.Endpoints;
 import com.rookie.asset_management.constant.UserRoles;
 import lombok.AccessLevel;

@@ -3,6 +3,7 @@ package com.rookie.asset_management.service.impl;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.asset.AssetBriefDtoResponse;
 import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
@@ -19,12 +20,15 @@ import com.rookie.asset_management.repository.AssetRepository;
 import com.rookie.asset_management.repository.CategoryRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.AssetService;
+import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.util.SpecificationBuilder;
+import jakarta.transaction.Transactional;
 import java.util.Date;
 import java.util.List;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +43,8 @@ public class AssetServiceImpl implements AssetService {
   private final CategoryRepository categoryRepository;
 
   private final UserRepository userRepository;
+
+  private final JwtService jwtService;
 
   @Override
   public PagingDtoResponse<ViewAssetListDtoResponse> getAllAssets(
@@ -124,7 +130,7 @@ public class AssetServiceImpl implements AssetService {
   }
 
   @Override
-  public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, Integer adminId) {
+  public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto) {
 
     // Validate asset state
     if (dto.getState() != AssetStatus.AVAILABLE && dto.getState() != AssetStatus.NOT_AVAILABLE) {
@@ -163,11 +169,12 @@ public class AssetServiceImpl implements AssetService {
             .findById(dto.getCategoryId())
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Category not found"));
 
-    // Get admin user by ID
+    // Get admin user from token
+    String currentUsername = jwtService.extractUsername();
     User admin =
         userRepository
-            .findById(adminId)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
+            .findByUsername(currentUsername)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
     // Get location from admin
     Location location = admin.getLocation();
@@ -232,7 +239,7 @@ public class AssetServiceImpl implements AssetService {
   }
 
   @Override
-  public EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, Integer adminId) {
+  public EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto) {
 
     // Fetch asset by ID or throw if not found
     Asset asset =
@@ -269,11 +276,12 @@ public class AssetServiceImpl implements AssetService {
       throw new AppException(HttpStatus.BAD_REQUEST, "Invalid asset state");
     }
 
-    // Get admin user by ID
+    // Get admin user from token
+    String currentUsername = jwtService.extractUsername();
     User admin =
         userRepository
-            .findById(adminId)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Admin not found"));
+            .findByUsername(currentUsername)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
     Location location = admin.getLocation();
 
@@ -369,5 +377,60 @@ public class AssetServiceImpl implements AssetService {
     // Perform soft delete
     asset.setDisabled(true);
     assetRepository.save(asset);
+  }
+
+  @Override
+  @Transactional
+  public List<AssetBriefDtoResponse> getAllAvailableAssetBrief(
+      String keyword, String sortBy, String sortDir) {
+    // Get the user from JWT token
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Initialize a SpecificationBuilder to build dynamic query conditions
+    SpecificationBuilder<Asset> specBuilder = new SpecificationBuilder<>();
+
+    // Mandatory filter: Filter by location ID
+    specBuilder.add(
+        (root, query, cb) -> cb.equal(root.get("location").get("id"), user.getLocation().getId()));
+
+    // Mandatory filter: Only fetch assets that are not disabled
+    specBuilder.add((root, query, cb) -> cb.isFalse(root.get("disabled")));
+
+    // Optional keyword search: Match asset name or asset code (case-insensitive)
+    if (keyword != null && !keyword.isBlank()) {
+      specBuilder.add(
+          (root, query, cb) ->
+              cb.or(
+                  cb.like(cb.lower(root.get("name")), "%" + keyword.toLowerCase() + "%"),
+                  cb.like(cb.lower(root.get("assetCode")), "%" + keyword.toLowerCase() + "%")));
+    }
+
+    // Filter by AVAILABLE status
+    specBuilder.add((root, query, cb) -> cb.equal(root.get("status"), AssetStatus.AVAILABLE));
+
+    // Create sorting object
+    Sort sort =
+        "asc".equalsIgnoreCase(sortDir)
+            ? Sort.by(sortBy).ascending()
+            : Sort.by(sortBy).descending();
+
+    // Retrieve all available assets with sorting
+    List<Asset> assets = assetRepository.findAll(specBuilder.build(), sort);
+
+    // Map assets to AssetBriefDtoResponse
+    return assets.stream()
+        .map(
+            asset ->
+                AssetBriefDtoResponse.builder()
+                    .id(asset.getId())
+                    .assetCode(asset.getAssetCode())
+                    .assetName(asset.getName())
+                    .categoryName(asset.getCategory().getName())
+                    .build())
+        .toList();
   }
 }

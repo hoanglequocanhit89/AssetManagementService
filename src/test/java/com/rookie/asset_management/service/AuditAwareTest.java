@@ -17,7 +17,6 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.core.userdetails.UserDetails;
 
 @ExtendWith(MockitoExtension.class)
 class AuditAwareTest {
@@ -46,7 +45,7 @@ class AuditAwareTest {
     authenticationToken.setDetails("testUser");
     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
-    Optional<UserDetails> auditor = auditorAware.getCurrentAuditor();
+    Optional<User> auditor = auditorAware.getCurrentAuditor();
 
     User actualUser = (User) auditor.orElse(null);
 
@@ -60,7 +59,7 @@ class AuditAwareTest {
   void testGetCurrentAuditorNoUser() {
     SecurityContextHolder.clearContext();
 
-    Optional<UserDetails> auditor = auditorAware.getCurrentAuditor();
+    Optional<User> auditor = auditorAware.getCurrentAuditor();
 
     assertNull(auditor.orElse(null));
   }
@@ -71,7 +70,7 @@ class AuditAwareTest {
     SecurityContextHolder.getContext()
         .setAuthentication(new UsernamePasswordAuthenticationToken("anonymousUser", null));
 
-    Optional<UserDetails> auditor = auditorAware.getCurrentAuditor();
+    Optional<User> auditor = auditorAware.getCurrentAuditor();
 
     assertNull(auditor.orElse(null));
   }
@@ -82,7 +81,7 @@ class AuditAwareTest {
     SecurityContextHolder.getContext()
         .setAuthentication(new UsernamePasswordAuthenticationToken("someOtherPrincipal", null));
 
-    Optional<UserDetails> auditor = auditorAware.getCurrentAuditor();
+    Optional<User> auditor = auditorAware.getCurrentAuditor();
 
     assertNull(auditor.orElse(null));
   }

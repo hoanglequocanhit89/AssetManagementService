@@ -3,6 +3,7 @@ package com.rookie.asset_management.service;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.asset.AssetBriefDtoResponse;
 import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
@@ -40,10 +41,9 @@ public interface AssetService {
    * asset code is auto-generated based on the category prefix and a sequence number.
    *
    * @param dto the DTO containing the new asset information
-   * @param adminId the username of the admin creating the asset
    * @return the response DTO containing the created asset details
    */
-  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto, Integer adminId);
+  CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto);
 
   /**
    * Edits an existing asset if it is not assigned. Allows updates to name, specification, installed
@@ -51,10 +51,9 @@ public interface AssetService {
    *
    * @param assetId the ID of the asset to be edited
    * @param dto the DTO containing updated asset information
-   * @param adminId the adminId of the admin performing the update
    * @return the response DTO containing the updated asset details
    */
-  EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto, Integer adminId);
+  EditAssetDtoResponse editAsset(Integer assetId, EditAssetDtoRequest dto);
 
   /**
    * Get the detail of asset information
@@ -72,4 +71,16 @@ public interface AssetService {
    * @throws com.rookie.asset_management.exception.AppException if the asset cannot be deleted
    */
   void deleteAsset(Integer assetId);
+
+  /**
+   * Retrieves a list of brief asset information based on a search query, sorting criteria, and
+   * direction. This is typically used for displaying available assets in a brief format.
+   *
+   * @param keyword the search query to filter assets by name or code
+   * @param sortBy the field to sort by (e.g., name, code)
+   * @param sortDir the direction of sorting (asc or desc)
+   * @return a list of brief asset information
+   */
+  List<AssetBriefDtoResponse> getAllAvailableAssetBrief(
+      String keyword, String sortBy, String sortDir);
 }
