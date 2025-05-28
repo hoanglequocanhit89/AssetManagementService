@@ -9,11 +9,15 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignmentRequest;
+import com.rookie.asset_management.dto.response.ApiDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
+import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.enums.AssignmentStatus;
@@ -24,12 +28,17 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.AssignmentServiceImpl;
 import java.time.LocalDate;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
@@ -461,6 +470,385 @@ public class AssignmentServiceTest {
         assertThrows(
             AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
     assertEquals("Asset must be in the same location with assigner", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void getAllAssignments_NonAdminUser_ThrowsException() {
+    // Arrange
+    String username = "user";
+    Role userRole = new Role();
+    userRole.setName("USER");
+
+    User user = new User();
+    user.setUsername(username);
+    user.setRole(userRole);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> assignmentService.getAllAssignments(null, null, null, 0, 10, "id", "asc"));
+    assertEquals("Only admins can access this endpoint", exception.getMessage());
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void getAllAssignments_UserNotFound_ThrowsException() {
+    // Arrange
+    String username = "unknown";
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> assignmentService.getAllAssignments(null, null, null, 0, 10, "id", "asc"));
+    assertEquals("User Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void getAssignmentDetails_Success() {
+    // Arrange
+    String username = "admin";
+    Location location = new Location();
+    location.setId(1);
+
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername(username);
+    admin.setRole(adminRole);
+    admin.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAssignedTo(admin);
+    assignment.setAsset(asset);
+    assignment.setDeleted(false);
+
+    AssignmentDetailDtoResponse responseDto = new AssignmentDetailDtoResponse();
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(assignment));
+    when(assignmentMapper.toDetailDto(assignment)).thenReturn(responseDto);
+
+    // Act
+    ApiDtoResponse<AssignmentDetailDtoResponse> result = assignmentService.getAssignmentDetails(1);
+
+    // Assert
+    assertNotNull(result);
+    assertNotNull(result.getData());
+    assertEquals("Assignment details retrieved successfully", result.getMessage());
+    verify(assignmentRepository, times(1)).findByIdAndDeletedFalse(1);
+  }
+
+  @Test
+  void getAssignmentDetails_NonAdminUser_ThrowsException() {
+    // Arrange
+    String username = "user";
+    Role userRole = new Role();
+    userRole.setName("USER");
+
+    User user = new User();
+    user.setUsername(username);
+    user.setRole(userRole);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.getAssignmentDetails(1));
+    assertEquals("Only admins can access this endpoint", exception.getMessage());
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void getAssignmentDetails_AssignmentNotFound_ThrowsException() {
+    // Arrange
+    String username = "admin";
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    User admin = new User();
+    admin.setUsername(username);
+    admin.setRole(adminRole);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.getAssignmentDetails(1));
+    assertEquals("Assignment not found", exception.getMessage());
+    assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void getAssignmentDetails_LocationMismatch_ThrowsException() {
+    // Arrange
+    String username = "admin";
+    Location adminLocation = new Location();
+    adminLocation.setId(1);
+    Location otherLocation = new Location();
+    otherLocation.setId(2);
+
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername(username);
+    admin.setRole(adminRole);
+    admin.setLocation(adminLocation);
+
+    Asset asset = new Asset();
+    asset.setLocation(otherLocation);
+
+    User assignee = new User();
+    assignee.setLocation(otherLocation);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAssignedTo(assignee);
+    assignment.setAsset(asset);
+    assignment.setDeleted(false);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.getAssignmentDetails(1));
+    assertEquals("Assignment not in admin's location", exception.getMessage());
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void deleteAssignment_Success() {
+    // Arrange
+    String username = "admin";
+    Location location = new Location();
+    location.setId(1);
+
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername(username);
+    admin.setRole(adminRole);
+    admin.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAssignedTo(admin);
+    assignment.setAsset(asset);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setDeleted(false);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(assignment));
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
+
+    // Act
+    ApiDtoResponse<Void> result = assignmentService.deleteAssignment(1);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals("Assignment deleted successfully", result.getMessage());
+    verify(assignmentRepository, times(1)).save(any(Assignment.class));
+    assertEquals(true, assignment.isDeleted());
+  }
+
+  @Test
+  void deleteAssignment_NonAdminUser_ThrowsException() {
+    // Arrange
+    String username = "user";
+    Role userRole = new Role();
+    userRole.setName("USER");
+
+    User user = new User();
+    user.setUsername(username);
+    user.setRole(userRole);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.deleteAssignment(1));
+    assertEquals("Only admins can access this endpoint", exception.getMessage());
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void deleteAssignment_AssignmentNotFound_ThrowsException() {
+    // Arrange
+    String username = "admin";
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    User admin = new User();
+    admin.setUsername(username);
+    admin.setRole(adminRole);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.deleteAssignment(1));
+    assertEquals("Assignment not found", exception.getMessage());
+    assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void deleteAssignment_InvalidStatus_ThrowsException() {
+    // Arrange
+    String username = "admin";
+    Location location = new Location();
+    location.setId(1);
+
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    User admin = new User();
+    admin.setId(1);
+    admin.setUsername(username);
+    admin.setRole(adminRole);
+    admin.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAssignedTo(admin);
+    assignment.setAsset(asset);
+    assignment.setStatus(AssignmentStatus.ACCEPTED); // Invalid status for deletion
+    assignment.setDeleted(false);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(AppException.class, () -> assignmentService.deleteAssignment(1));
+    assertEquals(
+        "Can only delete assignments with status WAITING or DECLINED", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void getMyAssignments_Success() {
+    // Arrange
+    String username = "user";
+    Location location = new Location();
+    location.setId(1);
+
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+    user.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAssignedTo(user);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setDeleted(false);
+
+    MyAssignmentDtoResponse responseDto = new MyAssignmentDtoResponse();
+    List<Assignment> assignments = Collections.singletonList(assignment);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class), any(Sort.class)))
+        .thenReturn(assignments);
+    when(assignmentMapper.toMyAssignmentDto(any(Assignment.class))).thenReturn(responseDto);
+
+    // Act
+    ApiDtoResponse<List<MyAssignmentDtoResponse>> result =
+        assignmentService.getMyAssignments("assetCode", "asc");
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(1, result.getData().size());
+    assertEquals("My assignments retrieved successfully", result.getMessage());
+    verify(assignmentRepository, times(1)).findAll(any(Specification.class), any(Sort.class));
+  }
+
+  @Test
+  void getMyAssignments_StatusSort_Success() {
+    // Arrange
+    String username = "user";
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+
+    Assignment assignment1 = new Assignment();
+    assignment1.setId(1);
+    assignment1.setAssignedTo(user);
+    assignment1.setStatus(AssignmentStatus.ACCEPTED);
+    assignment1.setDeleted(false);
+
+    Assignment assignment2 = new Assignment();
+    assignment2.setId(2);
+    assignment2.setAssignedTo(user);
+    assignment2.setStatus(AssignmentStatus.WAITING);
+    assignment2.setDeleted(false);
+
+    MyAssignmentDtoResponse responseDto = new MyAssignmentDtoResponse();
+    List<Assignment> assignments = Arrays.asList(assignment1, assignment2);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class))).thenReturn(assignments);
+    when(assignmentMapper.toMyAssignmentDto(any(Assignment.class))).thenReturn(responseDto);
+
+    // Act
+    ApiDtoResponse<List<MyAssignmentDtoResponse>> result =
+        assignmentService.getMyAssignments("status", "asc");
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(2, result.getData().size());
+    assertEquals("My assignments retrieved successfully", result.getMessage());
+    verify(assignmentRepository, times(1)).findAll(any(Specification.class));
+  }
+
+  @Test
+  void getMyAssignments_UserNotFound_ThrowsException() {
+    // Arrange
+    String username = "unknown";
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.getMyAssignments("assetCode", "asc"));
+    assertEquals("User Not Found", exception.getMessage());
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
   }
 
