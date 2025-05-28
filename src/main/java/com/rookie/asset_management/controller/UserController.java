@@ -35,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 @RequestMapping(ApiPaths.V1 + "/users")
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class UserController extends ApiV1Controller {
+public class UserController {
   UserService userService;
 
   @GetMapping("/{userId}")

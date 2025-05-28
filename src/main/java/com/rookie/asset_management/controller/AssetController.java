@@ -29,7 +29,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("api/v1/assets")
-public class AssetController extends ApiV1Controller {
+public class AssetController {
 
   @Autowired private AssetService assetService;
 
