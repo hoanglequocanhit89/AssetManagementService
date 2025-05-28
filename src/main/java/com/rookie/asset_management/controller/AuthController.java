@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 @RequiredArgsConstructor
-public class AuthController extends ApiV1Controller {
+public class AuthController {
 
   AuthenticationService authenticationService;
 

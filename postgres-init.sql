@@ -13,8 +13,6 @@ CREATE TYPE GENDER AS ENUM (
 
 CREATE TYPE ASSIGNMENT_STATUS AS ENUM (
 	'WAITING',
-    'DECLINED',
-    'RETURNED',
 	'ACCEPTED'
 );
 
@@ -66,7 +64,6 @@ CREATE TABLE "assets" (
                           "specification" VARCHAR(255) NOT NULL,
                           "installed_date" DATE NOT NULL,
                           "asset_code" CHAR(8) NOT NULL UNIQUE,
-                          "disabled" BOOLEAN NOT NULL DEFAULT false,
                           "status" ASSET_STATUS NOT NULL,
                           "location_id" INTEGER NOT NULL,
                           "category_id" INTEGER NOT NULL,
@@ -177,3 +174,20 @@ ALTER TABLE "users"
 ALTER TABLE "returning_requests"
     ADD FOREIGN KEY("accepted_by") REFERENCES "users"("id")
         ON UPDATE NO ACTION ON DELETE NO ACTION;
+
+ALTER TABLE assets
+ADD COLUMN disabled BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE assets
+SET disabled = FALSE
+WHERE disabled IS NULL;
+
+ALTER TABLE assignments
+ADD COLUMN deleted BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE assignments
+SET deleted = FALSE
+WHERE deleted IS NULL;
+
+alter type ASSIGNMENT_STATUS
+add value 'DECLINED';

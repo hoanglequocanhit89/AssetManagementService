@@ -1,6 +1,5 @@
 package com.rookie.asset_management.config.security;
 
-import com.rookie.asset_management.constant.Endpoints;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.service.CustomUserDetailsService;
 import com.rookie.asset_management.service.JwtService;
@@ -9,7 +8,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
-import java.util.Arrays;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -35,14 +33,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       HttpServletRequest request, HttpServletResponse response, FilterChain filterChain)
       throws ServletException, IOException {
 
-    // Skip JWT validation for public endpoints
-    if (isPublicEndpoint(request)) {
+    String jwt = jwtService.getJwtFromCookie(request);
+
+    if (jwt == null || jwt.isEmpty()) {
       filterChain.doFilter(request, response);
       return;
     }
-
     try {
-      String jwt = jwtService.getJwtFromCookie(request);
       jwtService.validateToken(jwt);
       String username = jwtService.extractUsername();
 
@@ -55,19 +52,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       SecurityContext context = SecurityContextHolder.createEmptyContext();
       context.setAuthentication(authToken);
       SecurityContextHolder.setContext(context);
-
     } catch (Exception e) {
-      throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid JWT token: " + e.getMessage());
+      throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid JWT token");
     }
-    filterChain.doFilter(request, response);
-  }
 
-  private boolean isPublicEndpoint(HttpServletRequest request) {
-    String requestURI = request.getRequestURI();
-    return Arrays.stream(Endpoints.PUBLIC_ENDPOINTS)
-        .anyMatch(
-            endpoint ->
-                requestURI.startsWith(endpoint.replace("/**", ""))
-                    || requestURI.matches(endpoint.replace("**", ".*")));
+    filterChain.doFilter(request, response);
   }
 }
