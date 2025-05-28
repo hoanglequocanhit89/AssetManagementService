@@ -25,6 +25,7 @@ import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
 import java.util.Date;
 import java.util.List;
+import java.util.Optional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -179,11 +180,15 @@ public class AssetServiceImpl implements AssetService {
     // Get location from admin
     Location location = admin.getLocation();
 
-    // Check for asset name conflict within the same location
-    if (assetRepository.existsByNameAndLocation(dto.getName(), location)) {
-      throw new AppException(
-          HttpStatus.CONFLICT,
-          "Asset name already exists in this location. Please choose a different name.");
+    Optional<Asset> existingAssetOpt =
+        assetRepository.findByNameAndLocation(dto.getName(), location);
+    if (existingAssetOpt.isPresent()) {
+      Asset existingAsset = existingAssetOpt.get();
+      if (!existingAsset.getDisabled()) {
+        throw new AppException(
+            HttpStatus.CONFLICT,
+            "Asset name already exists in this location and is active. Please choose a different name.");
+      }
     }
 
     // Create and populate Asset entity
@@ -285,9 +290,15 @@ public class AssetServiceImpl implements AssetService {
 
     Location location = admin.getLocation();
 
-    if (!asset.getName().equalsIgnoreCase(dto.getName())
-        && assetRepository.existsByNameAndLocation(dto.getName(), location)) {
-      throw new AppException(HttpStatus.CONFLICT, "Asset name already exists in this location");
+    Optional<Asset> existingAssetOpt =
+        assetRepository.findByNameAndLocation(dto.getName(), location);
+    if (existingAssetOpt.isPresent()) {
+      Asset existingAsset = existingAssetOpt.get();
+      if (!existingAsset.getDisabled()) {
+        throw new AppException(
+            HttpStatus.CONFLICT,
+            "Asset name already exists in this location and is active. Please choose a different name.");
+      }
     }
 
     // Update asset
