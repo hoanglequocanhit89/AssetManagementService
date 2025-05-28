@@ -10,6 +10,7 @@ import static org.mockito.Mockito.when;
 
 import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignmentRequest;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
@@ -461,5 +462,233 @@ public class AssignmentServiceTest {
             AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
     assertEquals("Asset must be in the same location with assigner", exception.getMessage());
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void responseToAssignment_AcceptedStatus_Success() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.ACCEPTED;
+
+    Location location = new Location();
+    location.setId(1);
+
+    User assignedUser = new User();
+    assignedUser.setId(1);
+    assignedUser.setUsername("assignee");
+    assignedUser.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(assignmentId);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setAssignedTo(assignedUser);
+    assignment.setAsset(asset);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+    when(jwtService.extractUsername()).thenReturn("assignee");
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
+    when(assetRepository.save(any(Asset.class))).thenReturn(asset);
+
+    // Act
+    AssignmentStatusResponse result = assignmentService.responseToAssignment(assignmentId, status);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(assignmentId, result.getId());
+    assertEquals(AssignmentStatus.ACCEPTED, result.getStatus());
+    assertEquals(AssignmentStatus.ACCEPTED, assignment.getStatus());
+    assertEquals(AssetStatus.ASSIGNED, asset.getStatus());
+    verify(assignmentRepository, times(1)).save(assignment);
+    verify(assetRepository, times(1)).save(asset);
+  }
+
+  @Test
+  void responseToAssignment_DeclinedStatus_Success() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.DECLINED;
+
+    Location location = new Location();
+    location.setId(1);
+
+    User assignedUser = new User();
+    assignedUser.setId(1);
+    assignedUser.setUsername("assignee");
+    assignedUser.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(assignmentId);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setAssignedTo(assignedUser);
+    assignment.setAsset(asset);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+    when(jwtService.extractUsername()).thenReturn("assignee");
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
+
+    // Act
+    AssignmentStatusResponse result = assignmentService.responseToAssignment(assignmentId, status);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(assignmentId, result.getId());
+    assertEquals(AssignmentStatus.DECLINED, result.getStatus());
+    assertEquals(AssignmentStatus.DECLINED, assignment.getStatus());
+    assertEquals(AssetStatus.AVAILABLE, asset.getStatus()); // Asset status should remain unchanged
+    verify(assignmentRepository, times(1)).save(assignment);
+    verify(assetRepository, times(0))
+        .save(any(Asset.class)); // Asset should not be saved for DECLINED
+  }
+
+  @Test
+  void responseToAssignment_InvalidStatus_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.WAITING; // Invalid status for response
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.responseToAssignment(assignmentId, status));
+    assertEquals("Status must be either ACCEPTED or DECLINED", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void responseToAssignment_AssignmentNotFound_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.ACCEPTED;
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.responseToAssignment(assignmentId, status));
+    assertEquals("Assignment Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void responseToAssignment_AssignmentNotInWaitingState_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.ACCEPTED;
+
+    Assignment assignment = new Assignment();
+    assignment.setId(assignmentId);
+    assignment.setStatus(AssignmentStatus.ACCEPTED); // Already accepted, not WAITING
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.responseToAssignment(assignmentId, status));
+    assertEquals("Only assignments in WAITING state can be responded to", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void responseToAssignment_UnauthorizedUser_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.ACCEPTED;
+
+    User assignedUser = new User();
+    assignedUser.setId(1);
+    assignedUser.setUsername("assignee");
+
+    Assignment assignment = new Assignment();
+    assignment.setId(assignmentId);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setAssignedTo(assignedUser);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+    when(jwtService.extractUsername())
+        .thenReturn("different_user"); // Different user trying to respond
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.responseToAssignment(assignmentId, status));
+    assertEquals("You are not authorized to respond to this assignment", exception.getMessage());
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void responseToAssignment_AcceptedStatus_AssetStatusUpdated() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.ACCEPTED;
+
+    User assignedUser = new User();
+    assignedUser.setId(1);
+    assignedUser.setUsername("assignee");
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(assignmentId);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setAssignedTo(assignedUser);
+    assignment.setAsset(asset);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+    when(jwtService.extractUsername()).thenReturn("assignee");
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
+    when(assetRepository.save(any(Asset.class))).thenReturn(asset);
+
+    // Act
+    assignmentService.responseToAssignment(assignmentId, status);
+
+    // Assert
+    assertEquals(AssetStatus.ASSIGNED, asset.getStatus());
+    verify(assetRepository, times(1)).save(asset);
+  }
+
+  @Test
+  void responseToAssignment_DeclinedStatus_AssetStatusUnchanged() {
+    // Arrange
+    int assignmentId = 1;
+    AssignmentStatus status = AssignmentStatus.DECLINED;
+
+    User assignedUser = new User();
+    assignedUser.setId(1);
+    assignedUser.setUsername("assignee");
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(assignmentId);
+    assignment.setStatus(AssignmentStatus.WAITING);
+    assignment.setAssignedTo(assignedUser);
+    assignment.setAsset(asset);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
+    when(jwtService.extractUsername()).thenReturn("assignee");
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
+
+    // Act
+    assignmentService.responseToAssignment(assignmentId, status);
+
+    // Assert
+    assertEquals(AssetStatus.AVAILABLE, asset.getStatus()); // Should remain unchanged
+    verify(assetRepository, times(0)).save(any(Asset.class)); // Should not be called
   }
 }

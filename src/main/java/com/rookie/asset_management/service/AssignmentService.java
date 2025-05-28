@@ -5,6 +5,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
 import com.rookie.asset_management.enums.AssignmentStatus;
 import java.util.List;
@@ -32,18 +33,19 @@ public interface AssignmentService {
    */
   AssignmentListDtoResponse editAssignment(int assignmentId, CreateUpdateAssignmentRequest request);
 
-
   /**
-   * Retrieves a paginated list of assignments filtered by status, assigned date, and a search query.
+   * Retrieves a paginated list of assignments filtered by status, assigned date, and a search
+   * query.
    *
-   * @param status      the status of the assignment to filter by (optional)
+   * @param status the status of the assignment to filter by (optional)
    * @param assignedDate the assigned date to filter by in a specific format (optional)
-   * @param query       a search keyword to filter assignments by title or description (optional)
-   * @param page        the page number for pagination (zero-based index)
-   * @param size        the number of items per page
-   * @param sortBy      the field name to sort by
-   * @param sortDir     the direction of sorting ("asc" or "desc")
-   * @return a {@link PagingDtoResponse} containing a list of {@link AssignmentListDtoResponse} objects
+   * @param query a search keyword to filter assignments by title or description (optional)
+   * @param page the page number for pagination (zero-based index)
+   * @param size the number of items per page
+   * @param sortBy the field name to sort by
+   * @param sortDir the direction of sorting ("asc" or "desc")
+   * @return a {@link PagingDtoResponse} containing a list of {@link AssignmentListDtoResponse}
+   *     objects
    */
   PagingDtoResponse<AssignmentListDtoResponse> getAllAssignments(
       AssignmentStatus status,
@@ -73,9 +75,19 @@ public interface AssignmentService {
   /**
    * Retrieves a list of assignments assigned to the current user.
    *
-   * @param sortBy  the field name to sort the results by
+   * @param sortBy the field name to sort the results by
    * @param sortDir the direction of sorting ("asc" or "desc")
    * @return an {@link ApiDtoResponse} containing a list of {@link MyAssignmentDtoResponse}
    */
   ApiDtoResponse<List<MyAssignmentDtoResponse>> getMyAssignments(String sortBy, String sortDir);
+
+  /**
+   * Allows a user to respond to an assignment by accepting or declining the asset assigned to them.
+   *
+   * @param assignmentId the ID of the assignment to respond to
+   * @param status the response status, either ACCEPTED or DECLINED
+   * @return an {@link AssignmentStatusResponse} containing the updated status of the assignment
+   *     after the response
+   */
+  AssignmentStatusResponse responseToAssignment(int assignmentId, AssignmentStatus status);
 }
