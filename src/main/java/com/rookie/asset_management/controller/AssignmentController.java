@@ -6,6 +6,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
 import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.service.AssignmentService;
@@ -18,6 +19,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.PutMapping;
@@ -107,5 +109,15 @@ public class AssignmentController {
     ApiDtoResponse<List<MyAssignmentDtoResponse>> response =
         assignmentService.getMyAssignments(sortBy, sortDir);
     return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("/{assignmentId}")
+  public ResponseEntity<ApiDtoResponse<AssignmentStatusResponse>> respondToAssignment(
+      @PathVariable int assignmentId, @RequestParam AssignmentStatus status) {
+    return ResponseEntity.ok(
+        ApiDtoResponse.<AssignmentStatusResponse>builder()
+            .message("Assignment updated successfully.")
+            .data(assignmentService.responseToAssignment(assignmentId, status))
+            .build());
   }
 }
