@@ -43,6 +43,10 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
 
     try {
       String jwt = jwtService.getJwtFromCookie(request);
+      if (jwt == null) {
+        filterChain.doFilter(request, response);
+        return;
+      }
       jwtService.validateToken(jwt);
       String username = jwtService.extractUsername();
 

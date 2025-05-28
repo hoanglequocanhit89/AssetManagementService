@@ -27,10 +27,7 @@ public class AuthController extends ApiV1Controller {
     ApiDtoResponse<LoginResponseDTO> responseDTO =
         ApiDtoResponse.<LoginResponseDTO>builder()
             .message("Login successfully!")
-            .data(
-                LoginResponseDTO.builder()
-                    .role(authenticationService.login(request, response))
-                    .build())
+            .data(authenticationService.login(request, response))
             .build();
     return ResponseEntity.ok(responseDTO);
   }

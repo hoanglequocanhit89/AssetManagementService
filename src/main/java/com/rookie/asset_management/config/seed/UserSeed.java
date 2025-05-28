@@ -8,6 +8,7 @@ import com.rookie.asset_management.enums.Gender;
 import com.rookie.asset_management.repository.LocationRepository;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
+import com.rookie.asset_management.service.impl.UserServiceImpl;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Slf4j
 @Configuration
@@ -27,6 +29,8 @@ public class UserSeed implements CommandLineRunner {
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
   private final LocationRepository locationRepository;
+  private final PasswordEncoder passwordEncoder;
+  private final UserServiceImpl userServiceImpl;
 
   @Override
   @Transactional
@@ -224,7 +228,7 @@ public class UserSeed implements CommandLineRunner {
     userProfile.setUser(user);
     userProfile.setGender(gender);
     user.setUserProfile(userProfile);
-
+    user.setPassword(passwordEncoder.encode(userServiceImpl.generatePassword(username, userDob)));
     return user;
   }
 }
