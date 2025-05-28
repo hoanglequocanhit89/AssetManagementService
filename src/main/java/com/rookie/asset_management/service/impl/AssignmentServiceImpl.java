@@ -5,6 +5,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
@@ -165,58 +166,6 @@ public class AssignmentServiceImpl
     return assignmentMapper.toDto(assignmentRepository.save(assignment));
   }
 
-  //  @Override
-  //  public PagingDtoResponse<AssignmentListDtoResponse> getAllAssignments(
-  //      AssignmentStatus status,
-  //      String assignedDate,
-  //      String query,
-  //      Integer page,
-  //      Integer size,
-  //      String sortBy,
-  //      String sortDir) {
-  //
-  //    String username = jwtService.extractUsername();
-  //    User user =
-  //        userRepository
-  //            .findByUsername(username)
-  //            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
-  //
-  //    // Check if user is admin
-  //    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
-  //      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
-  //    }
-  //
-  //    // Adjust sortBy for nested properties
-  //    String effectiveSortBy = sortBy;
-  //    if ("assetName".equals(sortBy)) {
-  //      effectiveSortBy = "asset.name";
-  //    } else if ("assetCode".equals(sortBy)) {
-  //      effectiveSortBy = "asset.assetCode";
-  //    } else if ("assignedTo".equals(sortBy)) {
-  //      effectiveSortBy = "assignedTo.userProfile.lastName";
-  //    } else if ("assignedBy".equals(sortBy)) {
-  //      effectiveSortBy = "assignedBy.userProfile.lastName";
-  //    } else if ("status".equals(sortBy)) {
-  //      effectiveSortBy = "status"; // Sort by status as TEXT
-  //    }
-  //
-  //    // Create pageable object
-  //    Pageable pageable = createPageable(page, size, sortDir, effectiveSortBy);
-  //
-  //    // Build specification
-  //    Specification<Assignment> spec =
-  //        new SpecificationBuilder<Assignment>()
-  //            .addIfNotNull(status, AssignmentSpecification.hasStatus(status))
-  //            .addIfNotNull(assignedDate, AssignmentSpecification.hasAssignedDate(assignedDate))
-  //            .addIfNotNull(query, AssignmentSpecification.hasAssetOrAssigneeLike(query))
-  //            .addIfNotNull(user.getId(), AssignmentSpecification.hasSameLocationAs(user.getId()))
-  //            .add(AssignmentSpecification.excludeDeleted())
-  //            .build();
-  //
-  //    // Use getMany from PagingServiceImpl instead of calling pagingMapper directly
-  //    return getMany(spec, pageable);
-  //  }
-
   @Override
   public PagingDtoResponse<AssignmentListDtoResponse> getAllAssignments(
       AssignmentStatus status,
@@ -346,66 +295,6 @@ public class AssignmentServiceImpl
         .build();
   }
 
-  //  @Override
-  //  public ApiDtoResponse<List<MyAssignmentDtoResponse>> getMyAssignments(
-  //      String sortBy, String sortDir) {
-  //    String username = jwtService.extractUsername();
-  //    User user =
-  //        userRepository
-  //            .findByUsername(username)
-  //            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
-  //
-  //    // Adjust sortBy for nested properties
-  //    String effectiveSortBy = sortBy;
-  //    if ("assetName".equals(sortBy)) {
-  //      effectiveSortBy = "asset.name";
-  //    } else if ("assetCode".equals(sortBy)) {
-  //      effectiveSortBy = "asset.assetCode";
-  //    } else if ("category".equals(sortBy)) {
-  //      effectiveSortBy = "asset.category.name";
-  //    } else if ("assignedDate".equals(sortBy)) {
-  //      effectiveSortBy = "assignedDate";
-  //    } else if ("id".equals(sortBy)) {
-  //      effectiveSortBy = "id";
-  //    } else {
-  //      effectiveSortBy = "asset.assetCode"; // Default sort by assetCode
-  //    }
-  //
-  //    // Create Sort object
-  //    Sort sort =
-  //        sortDir.equalsIgnoreCase("asc")
-  //            ? Sort.by(effectiveSortBy).ascending()
-  //            : Sort.by(effectiveSortBy).descending();
-  //
-  //    // Build specification
-  //    Specification<Assignment> spec =
-  //        new SpecificationBuilder<Assignment>()
-  //            .add(AssignmentSpecification.hasAssignedTo(user.getId()))
-  //            .add(
-  //                AssignmentSpecification.hasStatusIn(
-  //                    Arrays.asList(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED)))
-  //            .add(AssignmentSpecification.excludeDeleted())
-  //            .build();
-  //
-  //    // Apply alphabetical sorting for status
-  //    if ("status".equals(sortBy)) {
-  //      String customerSortDir = sortDir.equals("asc") ? "desc" : "asc";
-  //      spec =
-  //
-  // Specification.where(spec).and(AssignmentSpecification.orderByStatusOwn(customerSortDir));
-  //    }
-  //
-  //    // Get assignments
-  //    List<Assignment> assignments = assignmentRepository.findAll(spec, sort);
-  //    List<MyAssignmentDtoResponse> response =
-  //
-  // assignments.stream().map(assignmentMapper::toMyAssignmentDto).collect(Collectors.toList());
-  //
-  //    return ApiDtoResponse.<List<MyAssignmentDtoResponse>>builder()
-  //        .message("My assignments retrieved successfully")
-  //        .data(response)
-  //        .build();
-  //  }
   @Override
   public ApiDtoResponse<List<MyAssignmentDtoResponse>> getMyAssignments(
       String sortBy, String sortDir) {
@@ -480,6 +369,56 @@ public class AssignmentServiceImpl
     return ApiDtoResponse.<List<MyAssignmentDtoResponse>>builder()
         .message("My assignments retrieved successfully")
         .data(response)
+        .build();
+  }
+
+  @Override
+  @Transactional
+  public AssignmentStatusResponse responseToAssignment(int assignmentId, AssignmentStatus status) {
+    // Check if the updated status is valid
+    if (!status.equals(AssignmentStatus.ACCEPTED) && !status.equals(AssignmentStatus.DECLINED)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Status must be either ACCEPTED or DECLINED");
+    }
+
+    // Find the existing assignment
+    Assignment assignment =
+        assignmentRepository
+            .findById(assignmentId)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
+
+    // Check if the assignment is in WAITING state
+    if (!assignment.getStatus().equals(AssignmentStatus.WAITING)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Only assignments in WAITING state can be responded to");
+    }
+
+    // Get username from token
+    String username = jwtService.extractUsername();
+
+    // Check if the user responding to the assignment is the one assigned to it
+    if (!assignment.getAssignedTo().getUsername().equals(username)) {
+      throw new AppException(
+          HttpStatus.FORBIDDEN, "You are not authorized to respond to this assignment");
+    }
+
+    if (status.equals(AssignmentStatus.DECLINED)) {
+      // If the status is DECLINED, set the assignment status to DECLINED
+      assignment.setStatus(AssignmentStatus.DECLINED);
+    } else {
+      // If the status is ACCEPTED, set the assignment status to ACCEPTED
+      assignment.setStatus(AssignmentStatus.ACCEPTED);
+      // Update the asset status to ASSIGNED
+      Asset asset = assignment.getAsset();
+      asset.setStatus(AssetStatus.ASSIGNED);
+      assetRepository.save(asset);
+    }
+
+    // Save the updated assignment
+    assignmentRepository.save(assignment);
+
+    return AssignmentStatusResponse.builder()
+        .id(assignmentId)
+        .status(assignment.getStatus())
         .build();
   }
 }
