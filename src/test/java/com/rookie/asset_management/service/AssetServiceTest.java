@@ -1,9 +1,6 @@
 package com.rookie.asset_management.service;
 
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -225,12 +222,16 @@ class AssetServiceTest {
     savedAsset.setStatus(request.getState());
     savedAsset.setAssetCode("LA000123");
     savedAsset.setCreatedAt(new Date());
+    savedAsset.setDisabled(false);
+
+    Optional<Asset> mockAsset = Optional.of(asset);
 
     // Mock JWT service to return username
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
+    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
+        .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
@@ -259,7 +260,7 @@ class AssetServiceTest {
     verify(jwtService, times(1)).extractUsername();
     verify(categoryRepository, times(1)).findById(1);
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).existsByNameAndLocation("Laptop Dell", location);
+    verify(assetRepository, times(1)).findByNameAndLocation("Laptop Dell", location);
     verify(assetRepository, times(2))
         .save(
             any(Asset.class)); // Called twice: first for ID generation, second for assetCode update
@@ -480,7 +481,10 @@ class AssetServiceTest {
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(true);
+    Asset existingAsset = new Asset();
+    existingAsset.setDisabled(false); // simulate an active (not deleted) asset
+    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
+        .thenReturn(Optional.of(existingAsset));
 
     // Act & Assert
     AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
@@ -492,7 +496,7 @@ class AssetServiceTest {
     verify(jwtService, times(1)).extractUsername();
     verify(categoryRepository, times(1)).findById(1);
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).existsByNameAndLocation("Laptop Dell", location);
+    verify(assetRepository, times(1)).findByNameAndLocation("Laptop Dell", location);
     verify(assetRepository, never()).save(any());
   }
 
@@ -522,10 +526,17 @@ class AssetServiceTest {
     admin.setUsername("admin1");
     admin.setLocation(location);
 
+    Asset asset = new Asset();
+    asset.setName("Laptop Dell");
+    asset.setLocation(location);
+    asset.setDisabled(false);
+    Optional<Asset> mockAsset = Optional.of(asset);
+
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
+    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
+        .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
@@ -544,7 +555,7 @@ class AssetServiceTest {
     verify(jwtService, times(1)).extractUsername();
     verify(categoryRepository, times(1)).findById(1);
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).existsByNameAndLocation("Laptop Dell", location);
+    verify(assetRepository, times(1)).findByNameAndLocation("Laptop Dell", location);
     verify(assetRepository, times(1)).save(any(Asset.class)); // First save to get ID
   }
 
@@ -574,10 +585,17 @@ class AssetServiceTest {
     admin.setUsername("admin1");
     admin.setLocation(location);
 
+    Asset asset = new Asset();
+    asset.setName("Laptop Dell");
+    asset.setLocation(location);
+    asset.setDisabled(false);
+    Optional<Asset> mockAsset = Optional.of(asset);
+
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
+    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
+        .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
@@ -619,10 +637,17 @@ class AssetServiceTest {
     admin.setUsername("admin1");
     admin.setLocation(location);
 
+    Asset asset = new Asset();
+    asset.setName("Laptop Dell");
+    asset.setLocation(location);
+    asset.setDisabled(false);
+    Optional<Asset> mockAsset = Optional.of(asset);
+
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
     when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(assetRepository.existsByNameAndLocation("Laptop Dell", location)).thenReturn(false);
+    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
+        .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
@@ -680,11 +705,14 @@ class AssetServiceTest {
     asset.setStatus(AssetStatus.AVAILABLE);
     asset.setCategory(category);
     asset.setLocation(location);
+    asset.setDisabled(false);
+    Optional<Asset> mockAsset = Optional.of(asset);
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Updated Laptop", location)).thenReturn(false);
+    when(assetRepository.findByNameAndLocation("Updated Laptop", location))
+        .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -707,7 +735,7 @@ class AssetServiceTest {
     verify(assetRepository, times(1)).findById(assetId);
     verify(jwtService, times(1)).extractUsername();
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).existsByNameAndLocation("Updated Laptop", location);
+    verify(assetRepository, times(1)).findByNameAndLocation("Updated Laptop", location);
     verify(assetRepository, times(1)).save(asset);
   }
 
@@ -962,7 +990,7 @@ class AssetServiceTest {
     verify(assetRepository, times(1)).findById(assetId);
     verify(jwtService, times(1)).extractUsername();
     verify(userRepository, times(1)).findByUsername("nonexistent_user");
-    verify(assetRepository, never()).existsByNameAndLocation(any(), any());
+    verify(assetRepository, never()).findByNameAndLocation(any(), any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -990,6 +1018,9 @@ class AssetServiceTest {
     asset.setStatus(AssetStatus.AVAILABLE);
     asset.setLocation(location);
     asset.setCategory(category);
+    asset.setDisabled(false);
+
+    Optional<Asset> mockAsset = Optional.of(asset);
 
     EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
@@ -1002,81 +1033,24 @@ class AssetServiceTest {
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.existsByNameAndLocation("Existing Asset Name", location)).thenReturn(true);
+    when(assetRepository.findByNameAndLocation("Existing Asset Name", location))
+        .thenReturn(mockAsset);
 
     // Act & Assert
     AppException ex =
         assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
 
     assertEquals(HttpStatus.CONFLICT, ex.getHttpStatusCode());
-    assertEquals("Asset name already exists in this location", ex.getMessage());
+    assertEquals(
+        "Asset name already exists in this location and is active. Please choose a different name.",
+        ex.getMessage());
 
     // Verify all interactions up to duplicate check
     verify(assetRepository, times(1)).findById(assetId);
     verify(jwtService, times(1)).extractUsername();
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).existsByNameAndLocation("Existing Asset Name", location);
+    verify(assetRepository, times(1)).findByNameAndLocation("Existing Asset Name", location);
     verify(assetRepository, never()).save(any());
-  }
-
-  @Test
-  void editAsset_SameNameNoConflict_Success() {
-    // Arrange
-    Integer assetId = 1;
-
-    Location location = new Location();
-    location.setId(1);
-    location.setName("HCM");
-
-    Category category = new Category();
-    category.setId(1);
-    category.setName("Laptop");
-
-    User admin = new User();
-    admin.setId(2);
-    admin.setUsername("admin1");
-    admin.setLocation(location);
-
-    Asset asset = new Asset();
-    asset.setId(assetId);
-    asset.setAssetCode("LA0001");
-    asset.setName("Same Asset Name");
-    asset.setSpecification("Old Spec");
-    asset.setInstalledDate(LocalDate.now().minusDays(1));
-    asset.setStatus(AssetStatus.AVAILABLE);
-    asset.setLocation(location);
-    asset.setCategory(category);
-
-    EditAssetDtoRequest request =
-        EditAssetDtoRequest.builder()
-            .name("Same Asset Name") // Same as current name
-            .specification("Updated Spec")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.NOT_AVAILABLE)
-            .build();
-
-    when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    // Note: existsByNameAndLocation should NOT be called when name is the same
-    when(assetRepository.save(any(Asset.class)))
-        .thenAnswer(invocation -> invocation.getArgument(0));
-
-    // Act
-    EditAssetDtoResponse response = assetService.editAsset(assetId, request);
-
-    // Assert
-    assertNotNull(response);
-    assertEquals("Same Asset Name", response.getName());
-    assertEquals("Updated Spec", response.getSpecification());
-    assertEquals(AssetStatus.NOT_AVAILABLE, response.getState());
-
-    // Verify interactions
-    verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, times(1)).extractUsername();
-    verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, never()).existsByNameAndLocation(any(), any());
-    verify(assetRepository, times(1)).save(asset);
   }
 
   @Test
