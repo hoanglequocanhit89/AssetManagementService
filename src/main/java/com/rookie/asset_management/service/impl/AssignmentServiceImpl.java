@@ -204,7 +204,7 @@ public class AssignmentServiceImpl
     if ("status".equals(sortBy)) {
       pageable = Pageable.unpaged();
     } else {
-      pageable = createPageable(page - 1, size, sortDir, effectiveSortBy);
+      pageable = createPageable(page, size, sortDir, effectiveSortBy);
     }
 
     // Build specification
