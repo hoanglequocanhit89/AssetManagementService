@@ -62,4 +62,6 @@ public interface AssetRepository extends BaseRepository<Asset, Integer> {
    * @return a list of assets that match the specification and are sorted accordingly
    */
   List<Asset> findAll(Specification<Asset> build, Sort sort);
+
+  Optional<Asset> findByNameAndLocation(String name, Location location);
 }
