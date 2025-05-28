@@ -61,9 +61,8 @@ public class AssignmentSpecification {
                 criteriaBuilder.lower(
                     criteriaBuilder.concat(
                         criteriaBuilder.concat(
-                            root.get("assignedTo").get("userProfile").get("firstName"),
-                            criteriaBuilder.literal(" ")),
-                        root.get("assignedTo").get("userProfile").get("lastName"))),
+                            root.get("assignedTo").get("username"), criteriaBuilder.literal(" ")),
+                        root.get("assignedTo").get("username"))),
                 "%" + query.toLowerCase() + "%"));
   }
 
@@ -95,10 +94,9 @@ public class AssignmentSpecification {
     return (root, query, criteriaBuilder) -> criteriaBuilder.isFalse(root.get("deleted"));
   }
 
-
   /**
-   * Returns a JPA Specification to filter {@link Assignment} entities
-   * by the ID of the user they are assigned to.
+   * Returns a JPA Specification to filter {@link Assignment} entities by the ID of the user they
+   * are assigned to.
    *
    * @param userId the ID of the user to whom the assignment is assigned
    * @return a {@link Specification} that filters assignments based on the assigned user's ID
@@ -108,10 +106,9 @@ public class AssignmentSpecification {
         criteriaBuilder.equal(root.get("assignedTo").get("id"), userId);
   }
 
-
   /**
-   * Returns a JPA Specification to filter {@link Assignment} entities
-   * that have a status included in the given list of statuses.
+   * Returns a JPA Specification to filter {@link Assignment} entities that have a status included
+   * in the given list of statuses.
    *
    * @param statuses a list of {@link AssignmentStatus} values to filter by
    * @return a {@link Specification} that filters assignments whose status is in the provided list
