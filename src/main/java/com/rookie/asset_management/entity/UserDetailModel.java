@@ -1,31 +1,41 @@
 package com.rookie.asset_management.entity;
 
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
-import java.util.stream.Collectors;
-import java.util.stream.Stream;
 import lombok.AccessLevel;
+import lombok.Getter;
 import lombok.experimental.FieldDefaults;
 import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.userdetails.UserDetails;
 
-@FieldDefaults(level = AccessLevel.PRIVATE)
+@Getter
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class UserDetailModel implements UserDetails {
 
   String username;
   String password;
+
   Boolean isEnabled;
+  Boolean isFirstLogin;
   List<GrantedAuthority> authorities;
+  boolean accountNonExpired;
+  boolean accountNonLocked;
+  boolean credentialsNonExpired;
 
   public UserDetailModel(User user) {
     this.username = user.getUsername();
     this.password = user.getPassword();
     this.isEnabled = !user.getDisabled();
+    this.isFirstLogin = user.getFirstLogin() != null ? user.getFirstLogin() : false;
     this.authorities =
-        Stream.of(user.getRole().getName())
-            .map(SimpleGrantedAuthority::new)
-            .collect(Collectors.toList());
+        user.getRole() != null
+            ? List.of(new SimpleGrantedAuthority(user.getRole().getName()))
+            : Collections.emptyList();
+    this.accountNonExpired = true;
+    this.accountNonLocked = true;
+    this.credentialsNonExpired = true;
   }
 
   @Override
@@ -45,17 +55,17 @@ public class UserDetailModel implements UserDetails {
 
   @Override
   public boolean isAccountNonExpired() {
-    return false;
+    return this.accountNonExpired;
   }
 
   @Override
   public boolean isAccountNonLocked() {
-    return false;
+    return this.accountNonLocked;
   }
 
   @Override
   public boolean isCredentialsNonExpired() {
-    return false;
+    return this.credentialsNonExpired;
   }
 
   @Override
