@@ -98,4 +98,58 @@ public class AssignmentServiceImpl
     // Save the assignment
     return assignmentMapper.toDto(assignmentRepository.save(assignment));
   }
+
+  @Override
+  @Transactional
+  public AssignmentListDtoResponse editAssignment(
+      int assignmentId, CreateUpdateAssignmentRequest request) {
+    // Find the existing assignment
+    Assignment assignment =
+        assignmentRepository
+            .findById(assignmentId)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
+
+    // Check if assignment is in WAITING state
+    if (!assignment.getStatus().equals(AssignmentStatus.WAITING)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Only assignments in WAITING state can be edited");
+    }
+
+    // check if the user and asset exist
+    User assignee =
+        userRepository
+            .findById(request.getUserId())
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    Asset asset =
+        assetRepository
+            .findById(request.getAssetId())
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Asset Not Found"));
+
+    // check if assigner and assignee are in the same location
+    if (!assignment.getAssignedBy().getLocation().equals(assignee.getLocation())) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Assigner and assignee must be in the same location");
+    }
+
+    // check if the asset is available for assignment
+    if (!asset.getStatus().equals(AssetStatus.AVAILABLE)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Asset is not available for assignment");
+    }
+
+    // check if the asset is in the same location with assigner
+    if (!asset.getLocation().equals(assignment.getAssignedBy().getLocation())) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Asset must be in the same location with assigner");
+    }
+
+    // Update the assignment details
+    assignment.setAssignedTo(assignee);
+    assignment.setAsset(asset);
+    assignment.setNote(request.getNote());
+    assignment.setAssignedDate(request.getAssignedDate());
+
+    // Save the updated assignment
+    return assignmentMapper.toDto(assignmentRepository.save(assignment));
+  }
 }
