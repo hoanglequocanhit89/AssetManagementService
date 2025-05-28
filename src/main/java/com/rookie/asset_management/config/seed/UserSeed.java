@@ -8,6 +8,7 @@ import com.rookie.asset_management.enums.Gender;
 import com.rookie.asset_management.repository.LocationRepository;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
+import com.rookie.asset_management.service.impl.UserServiceImpl;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
@@ -17,6 +18,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Slf4j
 @Configuration
@@ -27,6 +29,8 @@ public class UserSeed implements CommandLineRunner {
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
   private final LocationRepository locationRepository;
+  private final UserServiceImpl userService;
+  private final PasswordEncoder passwordEncoder;
 
   @Override
   @Transactional
@@ -61,9 +65,9 @@ public class UserSeed implements CommandLineRunner {
     // Create admin user
     User adminUser1 =
         getUser(
-            "admindnu1",
+            "admindnuo",
             "Admindn",
-            "User 1",
+            "User One",
             "01-01-2024",
             "01-01-1990",
             adminRole,
@@ -74,9 +78,9 @@ public class UserSeed implements CommandLineRunner {
 
     User adminUser2 =
         getUser(
-            "adminhcmu2",
+            "adminhcmut",
             "Adminhcm",
-            "User 2",
+            "User Two",
             "02-01-2024",
             "02-01-1990",
             adminRole,
@@ -87,9 +91,9 @@ public class UserSeed implements CommandLineRunner {
 
     User adminUser3 =
         getUser(
-            "adminhnu3",
+            "adminhnut",
             "Adminhn",
-            "User 3",
+            "User Three",
             "03-01-2024",
             "03-01-1990",
             adminRole,
@@ -101,9 +105,9 @@ public class UserSeed implements CommandLineRunner {
     // Create users
     User staffUser1 =
         getUser(
-            "staffdnu1",
+            "staffdnuo",
             "Staffdn",
-            "User 1",
+            "User One",
             "01-01-2025",
             "01-01-1995",
             staffRole,
@@ -114,9 +118,9 @@ public class UserSeed implements CommandLineRunner {
 
     User staffUser2 =
         getUser(
-            "staffdnu2",
+            "staffdnut",
             "Staffdn",
-            "User 2",
+            "User Two",
             "02-01-2025",
             "02-01-1995",
             staffRole,
@@ -127,9 +131,9 @@ public class UserSeed implements CommandLineRunner {
 
     User staffUser3 =
         getUser(
-            "staffhcmu3",
+            "staffhcmut1",
             "Staffhcm",
-            "User 3",
+            "User Three",
             "03-01-2025",
             "03-01-1995",
             staffRole,
@@ -140,9 +144,9 @@ public class UserSeed implements CommandLineRunner {
 
     User staffUser4 =
         getUser(
-            "staffhcmu4",
+            "staffhcmuf",
             "Staffhcm",
-            "User 4",
+            "User Four",
             "04-01-2025",
             "04-01-1995",
             staffRole,
@@ -153,9 +157,9 @@ public class UserSeed implements CommandLineRunner {
 
     User staffUser5 =
         getUser(
-            "staffhnu5",
+            "staffhnuf1",
             "Staffhn",
-            "User 5",
+            "User Five",
             "05-01-2025",
             "05-01-1995",
             staffRole,
@@ -166,9 +170,9 @@ public class UserSeed implements CommandLineRunner {
 
     User staffUser6 =
         getUser(
-            "staffhnu6",
+            "staffhnus",
             "Staffhn",
-            "User 6",
+            "User Six",
             "06-01-2025",
             "06-01-1995",
             staffRole,
@@ -221,6 +225,9 @@ public class UserSeed implements CommandLineRunner {
     userProfile.setLastName(lastName);
     LocalDate userDob = LocalDate.parse(dob, formatter);
     userProfile.setDob(userDob);
+    // generate password
+    String hashedPassword = userService.generatePassword(username, userDob);
+    user.setPassword(passwordEncoder.encode(hashedPassword));
     userProfile.setUser(user);
     userProfile.setGender(gender);
     user.setUserProfile(userProfile);

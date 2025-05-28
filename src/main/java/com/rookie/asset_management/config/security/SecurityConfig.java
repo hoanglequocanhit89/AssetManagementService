@@ -1,7 +1,9 @@
 package com.rookie.asset_management.config.security;
 
+import com.rookie.asset_management.constant.AllowedOrigin;
 import com.rookie.asset_management.constant.Endpoints;
 import com.rookie.asset_management.constant.UserRoles;
+import java.util.Arrays;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,6 +21,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 @EnableWebSecurity
 @Configuration
@@ -29,24 +34,30 @@ public class SecurityConfig {
   JwtAuthenticationFilter jwtAuthenticationFilter;
 
   @Bean
-  SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+  SecurityFilterChain securityFilterChain(
+      HttpSecurity http, CorsConfigurationSource corsConfigurationSource) throws Exception {
+    // Configure HTTP csrf and cors
     http.csrf(AbstractHttpConfigurer::disable)
-        .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class)
-        .exceptionHandling(
-            exceptionHandling ->
-                exceptionHandling.authenticationEntryPoint(new AuthEntryPointJwt()))
-        .authorizeHttpRequests(
-            (auth) ->
-                auth.requestMatchers(Endpoints.PUBLIC_ENDPOINTS)
-                    .permitAll()
-                    .requestMatchers(Endpoints.ADMIN_ENDPOINTS)
-                    .hasAuthority(UserRoles.ADMIN)
-                    .requestMatchers(Endpoints.STAFF_ENDPOINTS)
-                    .hasAuthority(UserRoles.STAFF)
-                    .anyRequest()
-                    .authenticated())
-        .sessionManagement(
-            manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
+        .cors(cors -> cors.configurationSource(corsConfigurationSource));
+    // custom filter
+    http.addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
+    // Configure exception
+    http.exceptionHandling(
+        exceptionHandling -> exceptionHandling.authenticationEntryPoint(new AuthEntryPointJwt()));
+    // configure authorization
+    http.authorizeHttpRequests(
+        (auth) ->
+            auth.requestMatchers(Endpoints.PUBLIC_ENDPOINTS)
+                .permitAll()
+                .requestMatchers(Endpoints.ADMIN_ENDPOINTS)
+                .hasAuthority(UserRoles.ADMIN)
+                .requestMatchers(Endpoints.STAFF_ENDPOINTS)
+                .hasAuthority(UserRoles.STAFF)
+                .anyRequest()
+                .authenticated());
+    // configure session management
+    http.sessionManagement(
+        manager -> manager.sessionCreationPolicy(SessionCreationPolicy.STATELESS));
 
     return http.build();
   }
@@ -65,5 +76,19 @@ public class SecurityConfig {
   @Bean
   public PasswordEncoder passwordEncoder() {
     return new BCryptPasswordEncoder();
+  }
+
+  @Bean
+  public CorsConfigurationSource corsConfigurationSource() {
+    CorsConfiguration configuration = new CorsConfiguration();
+    configuration.setAllowedOrigins(Arrays.asList(AllowedOrigin.ALLOWED_ORIGINS));
+    configuration.setAllowedMethods(Arrays.asList(AllowedOrigin.ALLOWED_METHODS));
+    configuration.setAllowedHeaders(Arrays.asList(AllowedOrigin.ALLOWED_HEADERS));
+    configuration.setAllowCredentials(true);
+    configuration.setMaxAge(3600L);
+
+    UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+    source.registerCorsConfiguration("/**", configuration);
+    return source;
   }
 }

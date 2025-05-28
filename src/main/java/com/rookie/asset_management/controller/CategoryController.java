@@ -17,7 +17,7 @@ import org.springframework.web.bind.annotation.*;
  */
 @RestController
 @RequestMapping("api/v1/categories")
-public class CategoryController extends ApiV1Controller {
+public class CategoryController {
 
   @Autowired CategoryService categoryService;
 
