@@ -1,7 +1,11 @@
 package com.rookie.asset_management.service.impl;
 
 import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignmentRequest;
+import com.rookie.asset_management.dto.response.ApiDtoResponse;
+import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.User;
@@ -14,9 +18,17 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.AssignmentService;
 import com.rookie.asset_management.service.JwtService;
+import com.rookie.asset_management.service.specification.AssignmentSpecification;
+import com.rookie.asset_management.util.SpecificationBuilder;
+import java.util.Arrays;
+import java.util.List;
+import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -151,5 +163,323 @@ public class AssignmentServiceImpl
 
     // Save the updated assignment
     return assignmentMapper.toDto(assignmentRepository.save(assignment));
+  }
+
+  //  @Override
+  //  public PagingDtoResponse<AssignmentListDtoResponse> getAllAssignments(
+  //      AssignmentStatus status,
+  //      String assignedDate,
+  //      String query,
+  //      Integer page,
+  //      Integer size,
+  //      String sortBy,
+  //      String sortDir) {
+  //
+  //    String username = jwtService.extractUsername();
+  //    User user =
+  //        userRepository
+  //            .findByUsername(username)
+  //            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+  //
+  //    // Check if user is admin
+  //    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+  //      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+  //    }
+  //
+  //    // Adjust sortBy for nested properties
+  //    String effectiveSortBy = sortBy;
+  //    if ("assetName".equals(sortBy)) {
+  //      effectiveSortBy = "asset.name";
+  //    } else if ("assetCode".equals(sortBy)) {
+  //      effectiveSortBy = "asset.assetCode";
+  //    } else if ("assignedTo".equals(sortBy)) {
+  //      effectiveSortBy = "assignedTo.userProfile.lastName";
+  //    } else if ("assignedBy".equals(sortBy)) {
+  //      effectiveSortBy = "assignedBy.userProfile.lastName";
+  //    } else if ("status".equals(sortBy)) {
+  //      effectiveSortBy = "status"; // Sort by status as TEXT
+  //    }
+  //
+  //    // Create pageable object
+  //    Pageable pageable = createPageable(page, size, sortDir, effectiveSortBy);
+  //
+  //    // Build specification
+  //    Specification<Assignment> spec =
+  //        new SpecificationBuilder<Assignment>()
+  //            .addIfNotNull(status, AssignmentSpecification.hasStatus(status))
+  //            .addIfNotNull(assignedDate, AssignmentSpecification.hasAssignedDate(assignedDate))
+  //            .addIfNotNull(query, AssignmentSpecification.hasAssetOrAssigneeLike(query))
+  //            .addIfNotNull(user.getId(), AssignmentSpecification.hasSameLocationAs(user.getId()))
+  //            .add(AssignmentSpecification.excludeDeleted())
+  //            .build();
+  //
+  //    // Use getMany from PagingServiceImpl instead of calling pagingMapper directly
+  //    return getMany(spec, pageable);
+  //  }
+
+  @Override
+  public PagingDtoResponse<AssignmentListDtoResponse> getAllAssignments(
+      AssignmentStatus status,
+      String assignedDate,
+      String query,
+      Integer page,
+      Integer size,
+      String sortBy,
+      String sortDir) {
+
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Check if user is admin
+    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+    }
+
+    // Adjust sortBy for nested properties
+    String effectiveSortBy = sortBy;
+
+    if ("assetName".equals(sortBy)) {
+      effectiveSortBy = "asset.name";
+    } else if ("assetCode".equals(sortBy)) {
+      effectiveSortBy = "asset.assetCode";
+    } else if ("assignedTo".equals(sortBy)) {
+      effectiveSortBy = "assignedTo.userProfile.lastName";
+    } else if ("assignedBy".equals(sortBy)) {
+      effectiveSortBy = "assignedBy.userProfile.lastName";
+    }
+
+    Pageable pageable;
+    if ("status".equals(sortBy)) {
+      pageable = Pageable.unpaged();
+    } else {
+      pageable = createPageable(page - 1, size, sortDir, effectiveSortBy);
+    }
+
+    // Build specification
+    Specification<Assignment> spec =
+        new SpecificationBuilder<Assignment>()
+            .addIfNotNull(status, AssignmentSpecification.hasStatus(status))
+            .addIfNotNull(assignedDate, AssignmentSpecification.hasAssignedDate(assignedDate))
+            .addIfNotNull(query, AssignmentSpecification.hasAssetOrAssigneeLike(query))
+            .addIfNotNull(user.getId(), AssignmentSpecification.hasSameLocationAs(user.getId()))
+            .add(AssignmentSpecification.excludeDeleted())
+            .build();
+
+    // Apply alphabetical sorting for status
+    if ("status".equals(sortBy)) {
+      String customerSortDir = sortDir.equals("asc") ? "desc" : "asc";
+      spec = Specification.where(spec).and(AssignmentSpecification.orderByStatus(customerSortDir));
+    }
+
+    // Use getMany from PagingServiceImpl
+    PagingDtoResponse<AssignmentListDtoResponse> result = getMany(spec, pageable);
+
+    return result;
+  }
+
+  @Override
+  public ApiDtoResponse<AssignmentDetailDtoResponse> getAssignmentDetails(Integer assignmentId) {
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+    }
+
+    Assignment assignment =
+        assignmentRepository
+            .findByIdAndDeletedFalse(assignmentId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Assignment not found"));
+
+    if (!assignment.getAsset().getLocation().getId().equals(user.getLocation().getId())
+        || !assignment.getAssignedTo().getLocation().getId().equals(user.getLocation().getId())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Assignment not in admin's location");
+    }
+
+    AssignmentDetailDtoResponse response = assignmentMapper.toDetailDto(assignment);
+    return ApiDtoResponse.<AssignmentDetailDtoResponse>builder()
+        .message("Assignment details retrieved successfully")
+        .data(response)
+        .build();
+  }
+
+  @Override
+  public ApiDtoResponse<Void> deleteAssignment(Integer assignmentId) {
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+    }
+
+    Assignment assignment =
+        assignmentRepository
+            .findByIdAndDeletedFalse(assignmentId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Assignment not found"));
+
+    if (!assignment.getAsset().getLocation().getId().equals(user.getLocation().getId())
+        || !assignment.getAssignedTo().getLocation().getId().equals(user.getLocation().getId())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Assignment not in admin's location");
+    }
+
+    if (assignment.getStatus() != AssignmentStatus.WAITING
+        && assignment.getStatus() != AssignmentStatus.DECLINED) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Can only delete assignments with status WAITING or DECLINED");
+    }
+
+    assignment.setDeleted(true);
+    assignmentRepository.save(assignment);
+
+    return ApiDtoResponse.<Void>builder()
+        .message("Assignment deleted successfully")
+        .data(null)
+        .build();
+  }
+
+  //  @Override
+  //  public ApiDtoResponse<List<MyAssignmentDtoResponse>> getMyAssignments(
+  //      String sortBy, String sortDir) {
+  //    String username = jwtService.extractUsername();
+  //    User user =
+  //        userRepository
+  //            .findByUsername(username)
+  //            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+  //
+  //    // Adjust sortBy for nested properties
+  //    String effectiveSortBy = sortBy;
+  //    if ("assetName".equals(sortBy)) {
+  //      effectiveSortBy = "asset.name";
+  //    } else if ("assetCode".equals(sortBy)) {
+  //      effectiveSortBy = "asset.assetCode";
+  //    } else if ("category".equals(sortBy)) {
+  //      effectiveSortBy = "asset.category.name";
+  //    } else if ("assignedDate".equals(sortBy)) {
+  //      effectiveSortBy = "assignedDate";
+  //    } else if ("id".equals(sortBy)) {
+  //      effectiveSortBy = "id";
+  //    } else {
+  //      effectiveSortBy = "asset.assetCode"; // Default sort by assetCode
+  //    }
+  //
+  //    // Create Sort object
+  //    Sort sort =
+  //        sortDir.equalsIgnoreCase("asc")
+  //            ? Sort.by(effectiveSortBy).ascending()
+  //            : Sort.by(effectiveSortBy).descending();
+  //
+  //    // Build specification
+  //    Specification<Assignment> spec =
+  //        new SpecificationBuilder<Assignment>()
+  //            .add(AssignmentSpecification.hasAssignedTo(user.getId()))
+  //            .add(
+  //                AssignmentSpecification.hasStatusIn(
+  //                    Arrays.asList(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED)))
+  //            .add(AssignmentSpecification.excludeDeleted())
+  //            .build();
+  //
+  //    // Apply alphabetical sorting for status
+  //    if ("status".equals(sortBy)) {
+  //      String customerSortDir = sortDir.equals("asc") ? "desc" : "asc";
+  //      spec =
+  //
+  // Specification.where(spec).and(AssignmentSpecification.orderByStatusOwn(customerSortDir));
+  //    }
+  //
+  //    // Get assignments
+  //    List<Assignment> assignments = assignmentRepository.findAll(spec, sort);
+  //    List<MyAssignmentDtoResponse> response =
+  //
+  // assignments.stream().map(assignmentMapper::toMyAssignmentDto).collect(Collectors.toList());
+  //
+  //    return ApiDtoResponse.<List<MyAssignmentDtoResponse>>builder()
+  //        .message("My assignments retrieved successfully")
+  //        .data(response)
+  //        .build();
+  //  }
+  @Override
+  public ApiDtoResponse<List<MyAssignmentDtoResponse>> getMyAssignments(
+      String sortBy, String sortDir) {
+
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Build specification
+    Specification<Assignment> spec =
+        new SpecificationBuilder<Assignment>()
+            .add(AssignmentSpecification.hasAssignedTo(user.getId()))
+            .add(
+                AssignmentSpecification.hasStatusIn(
+                    Arrays.asList(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED)))
+            .add(AssignmentSpecification.excludeDeleted())
+            .build();
+
+    List<Assignment> assignments;
+
+    if ("status".equalsIgnoreCase(sortBy)) {
+      assignments = assignmentRepository.findAll(spec);
+
+      List<AssignmentStatus> statusOrder =
+          sortDir.equalsIgnoreCase("asc")
+              ? List.of(AssignmentStatus.ACCEPTED, AssignmentStatus.WAITING)
+              : List.of(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED);
+
+      assignments.sort(
+          (a1, a2) -> {
+            int i1 = statusOrder.indexOf(a1.getStatus());
+            int i2 = statusOrder.indexOf(a2.getStatus());
+            return Integer.compare(i1, i2);
+          });
+
+    } else {
+      // Adjust sortBy for nested properties
+      String effectiveSortBy;
+      switch (sortBy) {
+        case "assetName":
+          effectiveSortBy = "asset.name";
+          break;
+        case "assetCode":
+          effectiveSortBy = "asset.assetCode";
+          break;
+        case "category":
+          effectiveSortBy = "asset.category.name";
+          break;
+        case "assignedDate":
+          effectiveSortBy = "assignedDate";
+          break;
+        case "id":
+          effectiveSortBy = "id";
+          break;
+        default:
+          effectiveSortBy = "asset.assetCode";
+      }
+
+      Sort sort =
+          sortDir.equalsIgnoreCase("asc")
+              ? Sort.by(effectiveSortBy).ascending()
+              : Sort.by(effectiveSortBy).descending();
+
+      assignments = assignmentRepository.findAll(spec, sort);
+    }
+
+    List<MyAssignmentDtoResponse> response =
+        assignments.stream().map(assignmentMapper::toMyAssignmentDto).collect(Collectors.toList());
+
+    return ApiDtoResponse.<List<MyAssignmentDtoResponse>>builder()
+        .message("My assignments retrieved successfully")
+        .data(response)
+        .build();
   }
 }
