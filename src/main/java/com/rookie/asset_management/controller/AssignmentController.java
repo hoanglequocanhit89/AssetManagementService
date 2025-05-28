@@ -7,7 +7,9 @@ import com.rookie.asset_management.service.AssignmentService;
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -32,5 +34,15 @@ public class AssignmentController{
                 .message("Assignment created successfully.")
                 .data(assignmentService.createAssignment(request))
                 .build());
+  }
+
+  @PutMapping("/{assignmentId}")
+  public ResponseEntity<ApiDtoResponse<AssignmentListDtoResponse>> editAssignment(
+      @PathVariable int assignmentId, @RequestBody @Valid CreateUpdateAssignmentRequest request) {
+    return ResponseEntity.ok(
+        ApiDtoResponse.<AssignmentListDtoResponse>builder()
+            .message("Assignment updated successfully.")
+            .data(assignmentService.editAssignment(assignmentId, request))
+            .build());
   }
 }
