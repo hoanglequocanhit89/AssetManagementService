@@ -2,6 +2,7 @@ package com.rookie.asset_management.service;
 
 import com.rookie.asset_management.dto.request.authentication.ChangePasswordRequestDTO;
 import com.rookie.asset_management.dto.request.authentication.LoginRequestDTO;
+import com.rookie.asset_management.dto.response.authentication.LoginResponseDTO;
 import jakarta.servlet.http.HttpServletResponse;
 
 /**
@@ -26,7 +27,7 @@ public interface AuthenticationService {
    * @throws com.rookie.asset_management.exception.AppException if authentication fails (e.g.,
    *     invalid credentials)
    */
-  String login(LoginRequestDTO loginRequestDTO, HttpServletResponse response);
+  LoginResponseDTO login(LoginRequestDTO loginRequestDTO, HttpServletResponse response);
 
   /**
    * Changes the password for an authenticated user.
