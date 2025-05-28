@@ -64,4 +64,7 @@ public class Assignment {
 
   @OneToOne(mappedBy = "assignment")
   private ReturningRequest returningRequest;
+
+  @Column(nullable = false)
+  private boolean deleted = false;
 }
