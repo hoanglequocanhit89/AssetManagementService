@@ -199,4 +199,267 @@ public class AssignmentServiceTest {
     assertEquals("Assigner and assignee must be in the same location", exception.getMessage());
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
   }
+
+  @Test
+  void editAssignment_Success() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2);
+    request.setAssignedDate(LocalDate.now().plusDays(1));
+    request.setNote("Updated Note");
+
+    Location location = new Location();
+    location.setId(1);
+
+    User originalAssigner = new User();
+    originalAssigner.setId(1);
+    originalAssigner.setLocation(location);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+    newAssignee.setLocation(location);
+
+    Asset newAsset = new Asset();
+    newAsset.setId(2);
+    newAsset.setStatus(AssetStatus.AVAILABLE);
+    newAsset.setLocation(location);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+    existingAssignment.setAssignedBy(originalAssigner);
+
+    AssignmentListDtoResponse response = new AssignmentListDtoResponse();
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(existingAssignment);
+    when(assignmentMapper.toDto(any(Assignment.class))).thenReturn(response);
+
+    // Act
+    AssignmentListDtoResponse result = assignmentService.editAssignment(assignmentId, request);
+
+    // Assert
+    assertNotNull(result);
+    verify(assignmentRepository, times(1)).save(any(Assignment.class));
+    assertEquals(newAssignee, existingAssignment.getAssignedTo());
+    assertEquals(newAsset, existingAssignment.getAsset());
+    assertEquals(request.getNote(), existingAssignment.getNote());
+    assertEquals(request.getAssignedDate(), existingAssignment.getAssignedDate());
+  }
+
+  @Test
+  void editAssignment_AssignmentNotFound_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Assignment Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void editAssignment_AssignmentNotInWaitingState_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.ACCEPTED); // Not WAITING
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Only assignments in WAITING state can be edited", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void editAssignment_UserNotFound_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("User Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void editAssignment_AssetNotFound_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(2)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Asset Not Found", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void editAssignment_AssignerAndAssigneeLocationMismatch_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2);
+
+    Location location1 = new Location();
+    location1.setId(1);
+
+    Location location2 = new Location();
+    location2.setId(2);
+
+    User originalAssigner = new User();
+    originalAssigner.setId(1);
+    originalAssigner.setLocation(location1);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+    newAssignee.setLocation(location2); // Different location
+
+    Asset newAsset = new Asset();
+    newAsset.setId(2);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+    existingAssignment.setAssignedBy(originalAssigner);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Assigner and assignee must be in the same location", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void editAssignment_AssetNotAvailable_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2);
+
+    Location location = new Location();
+    location.setId(1);
+
+    User originalAssigner = new User();
+    originalAssigner.setId(1);
+    originalAssigner.setLocation(location);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+    newAssignee.setLocation(location);
+
+    Asset newAsset = new Asset();
+    newAsset.setId(2);
+    newAsset.setStatus(AssetStatus.ASSIGNED); // Not available
+    newAsset.setLocation(location);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+    existingAssignment.setAssignedBy(originalAssigner);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Asset is not available for assignment", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
+  void editAssignment_AssetAndAssignerLocationMismatch_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2);
+
+    Location location1 = new Location();
+    location1.setId(1);
+
+    Location location2 = new Location();
+    location2.setId(2);
+
+    User originalAssigner = new User();
+    originalAssigner.setId(1);
+    originalAssigner.setLocation(location1);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+    newAssignee.setLocation(location1);
+
+    Asset newAsset = new Asset();
+    newAsset.setId(2);
+    newAsset.setStatus(AssetStatus.AVAILABLE);
+    newAsset.setLocation(location2); // Different location from assigner
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+    existingAssignment.setAssignedBy(originalAssigner);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Asset must be in the same location with assigner", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
 }
