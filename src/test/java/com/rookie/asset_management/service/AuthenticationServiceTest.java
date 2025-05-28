@@ -13,6 +13,8 @@ import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.AuthenticationServiceImpl;
 import com.rookie.asset_management.util.SecurityUtils;
 import jakarta.servlet.http.HttpServletResponse;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,33 +25,23 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.*;
 import org.springframework.security.core.Authentication;
-import org.springframework.security.core.GrantedAuthority;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
-import java.util.Collection;
-import java.util.List;
-import java.util.Optional;
-
 @ExtendWith(MockitoExtension.class)
 class AuthenticationServiceTest {
 
-  @Mock
-  private AuthenticationManager authenticationManager;
+  @Mock private AuthenticationManager authenticationManager;
 
-  @Mock
-  private PasswordEncoder passwordEncoder;
+  @Mock private PasswordEncoder passwordEncoder;
 
-  @Mock
-  private UserRepository userRepository;
+  @Mock private UserRepository userRepository;
 
-  @Mock
-  private JwtService jwtService;
+  @Mock private JwtService jwtService;
 
-  @InjectMocks
-  private AuthenticationServiceImpl authenticationService;
+  @InjectMocks private AuthenticationServiceImpl authenticationService;
 
   private User user;
   private HttpServletResponse response;
@@ -75,17 +67,13 @@ class AuthenticationServiceTest {
   @DisplayName("Login successfully with valid credentials")
   void login_Successful() {
     // GIVEN
-    LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
-        .username("testuser")
-        .password("password")
-        .build();
+    LoginRequestDTO loginRequestDTO =
+        LoginRequestDTO.builder().username("testuser").password("password").build();
 
     // Use real UserDetails implementation
-    UserDetails userDetails = new org.springframework.security.core.userdetails.User(
-        "testuser",
-        "password",
-        List.of(new SimpleGrantedAuthority("ROLE_ADMIN"))
-    );
+    UserDetails userDetails =
+        new org.springframework.security.core.userdetails.User(
+            "testuser", "password", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
     Authentication authentication = mock(Authentication.class);
     when(authentication.getPrincipal()).thenReturn(userDetails);
@@ -113,17 +101,16 @@ class AuthenticationServiceTest {
   @DisplayName("Login fails due to incorrect password")
   void login_Fail_BadCredentials() {
     // GIVEN
-    LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
-        .username("testuser")
-        .password("wrongpassword")
-        .build();
+    LoginRequestDTO loginRequestDTO =
+        LoginRequestDTO.builder().username("testuser").password("wrongpassword").build();
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenThrow(new BadCredentialsException("Incorrect password"));
 
     // WHEN & THEN
-    AppException exception = assertThrows(AppException.class,
-        () -> authenticationService.login(loginRequestDTO, response));
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.login(loginRequestDTO, response));
     assertEquals(HttpStatus.UNAUTHORIZED, exception.getHttpStatusCode());
     assertEquals("Incorrect password", exception.getMessage());
     verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
@@ -133,17 +120,16 @@ class AuthenticationServiceTest {
   @DisplayName("Login fails due to locked account")
   void login_Fail_AccountLocked() {
     // GIVEN
-    LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
-        .username("testuser")
-        .password("password")
-        .build();
+    LoginRequestDTO loginRequestDTO =
+        LoginRequestDTO.builder().username("testuser").password("password").build();
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenThrow(new LockedException("Account is locked"));
 
     // WHEN & THEN
-    AppException exception = assertThrows(AppException.class,
-        () -> authenticationService.login(loginRequestDTO, response));
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.login(loginRequestDTO, response));
     assertEquals(HttpStatus.UNAUTHORIZED, exception.getHttpStatusCode());
     assertEquals("Account is locked", exception.getMessage());
     verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
@@ -153,17 +139,16 @@ class AuthenticationServiceTest {
   @DisplayName("Login fails due to disabled account")
   void login_Fail_AccountDisabled() {
     // GIVEN
-    LoginRequestDTO loginRequestDTO = LoginRequestDTO.builder()
-        .username("testuser")
-        .password("password")
-        .build();
+    LoginRequestDTO loginRequestDTO =
+        LoginRequestDTO.builder().username("testuser").password("password").build();
 
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenThrow(new DisabledException("Account is disabled"));
 
     // WHEN & THEN
-    AppException exception = assertThrows(AppException.class,
-        () -> authenticationService.login(loginRequestDTO, response));
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.login(loginRequestDTO, response));
     assertEquals(HttpStatus.UNAUTHORIZED, exception.getHttpStatusCode());
     assertEquals("Account is disabled", exception.getMessage());
     verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
@@ -173,10 +158,11 @@ class AuthenticationServiceTest {
   @DisplayName("Change password successfully")
   void changePassword_Successful() {
     // GIVEN
-    ChangePasswordRequestDTO request = ChangePasswordRequestDTO.builder()
-        .oldPassword("oldPassword")
-        .newPassword("newPassword")
-        .build();
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("oldPassword")
+            .newPassword("newPassword")
+            .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
@@ -198,18 +184,20 @@ class AuthenticationServiceTest {
   @DisplayName("Change password fails due to incorrect old password")
   void changePassword_Fail_IncorrectOldPassword() {
     // GIVEN
-    ChangePasswordRequestDTO request = ChangePasswordRequestDTO.builder()
-        .oldPassword("wrongOldPassword")
-        .newPassword("newPassword")
-        .build();
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("wrongOldPassword")
+            .newPassword("newPassword")
+            .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
     when(passwordEncoder.matches("wrongOldPassword", "encodedPassword")).thenReturn(false);
 
     // WHEN & THEN
-    AppException exception = assertThrows(AppException.class,
-        () -> authenticationService.changePassword(request, response));
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
     assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
     assertEquals("Incorrect password!", exception.getMessage());
     verify(userRepository, never()).save(any(User.class));
@@ -219,10 +207,11 @@ class AuthenticationServiceTest {
   @DisplayName("Change password fails due to new password being the same as old password")
   void changePassword_Fail_NewPasswordSameAsOld() {
     // GIVEN
-    ChangePasswordRequestDTO request = ChangePasswordRequestDTO.builder()
-        .oldPassword("oldPassword")
-        .newPassword("oldPassword")
-        .build();
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("oldPassword")
+            .newPassword("oldPassword")
+            .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
@@ -230,8 +219,9 @@ class AuthenticationServiceTest {
     when(passwordEncoder.matches("oldPassword", "encodedPassword")).thenReturn(true);
 
     // WHEN & THEN
-    AppException exception = assertThrows(AppException.class,
-        () -> authenticationService.changePassword(request, response));
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
     assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
     assertEquals("New password must be different to the old one", exception.getMessage());
     verify(userRepository, never()).save(any(User.class));
@@ -241,17 +231,19 @@ class AuthenticationServiceTest {
   @DisplayName("Change password fails due to user not found")
   void changePassword_Fail_UserNotFound() {
     // GIVEN
-    ChangePasswordRequestDTO request = ChangePasswordRequestDTO.builder()
-        .oldPassword("oldPassword")
-        .newPassword("newPassword")
-        .build();
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("oldPassword")
+            .newPassword("newPassword")
+            .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
 
     // WHEN & THEN
-    AppException exception = assertThrows(AppException.class,
-        () -> authenticationService.changePassword(request, response));
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("User Not Found", exception.getMessage());
     verify(userRepository, never()).save(any(User.class));
