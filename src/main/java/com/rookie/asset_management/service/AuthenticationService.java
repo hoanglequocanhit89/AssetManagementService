@@ -1,6 +1,7 @@
 package com.rookie.asset_management.service;
 
 import com.rookie.asset_management.dto.request.authentication.ChangePasswordRequestDTO;
+import com.rookie.asset_management.dto.request.authentication.FirstLoginChangePasswordRequestDTO;
 import com.rookie.asset_management.dto.request.authentication.LoginRequestDTO;
 import com.rookie.asset_management.dto.response.authentication.LoginResponseDTO;
 import jakarta.servlet.http.HttpServletResponse;
@@ -55,4 +56,23 @@ public interface AuthenticationService {
    * @param response the HTTP response used to clear the JWT token (e.g., by removing the cookie)
    */
   void logout(HttpServletResponse response);
+
+  /**
+   * Changes the password for a user on their first login.
+   *
+   * <p>This method updates the user's password using the provided new password without requiring
+   * the old password, intended for first-time login scenarios. It updates the user's password in
+   * the data source, sets the first login flag to false, and may refresh the JWT token to maintain
+   * the user session.
+   *
+   * @param firstLoginChangePasswordRequestDTO the data transfer object containing the new password
+   * @param response the HTTP response used to update the JWT token (e.g., as a cookie)
+   * @return a string message indicating the result of the operation (e.g., "Password changed
+   *     successfully!")
+   * @throws com.rookie.asset_management.exception.AppException if the password change fails (e.g.,
+   *     new password matches the old one or unauthorized access)
+   */
+  String firstLoginChangePassword(
+      FirstLoginChangePasswordRequestDTO firstLoginChangePasswordRequestDTO,
+      HttpServletResponse response);
 }
