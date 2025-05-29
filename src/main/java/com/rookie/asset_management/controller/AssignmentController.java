@@ -5,6 +5,7 @@ import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignment
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDetailForEditResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
@@ -118,6 +119,16 @@ public class AssignmentController {
         ApiDtoResponse.<AssignmentStatusResponse>builder()
             .message("Assignment updated successfully.")
             .data(assignmentService.responseToAssignment(assignmentId, status))
+            .build());
+  }
+
+  @GetMapping("/{assignmentId}/update")
+  public ResponseEntity<ApiDtoResponse<AssignmentDetailForEditResponse>> getAssignmentDetailForEdit(
+      @PathVariable Integer assignmentId) {
+    return ResponseEntity.ok(
+        ApiDtoResponse.<AssignmentDetailForEditResponse>builder()
+            .message("Assignment retrieved successfully")
+            .data(assignmentService.getAssignmentDetailForEdit(assignmentId))
             .build());
   }
 }
