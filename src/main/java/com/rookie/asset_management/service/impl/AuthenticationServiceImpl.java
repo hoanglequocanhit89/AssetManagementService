@@ -1,6 +1,7 @@
 package com.rookie.asset_management.service.impl;
 
 import com.rookie.asset_management.dto.request.authentication.ChangePasswordRequestDTO;
+import com.rookie.asset_management.dto.request.authentication.FirstLoginChangePasswordRequestDTO;
 import com.rookie.asset_management.dto.request.authentication.LoginRequestDTO;
 import com.rookie.asset_management.dto.response.authentication.LoginResponseDTO;
 import com.rookie.asset_management.entity.User;
@@ -61,7 +62,11 @@ public class AuthenticationServiceImpl implements AuthenticationService {
 
       Boolean isFirstLogin = SecurityUtils.isFirstLogin();
 
-      return LoginResponseDTO.builder().role(role).isFirstLogin(isFirstLogin).build();
+      return LoginResponseDTO.builder()
+          .role(role)
+          .username(userDetails.getUsername())
+          .isFirstLogin(isFirstLogin)
+          .build();
 
     } catch (BadCredentialsException e) {
       throw new AppException(HttpStatus.UNAUTHORIZED, "Incorrect password");
@@ -99,5 +104,27 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   @Override
   public void logout(HttpServletResponse response) {
     jwtService.removeTokenFromCookie(response);
+  }
+
+  @Override
+  public String firstLoginChangePassword(
+      FirstLoginChangePasswordRequestDTO firstLoginChangePasswordRequestDTO,
+      HttpServletResponse response) {
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+    if (passwordEncoder.matches(
+        firstLoginChangePasswordRequestDTO.getNewPassword(), user.getPassword())) {
+      throw new AppException(HttpStatus.CONFLICT, "New password must be different to the old one");
+    }
+    user.setPassword(passwordEncoder.encode(firstLoginChangePasswordRequestDTO.getNewPassword()));
+    if (user.getFirstLogin()) {
+      user.setFirstLogin(false);
+    }
+    userRepository.save(user);
+    jwtService.generateToken(username, response);
+    return "Password changed successfully!";
   }
 }
