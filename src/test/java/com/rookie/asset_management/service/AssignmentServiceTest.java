@@ -31,9 +31,11 @@ import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -1199,5 +1201,178 @@ public class AssignmentServiceTest {
     // Assert
     assertEquals(AssetStatus.AVAILABLE, asset.getStatus()); // Should remain unchanged
     verify(assetRepository, times(0)).save(any(Asset.class)); // Should not be called
+  }
+
+  @Test
+  void getMyAssignments_OnlyReturnsAssignmentsWithAssignedDateBeforeOrEqualToday_Success() {
+    // Arrange
+    String username = "user";
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+
+    // Assignment with today's date - should be included
+    Assignment assignmentToday = new Assignment();
+    assignmentToday.setId(1);
+    assignmentToday.setAssignedTo(user);
+    assignmentToday.setStatus(AssignmentStatus.WAITING);
+    assignmentToday.setAssignedDate(LocalDate.now());
+    assignmentToday.setDeleted(false);
+
+    // Assignment with past date - should be included
+    Assignment assignmentPast = new Assignment();
+    assignmentPast.setId(2);
+    assignmentPast.setAssignedTo(user);
+    assignmentPast.setStatus(AssignmentStatus.ACCEPTED);
+    assignmentPast.setAssignedDate(LocalDate.now().minusDays(5));
+    assignmentPast.setDeleted(false);
+
+    MyAssignmentDtoResponse responseDto = new MyAssignmentDtoResponse();
+    List<Assignment> assignments = Arrays.asList(assignmentToday, assignmentPast);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class), any(Sort.class)))
+        .thenReturn(assignments);
+    when(assignmentMapper.toMyAssignmentDto(any(Assignment.class))).thenReturn(responseDto);
+
+    // Act
+    ApiDtoResponse<List<MyAssignmentDtoResponse>> result =
+        assignmentService.getMyAssignments("assetCode", "asc");
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(2, result.getData().size());
+    assertEquals("My assignments retrieved successfully", result.getMessage());
+
+    // Verify that the specification includes the assigned date filter
+    verify(assignmentRepository, times(1)).findAll(any(Specification.class), any(Sort.class));
+  }
+
+  @Test
+  void getMyAssignments_VerifySpecificationIncludesAssignedDateFilter() {
+    // Arrange
+    String username = "user";
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class), any(Sort.class)))
+        .thenReturn(Collections.emptyList());
+
+    // Act
+    assignmentService.getMyAssignments("assetCode", "asc");
+
+    // Assert
+    ArgumentCaptor<Specification<Assignment>> specCaptor =
+        ArgumentCaptor.forClass(Specification.class);
+    verify(assignmentRepository).findAll(specCaptor.capture(), any(Sort.class));
+
+    assertNotNull(specCaptor.getValue());
+  }
+
+  @Test
+  void getMyAssignments_WithStatusSort_VerifyAssignedDateFilter() {
+    // Arrange
+    String username = "user";
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+
+    Assignment assignment1 = new Assignment();
+    assignment1.setId(1);
+    assignment1.setAssignedTo(user);
+    assignment1.setStatus(AssignmentStatus.ACCEPTED);
+    assignment1.setAssignedDate(LocalDate.now().minusDays(1));
+    assignment1.setDeleted(false);
+
+    Assignment assignment2 = new Assignment();
+    assignment2.setId(2);
+    assignment2.setAssignedTo(user);
+    assignment2.setStatus(AssignmentStatus.WAITING);
+    assignment2.setAssignedDate(LocalDate.now());
+    assignment2.setDeleted(false);
+
+    MyAssignmentDtoResponse responseDto = new MyAssignmentDtoResponse();
+    List<Assignment> assignments = Arrays.asList(assignment1, assignment2);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class))).thenReturn(assignments);
+    when(assignmentMapper.toMyAssignmentDto(any(Assignment.class))).thenReturn(responseDto);
+
+    // Act
+    ApiDtoResponse<List<MyAssignmentDtoResponse>> result =
+        assignmentService.getMyAssignments("status", "asc");
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(2, result.getData().size());
+    assertEquals("My assignments retrieved successfully", result.getMessage());
+
+    // Verify that specification is called
+    ArgumentCaptor<Specification<Assignment>> specCaptor =
+        ArgumentCaptor.forClass(Specification.class);
+    verify(assignmentRepository).findAll(specCaptor.capture());
+    assertNotNull(specCaptor.getValue());
+  }
+
+  @Test
+  void getMyAssignments_EmptyResult_WhenNoAssignmentsMatchDateFilter() {
+    // Arrange
+    String username = "user";
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class), any(Sort.class)))
+        .thenReturn(Collections.emptyList());
+
+    // Act
+    ApiDtoResponse<List<MyAssignmentDtoResponse>> result =
+        assignmentService.getMyAssignments("assetCode", "asc");
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(0, result.getData().size());
+    assertEquals("My assignments retrieved successfully", result.getMessage());
+    verify(assignmentRepository, times(1)).findAll(any(Specification.class), any(Sort.class));
+  }
+
+  @Test
+  void getMyAssignments_VerifyAllSpecificationFiltersApplied() {
+    // Arrange
+    String username = "user";
+    User user = new User();
+    user.setId(1);
+    user.setUsername(username);
+
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
+    when(assignmentRepository.findAll(any(Specification.class), any(Sort.class)))
+        .thenReturn(Collections.emptyList());
+
+    // Act
+    assignmentService.getMyAssignments("id", "desc");
+
+    // Assert
+    ArgumentCaptor<Specification<Assignment>> specCaptor =
+        ArgumentCaptor.forClass(Specification.class);
+    ArgumentCaptor<Sort> sortCaptor = ArgumentCaptor.forClass(Sort.class);
+
+    verify(assignmentRepository).findAll(specCaptor.capture(), sortCaptor.capture());
+
+    // Verify specification is not null
+    assertNotNull(specCaptor.getValue());
+
+    // Verify sort is applied correctly
+    Sort capturedSort = sortCaptor.getValue();
+    assertNotNull(capturedSort);
+    assertEquals(
+        Sort.Direction.DESC, Objects.requireNonNull(capturedSort.getOrderFor("id")).getDirection());
   }
 }
