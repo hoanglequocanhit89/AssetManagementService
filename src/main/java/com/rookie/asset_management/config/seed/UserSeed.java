@@ -74,6 +74,7 @@ public class UserSeed implements CommandLineRunner {
             locationDN,
             Gender.MALE);
     adminRole.setUsers(List.of(adminUser1));
+    adminUser1.setFirstLogin(false);
     adminUser1.setStaffCode("ADMIN1");
 
     User adminUser2 =
@@ -87,6 +88,7 @@ public class UserSeed implements CommandLineRunner {
             locationHCM,
             Gender.MALE);
     adminRole.setUsers(List.of(adminUser2));
+    adminUser2.setFirstLogin(false);
     adminUser2.setStaffCode("ADMIN2");
 
     User adminUser3 =
@@ -100,6 +102,7 @@ public class UserSeed implements CommandLineRunner {
             locationHN,
             Gender.FEMALE);
     adminRole.setUsers(List.of(adminUser3));
+    adminUser3.setFirstLogin(false);
     adminUser3.setStaffCode("ADMIN3");
 
     // Create users
@@ -115,6 +118,7 @@ public class UserSeed implements CommandLineRunner {
             Gender.MALE);
     staffRole.setUsers(List.of(staffUser1));
     staffUser1.setStaffCode("STAFF1");
+    staffUser1.setFirstLogin(false);
 
     User staffUser2 =
         getUser(
@@ -141,6 +145,7 @@ public class UserSeed implements CommandLineRunner {
             Gender.FEMALE);
     staffRole.setUsers(List.of(staffUser3));
     staffUser3.setStaffCode("STAFF3");
+    staffUser3.setFirstLogin(false);
 
     User staffUser4 =
         getUser(
@@ -167,6 +172,7 @@ public class UserSeed implements CommandLineRunner {
             Gender.MALE);
     staffRole.setUsers(List.of(staffUser5));
     staffUser5.setStaffCode("STAFF5");
+    staffUser5.setFirstLogin(false);
 
     User staffUser6 =
         getUser(
