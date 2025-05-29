@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignment
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDetailForEditResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
@@ -90,4 +91,12 @@ public interface AssignmentService {
    *     after the response
    */
   AssignmentStatusResponse responseToAssignment(int assignmentId, AssignmentStatus status);
+
+  /**
+   * Retrieves detailed information for editing an assignment.
+   *
+   * @param assignmentId the ID of the assignment to retrieve details for editing
+   * @return an {@link AssignmentDetailForEditResponse} containing the details needed for editing
+   */
+  AssignmentDetailForEditResponse getAssignmentDetailForEdit(int assignmentId);
 }

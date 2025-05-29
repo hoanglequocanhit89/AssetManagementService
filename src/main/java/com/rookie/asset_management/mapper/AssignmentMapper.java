@@ -1,6 +1,7 @@
 package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDetailForEditResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
@@ -8,7 +9,9 @@ import com.rookie.asset_management.entity.User;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 
-@Mapper(componentModel = "spring")
+@Mapper(
+    componentModel = "spring",
+    uses = {UserMapper.class})
 public interface AssignmentMapper extends PagingMapper<Assignment, AssignmentListDtoResponse> {
   @Override
   @Mapping(target = "id", source = "id")
@@ -43,6 +46,13 @@ public interface AssignmentMapper extends PagingMapper<Assignment, AssignmentLis
   @Mapping(target = "assignedDate", source = "assignedDate", dateFormat = "yyyy-MM-dd")
   @Mapping(target = "status", source = "status")
   MyAssignmentDtoResponse toMyAssignmentDto(Assignment entity);
+
+  @Mapping(source = "assignedTo", target = "user", qualifiedByName = "toUserBriefDto")
+  @Mapping(target = "asset.id", source = "asset.id")
+  @Mapping(target = "asset.assetCode", source = "asset.assetCode")
+  @Mapping(target = "asset.assetName", source = "asset.name")
+  @Mapping(target = "asset.categoryName", source = "asset.category.name")
+  AssignmentDetailForEditResponse toDetailForEditDto(Assignment assignment);
 
   default String toAssigningUser(User user) {
     if (user == null) {

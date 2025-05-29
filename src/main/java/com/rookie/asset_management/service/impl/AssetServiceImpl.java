@@ -412,6 +412,19 @@ public class AssetServiceImpl implements AssetService {
     // Filter by AVAILABLE status
     specBuilder.add((root, query, cb) -> cb.equal(root.get("status"), AssetStatus.AVAILABLE));
 
+    // Filter to only get asset that doesn't have any assignment in WAITING status
+    specBuilder.add(
+        (root, query, cb) -> {
+          var subquery = query.subquery(Long.class);
+          var subRoot = subquery.from(Asset.class);
+          subquery
+              .select(cb.literal(1L))
+              .where(
+                  cb.equal(root, subRoot),
+                  cb.equal(subRoot.join("assignments").get("status"), AssetStatus.WAITING));
+          return cb.not(cb.exists(subquery));
+        });
+
     // Create sorting object
     Sort sort =
         "asc".equalsIgnoreCase(sortDir)
