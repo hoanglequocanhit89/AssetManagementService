@@ -24,6 +24,7 @@ import com.rookie.asset_management.service.specification.AssignmentSpecification
 import com.rookie.asset_management.util.SpecificationBuilder;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
@@ -158,8 +159,9 @@ public class AssignmentServiceImpl
     }
 
     // check if asset doesn't have any assignment in WAITING status
-    if (assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
-        asset, AssignmentStatus.WAITING)) {
+    if ((!Objects.equals(assignment.getAsset().getId(), request.getAssetId())
+        && assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
+            asset, AssignmentStatus.WAITING))) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Asset already has a waiting assignment");
     }
 
