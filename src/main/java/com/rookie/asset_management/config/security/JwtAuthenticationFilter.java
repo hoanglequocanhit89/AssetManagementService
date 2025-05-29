@@ -1,6 +1,5 @@
 package com.rookie.asset_management.config.security;
 
-import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.service.CustomUserDetailsService;
 import com.rookie.asset_management.service.JwtService;
 import jakarta.servlet.FilterChain;
@@ -11,7 +10,6 @@ import java.io.IOException;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
-import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContext;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -54,7 +52,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       context.setAuthentication(authToken);
       SecurityContextHolder.setContext(context);
     } catch (Exception e) {
-      throw new AppException(HttpStatus.UNAUTHORIZED, "Invalid JWT token");
+      filterChain.doFilter(request, response);
     }
 
     filterChain.doFilter(request, response);

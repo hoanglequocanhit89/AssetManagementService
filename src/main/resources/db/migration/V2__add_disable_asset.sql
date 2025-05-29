@@ -1,0 +1,6 @@
+ALTER TABLE assets
+    ADD COLUMN disabled BOOLEAN NOT NULL DEFAULT FALSE;
+
+UPDATE assets
+SET disabled = FALSE
+WHERE disabled IS NULL;

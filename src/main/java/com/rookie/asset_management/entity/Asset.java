@@ -62,7 +62,9 @@ public class Asset extends BaseEntityAudit {
   @Override
   public void prePersist() {
     super.prePersist();
-    this.disabled = false;
+    if (this.disabled == null) {
+      this.disabled = false;
+    }
   }
 
   @PostPersist
