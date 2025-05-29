@@ -17,6 +17,7 @@ import java.util.List;
 import org.mapstruct.Mapper;
 import org.mapstruct.Mapping;
 import org.mapstruct.MappingTarget;
+import org.mapstruct.Named;
 import org.mapstruct.NullValuePropertyMappingStrategy;
 
 /**
@@ -172,5 +173,6 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
    */
   @Mapping(target = "role", source = "role.name")
   @Mapping(target = "fullName", expression = "java(user.getUserProfile().getFullName())")
+  @Named("toUserBriefDto")
   UserBriefDtoResponse toUserBriefDto(User user);
 }

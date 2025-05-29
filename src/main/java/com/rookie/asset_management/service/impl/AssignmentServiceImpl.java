@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignment
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentDetailDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDetailForEditResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentListDtoResponse;
 import com.rookie.asset_management.dto.response.assignment.AssignmentStatusResponse;
 import com.rookie.asset_management.dto.response.assignment.MyAssignmentDtoResponse;
@@ -78,6 +79,12 @@ public class AssignmentServiceImpl
       throw new AppException(HttpStatus.BAD_REQUEST, "Asset is not available for assignment");
     }
 
+    // check if asset doesn't have any assignment in WAITING status
+    if (assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
+        asset, AssignmentStatus.WAITING)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Asset already has a waiting assignment");
+    }
+
     // Get the user from JWT token
     String username = jwtService.extractUsername();
     User assigner =
@@ -148,6 +155,12 @@ public class AssignmentServiceImpl
     // check if the asset is available for assignment
     if (!asset.getStatus().equals(AssetStatus.AVAILABLE)) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Asset is not available for assignment");
+    }
+
+    // check if asset doesn't have any assignment in WAITING status
+    if (assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
+        asset, AssignmentStatus.WAITING)) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Asset already has a waiting assignment");
     }
 
     // check if the asset is in the same location with assigner
@@ -420,5 +433,30 @@ public class AssignmentServiceImpl
         .id(assignmentId)
         .status(assignment.getStatus())
         .build();
+  }
+
+  @Override
+  public AssignmentDetailForEditResponse getAssignmentDetailForEdit(int assignmentId) {
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+    }
+
+    Assignment assignment =
+        assignmentRepository
+            .findByIdAndDeletedFalse(assignmentId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Assignment not found"));
+
+    if (!assignment.getAsset().getLocation().getId().equals(user.getLocation().getId())
+        || !assignment.getAssignedTo().getLocation().getId().equals(user.getLocation().getId())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Assignment not in admin's location");
+    }
+
+    return assignmentMapper.toDetailForEditDto(assignment);
   }
 }
