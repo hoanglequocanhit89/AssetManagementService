@@ -2,6 +2,7 @@ package com.rookie.asset_management.controller;
 
 import com.rookie.asset_management.constant.ApiPaths;
 import com.rookie.asset_management.dto.request.authentication.ChangePasswordRequestDTO;
+import com.rookie.asset_management.dto.request.authentication.FirstLoginChangePasswordRequestDTO;
 import com.rookie.asset_management.dto.request.authentication.LoginRequestDTO;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.authentication.LoginResponseDTO;
@@ -32,7 +33,7 @@ public class AuthController {
     return ResponseEntity.ok(responseDTO);
   }
 
-  @PatchMapping("/change-password")
+  @PutMapping("/change-password")
   public ResponseEntity<ApiDtoResponse<Void>> changePassword(
       @RequestBody ChangePasswordRequestDTO request, HttpServletResponse response) {
     ApiDtoResponse<Void> responseDTO =
@@ -47,6 +48,14 @@ public class AuthController {
     authenticationService.logout(response);
     ApiDtoResponse<Void> responseDTO =
         ApiDtoResponse.<Void>builder().message("Logout successfully").build();
+    return ResponseEntity.ok(responseDTO);
+  }
+
+  @PostMapping("/first-login-change-password")
+  public ResponseEntity<ApiDtoResponse<Void>> firstLoginChangePassword(
+      @RequestBody FirstLoginChangePasswordRequestDTO request, HttpServletResponse response) {
+    String result = authenticationService.firstLoginChangePassword(request, response);
+    ApiDtoResponse<Void> responseDTO = ApiDtoResponse.<Void>builder().message(result).build();
     return ResponseEntity.ok(responseDTO);
   }
 }

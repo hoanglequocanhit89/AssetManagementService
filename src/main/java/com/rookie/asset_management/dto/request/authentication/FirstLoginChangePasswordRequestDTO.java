@@ -1,4 +1,4 @@
-package com.rookie.asset_management.dto.response.authentication;
+package com.rookie.asset_management.dto.request.authentication;
 
 import lombok.*;
 import lombok.experimental.FieldDefaults;
@@ -8,8 +8,6 @@ import lombok.experimental.FieldDefaults;
 @AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
 @Builder
-public class LoginResponseDTO {
-  String role;
-  String username;
-  Boolean isFirstLogin;
+public class FirstLoginChangePasswordRequestDTO {
+  String newPassword;
 }
