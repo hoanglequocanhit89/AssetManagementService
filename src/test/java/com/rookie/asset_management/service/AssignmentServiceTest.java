@@ -37,11 +37,14 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.mockito.junit.jupiter.MockitoSettings;
+import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
+@MockitoSettings(strictness = Strictness.LENIENT)
 public class AssignmentServiceTest {
 
   @Mock private AssignmentRepository assignmentRepository;
@@ -231,6 +234,11 @@ public class AssignmentServiceTest {
     newAssignee.setId(2);
     newAssignee.setLocation(location);
 
+    Asset oldAsset = new Asset();
+    oldAsset.setId(1);
+    oldAsset.setStatus(AssetStatus.AVAILABLE);
+    oldAsset.setLocation(location);
+
     Asset newAsset = new Asset();
     newAsset.setId(2);
     newAsset.setStatus(AssetStatus.AVAILABLE);
@@ -240,12 +248,16 @@ public class AssignmentServiceTest {
     existingAssignment.setId(assignmentId);
     existingAssignment.setStatus(AssignmentStatus.WAITING);
     existingAssignment.setAssignedBy(originalAssigner);
+    existingAssignment.setAsset(oldAsset);
 
     AssignmentListDtoResponse response = new AssignmentListDtoResponse();
 
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
     when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
     when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+    when(assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
+            newAsset, AssignmentStatus.WAITING))
+        .thenReturn(false);
     when(assignmentRepository.save(any(Assignment.class))).thenReturn(existingAssignment);
     when(assignmentMapper.toDto(any(Assignment.class))).thenReturn(response);
 
@@ -259,6 +271,57 @@ public class AssignmentServiceTest {
     assertEquals(newAsset, existingAssignment.getAsset());
     assertEquals(request.getNote(), existingAssignment.getNote());
     assertEquals(request.getAssignedDate(), existingAssignment.getAssignedDate());
+  }
+
+  @Test
+  void editAssignment_SameAsset_Success() {
+    // Arrange - Test case where asset ID remains the same
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(1); // Same asset ID
+    request.setAssignedDate(LocalDate.now().plusDays(1));
+    request.setNote("Updated Note");
+
+    Location location = new Location();
+    location.setId(1);
+
+    User originalAssigner = new User();
+    originalAssigner.setId(1);
+    originalAssigner.setLocation(location);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+    newAssignee.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING); // Must be WAITING to be editable
+    existingAssignment.setAssignedBy(originalAssigner);
+    existingAssignment.setAsset(asset);
+
+    AssignmentListDtoResponse response = new AssignmentListDtoResponse();
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
+    when(assignmentRepository.save(any(Assignment.class))).thenReturn(existingAssignment);
+    when(assignmentMapper.toDto(any(Assignment.class))).thenReturn(response);
+
+    // Act
+    AssignmentListDtoResponse result = assignmentService.editAssignment(assignmentId, request);
+
+    // Assert
+    assertNotNull(result);
+    verify(assignmentRepository, times(1)).save(any(Assignment.class));
+    // Should not check for waiting assignment since it's the same asset
+    verify(assignmentRepository, times(0))
+        .existsByAssetAndStatusAndDeletedFalse(any(Asset.class), any(AssignmentStatus.class));
   }
 
   @Test
@@ -278,7 +341,7 @@ public class AssignmentServiceTest {
   }
 
   @Test
-  void editAssignment_AssignmentNotInWaitingState_ThrowsException() {
+  void editAssignment_NotInWaitingState_ThrowsException() {
     // Arrange
     int assignmentId = 1;
     CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
@@ -352,7 +415,7 @@ public class AssignmentServiceTest {
     int assignmentId = 1;
     CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
     request.setUserId(2);
-    request.setAssetId(2);
+    request.setAssetId(1);
 
     Location location1 = new Location();
     location1.setId(1);
@@ -368,17 +431,20 @@ public class AssignmentServiceTest {
     newAssignee.setId(2);
     newAssignee.setLocation(location2); // Different location
 
-    Asset newAsset = new Asset();
-    newAsset.setId(2);
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setStatus(AssetStatus.AVAILABLE);
+    asset.setLocation(location1);
 
     Assignment existingAssignment = new Assignment();
     existingAssignment.setId(assignmentId);
     existingAssignment.setStatus(AssignmentStatus.WAITING);
     existingAssignment.setAssignedBy(originalAssigner);
+    existingAssignment.setAsset(asset);
 
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
     when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
-    when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+    when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
 
     // Act & Assert
     AppException exception =
@@ -430,6 +496,54 @@ public class AssignmentServiceTest {
   }
 
   @Test
+  void editAssignment_AssetHasWaitingAssignment_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2); // Different asset
+
+    Location location = new Location();
+    location.setId(1);
+
+    User originalAssigner = new User();
+    originalAssigner.setId(1);
+    originalAssigner.setLocation(location);
+
+    User newAssignee = new User();
+    newAssignee.setId(2);
+    newAssignee.setLocation(location);
+
+    Asset oldAsset = new Asset();
+    oldAsset.setId(1);
+
+    Asset newAsset = new Asset();
+    newAsset.setId(2);
+    newAsset.setStatus(AssetStatus.AVAILABLE);
+    newAsset.setLocation(location);
+
+    Assignment existingAssignment = new Assignment();
+    existingAssignment.setId(assignmentId);
+    existingAssignment.setStatus(AssignmentStatus.WAITING);
+    existingAssignment.setAssignedBy(originalAssigner);
+    existingAssignment.setAsset(oldAsset);
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
+    when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
+    when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+    when(assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
+            newAsset, AssignmentStatus.WAITING))
+        .thenReturn(true); // Asset already has a waiting assignment
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals("Asset already has a waiting assignment", exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
   void editAssignment_AssetAndAssignerLocationMismatch_ThrowsException() {
     // Arrange
     int assignmentId = 1;
@@ -451,6 +565,9 @@ public class AssignmentServiceTest {
     newAssignee.setId(2);
     newAssignee.setLocation(location1);
 
+    Asset oldAsset = new Asset();
+    oldAsset.setId(1);
+
     Asset newAsset = new Asset();
     newAsset.setId(2);
     newAsset.setStatus(AssetStatus.AVAILABLE);
@@ -460,10 +577,14 @@ public class AssignmentServiceTest {
     existingAssignment.setId(assignmentId);
     existingAssignment.setStatus(AssignmentStatus.WAITING);
     existingAssignment.setAssignedBy(originalAssigner);
+    existingAssignment.setAsset(oldAsset);
 
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(existingAssignment));
     when(userRepository.findById(2)).thenReturn(Optional.of(newAssignee));
     when(assetRepository.findById(2)).thenReturn(Optional.of(newAsset));
+    when(assignmentRepository.existsByAssetAndStatusAndDeletedFalse(
+            newAsset, AssignmentStatus.WAITING))
+        .thenReturn(false);
 
     // Act & Assert
     AppException exception =
