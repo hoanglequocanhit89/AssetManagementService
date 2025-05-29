@@ -12,7 +12,6 @@ services:
       POSTGRES_DB: ${POSTGRES_DB}
     volumes:
       - postgres_data:/var/lib/postgresql/data
-      - ./postgres-init.sql:/docker-entrypoint-initdb.d/postgres-init.sql
     networks:
         - asset_management_network
     restart: unless-stopped
@@ -44,11 +43,6 @@ services:
         postgres:
             condition: service_healthy
     command: ["mvn", "spring-boot:run"]
-    healthcheck:
-      test: ["CMD-SHELL", "curl -f http://localhost:8080/actuator/health || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 5
 
 volumes:
   postgres_data:
