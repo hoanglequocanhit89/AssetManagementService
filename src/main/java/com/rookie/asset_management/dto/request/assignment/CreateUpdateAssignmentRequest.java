@@ -2,6 +2,7 @@ package com.rookie.asset_management.dto.request.assignment;
 
 import jakarta.validation.constraints.FutureOrPresent;
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Size;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -31,5 +32,6 @@ public class CreateUpdateAssignmentRequest {
   @FutureOrPresent(message = "Assigned date must be today or in the future")
   LocalDate assignedDate;
 
+  @Size(max = 255, message = "Note must be less than or equal to 255 characters")
   String note;
 }
