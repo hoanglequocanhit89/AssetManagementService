@@ -75,8 +75,12 @@ public class User extends BaseEntityAudit {
   @Override
   public void prePersist() {
     super.prePersist();
-    this.disabled = false;
-    this.firstLogin = true;
+    if (disabled == null) {
+      this.disabled = true;
+    }
+    if (this.firstLogin == null) {
+      this.firstLogin = true;
+    }
   }
 
   @PostPersist

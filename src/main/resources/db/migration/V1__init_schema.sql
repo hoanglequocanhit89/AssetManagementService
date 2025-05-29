@@ -174,20 +174,3 @@ ALTER TABLE "users"
 ALTER TABLE "returning_requests"
     ADD FOREIGN KEY("accepted_by") REFERENCES "users"("id")
         ON UPDATE NO ACTION ON DELETE NO ACTION;
-
-ALTER TABLE assets
-ADD COLUMN disabled BOOLEAN NOT NULL DEFAULT FALSE;
-
-UPDATE assets
-SET disabled = FALSE
-WHERE disabled IS NULL;
-
-ALTER TABLE assignments
-ADD COLUMN deleted BOOLEAN NOT NULL DEFAULT FALSE;
-
-UPDATE assignments
-SET deleted = FALSE
-WHERE deleted IS NULL;
-
-alter type ASSIGNMENT_STATUS
-add value 'DECLINED';
