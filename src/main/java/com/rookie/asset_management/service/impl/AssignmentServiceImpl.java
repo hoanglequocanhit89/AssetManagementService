@@ -29,6 +29,7 @@ import java.util.stream.Collectors;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -210,16 +211,20 @@ public class AssignmentServiceImpl
     } else if ("assetCode".equals(sortBy)) {
       effectiveSortBy = "asset.assetCode";
     } else if ("assignedTo".equals(sortBy)) {
-      effectiveSortBy = "assignedTo.userProfile.lastName";
+      effectiveSortBy = "assignedTo.username";
     } else if ("assignedBy".equals(sortBy)) {
-      effectiveSortBy = "assignedBy.userProfile.lastName";
+      effectiveSortBy = "assignedBy.username";
     }
 
     Pageable pageable;
     if ("status".equals(sortBy)) {
       pageable = Pageable.unpaged();
     } else {
-      pageable = createPageable(page, size, sortDir, effectiveSortBy);
+      Sort sort =
+          sortDir.equalsIgnoreCase("asc")
+              ? Sort.by(Sort.Order.asc(effectiveSortBy).ignoreCase())
+              : Sort.by(Sort.Order.desc(effectiveSortBy).ignoreCase());
+      pageable = PageRequest.of(page, size, sort);
     }
 
     // Build specification
@@ -328,6 +333,7 @@ public class AssignmentServiceImpl
                 AssignmentSpecification.hasStatusIn(
                     Arrays.asList(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED)))
             .add(AssignmentSpecification.excludeDeleted())
+            .add(AssignmentSpecification.hasAssignedDateBeforeOrEqualToCurrent())
             .build();
 
     List<Assignment> assignments;
@@ -372,8 +378,8 @@ public class AssignmentServiceImpl
 
       Sort sort =
           sortDir.equalsIgnoreCase("asc")
-              ? Sort.by(effectiveSortBy).ascending()
-              : Sort.by(effectiveSortBy).descending();
+              ? Sort.by(Sort.Order.asc(effectiveSortBy).ignoreCase())
+              : Sort.by(Sort.Order.desc(effectiveSortBy).ignoreCase());
 
       assignments = assignmentRepository.findAll(spec, sort);
     }
