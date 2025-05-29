@@ -137,4 +137,14 @@ public class AssignmentSpecification {
       return null;
     };
   }
+
+  /**
+   * Specification to filter assignments with assigned date less than or equal to the current date.
+   *
+   * @return a Specification that filters assignments by assigned date <= current date
+   */
+  public static Specification<Assignment> hasAssignedDateBeforeOrEqualToCurrent() {
+    return (root, query, criteriaBuilder) ->
+        criteriaBuilder.lessThanOrEqualTo(root.get("assignedDate"), LocalDate.now());
+  }
 }
