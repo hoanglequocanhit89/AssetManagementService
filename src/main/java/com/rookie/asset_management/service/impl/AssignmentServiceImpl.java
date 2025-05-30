@@ -131,6 +131,13 @@ public class AssignmentServiceImpl
             .findById(assignmentId)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
 
+    // Check if assignment is in deleted
+    if (assignment.isDeleted()) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          "Update failed: The Assignment was modified by another user. Please refresh and try again.");
+    }
+
     // Check if assignment is in WAITING state
     if (!assignment.getStatus().equals(AssignmentStatus.WAITING)) {
       throw new AppException(

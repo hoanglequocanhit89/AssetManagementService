@@ -498,6 +498,30 @@ public class AssignmentServiceTest {
   }
 
   @Test
+  void editAssignment_AssignmentDeleted_ThrowsException() {
+    // Arrange
+    int assignmentId = 1;
+    CreateUpdateAssignmentRequest request = new CreateUpdateAssignmentRequest();
+    request.setUserId(2);
+    request.setAssetId(2);
+
+    Assignment deletedAssignment = new Assignment();
+    deletedAssignment.setId(assignmentId);
+    deletedAssignment.setDeleted(true); // Mark the assignment as deleted
+
+    when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(deletedAssignment));
+
+    // Act & Assert
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> assignmentService.editAssignment(assignmentId, request));
+    assertEquals(
+        "Update failed: The Assignment was modified by another user. Please refresh and try again.",
+        exception.getMessage());
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+  }
+
+  @Test
   void editAssignment_AssetHasWaitingAssignment_ThrowsException() {
     // Arrange
     int assignmentId = 1;
