@@ -711,7 +711,7 @@ class AssetServiceTest {
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.findByNameAndLocation("Updated Laptop", location))
+    when(assetRepository.findByNameAndLocationAndIdNot("Updated Laptop", location, assetId))
         .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
@@ -735,7 +735,8 @@ class AssetServiceTest {
     verify(assetRepository, times(1)).findById(assetId);
     verify(jwtService, times(1)).extractUsername();
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).findByNameAndLocation("Updated Laptop", location);
+    verify(assetRepository, times(1))
+        .findByNameAndLocationAndIdNot("Updated Laptop", location, assetId);
     verify(assetRepository, times(1)).save(asset);
   }
 
@@ -990,7 +991,7 @@ class AssetServiceTest {
     verify(assetRepository, times(1)).findById(assetId);
     verify(jwtService, times(1)).extractUsername();
     verify(userRepository, times(1)).findByUsername("nonexistent_user");
-    verify(assetRepository, never()).findByNameAndLocation(any(), any());
+    verify(assetRepository, never()).findByNameAndLocationAndIdNot(any(), any(), any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -1033,7 +1034,7 @@ class AssetServiceTest {
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
     when(jwtService.extractUsername()).thenReturn("admin1");
     when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.findByNameAndLocation("Existing Asset Name", location))
+    when(assetRepository.findByNameAndLocationAndIdNot("Existing Asset Name", location, assetId))
         .thenReturn(mockAsset);
 
     // Act & Assert
@@ -1049,7 +1050,8 @@ class AssetServiceTest {
     verify(assetRepository, times(1)).findById(assetId);
     verify(jwtService, times(1)).extractUsername();
     verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).findByNameAndLocation("Existing Asset Name", location);
+    verify(assetRepository, times(1))
+        .findByNameAndLocationAndIdNot("Existing Asset Name", location, assetId);
     verify(assetRepository, never()).save(any());
   }
 
