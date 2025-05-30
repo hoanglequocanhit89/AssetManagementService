@@ -34,6 +34,23 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   UserRepository userRepository;
   JwtService jwtService;
 
+  private void validatePassword(String password, String fieldName) {
+    if (password == null || password.trim().isEmpty()) {
+      throw new AppException(HttpStatus.BAD_REQUEST, fieldName + " cannot be empty");
+    }
+    if (password.length() < 8 || password.length() > 128) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, fieldName + " must be between 8 and 128 characters");
+    }
+    String passwordPattern = "^(?=.*[A-Z])(?=.*[a-z])(?=.*\\d)(?=.*[@#$%^&+=!]).{8,128}$";
+    if (!password.matches(passwordPattern)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST,
+          fieldName
+              + " must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$%^&+=!)");
+    }
+  }
+
   @Override
   public LoginResponseDTO login(LoginRequestDTO loginRequestDTO, HttpServletResponse response) {
 
@@ -87,12 +104,26 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Validate oldPassword
+    if (changePasswordRequestDTO.getOldPassword() == null
+        || changePasswordRequestDTO.getOldPassword().trim().isEmpty()) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Old password cannot be empty");
+    }
+
+    // Validate newPassword
+    validatePassword(changePasswordRequestDTO.getNewPassword(), "New password");
+
+    // Check if oldPassword matches
     if (!passwordEncoder.matches(changePasswordRequestDTO.getOldPassword(), user.getPassword())) {
       throw new AppException(HttpStatus.CONFLICT, "Incorrect password!");
     }
+
+    // Check if newPassword is different from oldPassword
     if (passwordEncoder.matches(changePasswordRequestDTO.getNewPassword(), user.getPassword())) {
       throw new AppException(HttpStatus.CONFLICT, "New password must be different to the old one");
     }
+
     user.setPassword(passwordEncoder.encode(changePasswordRequestDTO.getNewPassword()));
     if (user.getFirstLogin()) {
       user.setFirstLogin(false);
@@ -115,10 +146,16 @@ public class AuthenticationServiceImpl implements AuthenticationService {
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Validate newPassword
+    validatePassword(firstLoginChangePasswordRequestDTO.getNewPassword(), "New password");
+
+    // Check if newPassword is different from oldPassword
     if (passwordEncoder.matches(
         firstLoginChangePasswordRequestDTO.getNewPassword(), user.getPassword())) {
       throw new AppException(HttpStatus.CONFLICT, "New password must be different to the old one");
     }
+
     user.setPassword(passwordEncoder.encode(firstLoginChangePasswordRequestDTO.getNewPassword()));
     if (user.getFirstLogin()) {
       user.setFirstLogin(false);
