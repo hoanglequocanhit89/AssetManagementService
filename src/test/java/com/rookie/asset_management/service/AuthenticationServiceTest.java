@@ -35,13 +35,9 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 class AuthenticationServiceTest {
 
   @Mock private AuthenticationManager authenticationManager;
-
   @Mock private PasswordEncoder passwordEncoder;
-
   @Mock private UserRepository userRepository;
-
   @Mock private JwtService jwtService;
-
   @InjectMocks private AuthenticationServiceImpl authenticationService;
 
   private User user;
@@ -71,18 +67,15 @@ class AuthenticationServiceTest {
     LoginRequestDTO loginRequestDTO =
         LoginRequestDTO.builder().username("testuser").password("password").build();
 
-    // Use real UserDetails implementation
     UserDetails userDetails =
         new org.springframework.security.core.userdetails.User(
             "testuser", "password", List.of(new SimpleGrantedAuthority("ROLE_ADMIN")));
 
     Authentication authentication = mock(Authentication.class);
     when(authentication.getPrincipal()).thenReturn(userDetails);
-
     when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
         .thenReturn(authentication);
 
-    // Mock SecurityUtils.isFirstLogin
     try (var mockedStatic = mockStatic(SecurityUtils.class)) {
       mockedStatic.when(SecurityUtils::isFirstLogin).thenReturn(true);
 
@@ -92,6 +85,7 @@ class AuthenticationServiceTest {
       // THEN
       assertNotNull(result);
       assertEquals("ROLE_ADMIN", result.getRole());
+      assertEquals("testuser", result.getUsername());
       assertTrue(result.getIsFirstLogin());
       verify(jwtService).generateToken("testuser", response);
       verify(authenticationManager).authenticate(any(UsernamePasswordAuthenticationToken.class));
@@ -161,15 +155,15 @@ class AuthenticationServiceTest {
     // GIVEN
     ChangePasswordRequestDTO request =
         ChangePasswordRequestDTO.builder()
-            .oldPassword("oldPassword")
-            .newPassword("newPassword")
+            .oldPassword("OldPass123!")
+            .newPassword("NewPass123!")
             .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches("oldPassword", "encodedPassword")).thenReturn(true);
-    when(passwordEncoder.matches("newPassword", "encodedPassword")).thenReturn(false);
-    when(passwordEncoder.encode("newPassword")).thenReturn("newEncodedPassword");
+    when(passwordEncoder.matches("OldPass123!", "encodedPassword")).thenReturn(true);
+    when(passwordEncoder.matches("NewPass123!", "encodedPassword")).thenReturn(false);
+    when(passwordEncoder.encode("NewPass123!")).thenReturn("newEncodedPassword");
 
     // WHEN
     String result = authenticationService.changePassword(request, response);
@@ -182,13 +176,125 @@ class AuthenticationServiceTest {
   }
 
   @Test
+  @DisplayName("Change password fails due to empty old password")
+  void changePassword_Fail_EmptyOldPassword() {
+    // GIVEN
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("")
+            .newPassword("NewPass123!")
+            .build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("Old password cannot be empty", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("Change password fails due to null old password")
+  void changePassword_Fail_NullOldPassword() {
+    // GIVEN
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword(null)
+            .newPassword("NewPass123!")
+            .build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("Old password cannot be empty", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("Change password fails due to empty new password")
+  void changePassword_Fail_EmptyNewPassword() {
+    // GIVEN
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("OldPass123!")
+            .newPassword("")
+            .build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("New password cannot be empty", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("Change password fails due to new password too short")
+  void changePassword_Fail_NewPasswordTooShort() {
+    // GIVEN
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("OldPass123!")
+            .newPassword("Ab1!")
+            .build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("New password must be between 8 and 128 characters", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
+  @DisplayName("Change password fails due to new password missing required characters")
+  void changePassword_Fail_NewPasswordMissingRequiredCharacters() {
+    // GIVEN
+    ChangePasswordRequestDTO request =
+        ChangePasswordRequestDTO.builder()
+            .oldPassword("OldPass123!")
+            .newPassword("Abcd1234")
+            .build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> authenticationService.changePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals(
+        "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$%^&+=!)",
+        exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+  }
+
+  @Test
   @DisplayName("Change password fails due to incorrect old password")
   void changePassword_Fail_IncorrectOldPassword() {
     // GIVEN
     ChangePasswordRequestDTO request =
         ChangePasswordRequestDTO.builder()
             .oldPassword("wrongOldPassword")
-            .newPassword("newPassword")
+            .newPassword("NewPass123!")
             .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
@@ -210,14 +316,14 @@ class AuthenticationServiceTest {
     // GIVEN
     ChangePasswordRequestDTO request =
         ChangePasswordRequestDTO.builder()
-            .oldPassword("oldPassword")
-            .newPassword("oldPassword")
+            .oldPassword("OldPass123!")
+            .newPassword("OldPass123!")
             .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches("oldPassword", "encodedPassword")).thenReturn(true);
-    when(passwordEncoder.matches("oldPassword", "encodedPassword")).thenReturn(true);
+    when(passwordEncoder.matches("OldPass123!", "encodedPassword")).thenReturn(true);
+    when(passwordEncoder.matches("OldPass123!", "encodedPassword")).thenReturn(true);
 
     // WHEN & THEN
     AppException exception =
@@ -234,8 +340,8 @@ class AuthenticationServiceTest {
     // GIVEN
     ChangePasswordRequestDTO request =
         ChangePasswordRequestDTO.builder()
-            .oldPassword("oldPassword")
-            .newPassword("newPassword")
+            .oldPassword("OldPass123!")
+            .newPassword("NewPass123!")
             .build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
@@ -265,12 +371,12 @@ class AuthenticationServiceTest {
   void firstLoginChangePassword_Successful() {
     // GIVEN
     FirstLoginChangePasswordRequestDTO request =
-        FirstLoginChangePasswordRequestDTO.builder().newPassword("newPassword").build();
+        FirstLoginChangePasswordRequestDTO.builder().newPassword("NewPass123!").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches("newPassword", "encodedPassword")).thenReturn(false);
-    when(passwordEncoder.encode("newPassword")).thenReturn("newEncodedPassword");
+    when(passwordEncoder.matches("NewPass123!", "encodedPassword")).thenReturn(false);
+    when(passwordEncoder.encode("NewPass123!")).thenReturn("newEncodedPassword");
 
     // WHEN
     String result = authenticationService.firstLoginChangePassword(request, response);
@@ -284,16 +390,101 @@ class AuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName(
-      "First login change password fails due to new password being the same as old password")
-  void firstLoginChangePassword_Fail_NewPasswordSameAsOld() {
+  @DisplayName("First login change password fails due to empty new password")
+  void firstLoginChangePassword_Fail_EmptyNewPassword() {
     // GIVEN
     FirstLoginChangePasswordRequestDTO request =
-        FirstLoginChangePasswordRequestDTO.builder().newPassword("oldPassword").build();
+        FirstLoginChangePasswordRequestDTO.builder().newPassword("").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
-    when(passwordEncoder.matches("oldPassword", "encodedPassword")).thenReturn(true);
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> authenticationService.firstLoginChangePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("New password cannot be empty", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+    verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
+  }
+
+  @Test
+  @DisplayName("First login change password fails due to null new password")
+  void firstLoginChangePassword_Fail_NullNewPassword() {
+    // GIVEN
+    FirstLoginChangePasswordRequestDTO request =
+        FirstLoginChangePasswordRequestDTO.builder().newPassword(null).build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> authenticationService.firstLoginChangePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("New password cannot be empty", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+    verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
+  }
+
+  @Test
+  @DisplayName("First login change password fails due to new password too short")
+  void firstLoginChangePassword_Fail_NewPasswordTooShort() {
+    // GIVEN
+    FirstLoginChangePasswordRequestDTO request =
+        FirstLoginChangePasswordRequestDTO.builder().newPassword("Ab1!").build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> authenticationService.firstLoginChangePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("New password must be between 8 and 128 characters", exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+    verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
+  }
+
+  @Test
+  @DisplayName("First login change password fails due to new password missing required characters")
+  void firstLoginChangePassword_Fail_NewPasswordMissingRequiredCharacters() {
+    // GIVEN
+    FirstLoginChangePasswordRequestDTO request =
+        FirstLoginChangePasswordRequestDTO.builder().newPassword("Abcd1234").build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+
+    // WHEN & THEN
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> authenticationService.firstLoginChangePassword(request, response));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals(
+        "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$%^&+=!)",
+        exception.getMessage());
+    verify(userRepository, never()).save(any(User.class));
+    verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
+  }
+
+  @Test
+  @DisplayName("First login change password fails due to new password being the same as old password")
+  void firstLoginChangePassword_Fail_NewPasswordSameAsOld() {
+    // GIVEN
+    FirstLoginChangePasswordRequestDTO request =
+        FirstLoginChangePasswordRequestDTO.builder().newPassword("OldPass123!").build();
+
+    when(jwtService.extractUsername()).thenReturn("testuser");
+    when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
+    when(passwordEncoder.matches("OldPass123!", "encodedPassword")).thenReturn(true);
 
     // WHEN & THEN
     AppException exception =
@@ -311,7 +502,7 @@ class AuthenticationServiceTest {
   void firstLoginChangePassword_Fail_UserNotFound() {
     // GIVEN
     FirstLoginChangePasswordRequestDTO request =
-        FirstLoginChangePasswordRequestDTO.builder().newPassword("newPassword").build();
+        FirstLoginChangePasswordRequestDTO.builder().newPassword("NewPass123!").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.empty());
