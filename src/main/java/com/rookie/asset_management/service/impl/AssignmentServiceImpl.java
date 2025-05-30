@@ -257,10 +257,6 @@ public class AssignmentServiceImpl
             .findByUsername(username)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
-    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
-      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
-    }
-
     Assignment assignment =
         assignmentRepository
             .findByIdAndDeletedFalse(assignmentId)

@@ -4,23 +4,32 @@ import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.repository.LocationRepository;
 import jakarta.transaction.Transactional;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 
 @Slf4j
 @Configuration
 @Order(1)
-@RequiredArgsConstructor
-public class LocationSeed implements CommandLineRunner {
+public class LocationSeed extends Seeder implements CommandLineRunner {
 
   private final LocationRepository locationRepository;
+
+  public LocationSeed(Environment environment, LocationRepository locationRepository) {
+    super(environment);
+    this.locationRepository = locationRepository;
+  }
 
   @Override
   @Transactional
   public void run(String... args) throws Exception {
+    if (isNotEnableSeeding()) {
+      // Skip seeding if not enabled
+      log.info("Location seeding is disabled in the current environment.");
+      return;
+    }
     // Check if locations already exist
     if (locationRepository.count() != 0) {
       // If locations already exist, skip seeding

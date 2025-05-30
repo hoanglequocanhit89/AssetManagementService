@@ -13,18 +13,17 @@ import jakarta.transaction.Transactional;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @Slf4j
 @Configuration
-@RequiredArgsConstructor
 @Order(3) // after LocationSeed and RoleSeed
-public class UserSeed implements CommandLineRunner {
+public class UserSeed extends Seeder implements CommandLineRunner {
 
   private final UserRepository userRepository;
   private final RoleRepository roleRepository;
@@ -32,9 +31,29 @@ public class UserSeed implements CommandLineRunner {
   private final UserServiceImpl userService;
   private final PasswordEncoder passwordEncoder;
 
+  public UserSeed(
+      Environment environment,
+      UserRepository userRepository,
+      RoleRepository roleRepository,
+      LocationRepository locationRepository,
+      UserServiceImpl userService,
+      PasswordEncoder passwordEncoder) {
+    super(environment);
+    this.userRepository = userRepository;
+    this.roleRepository = roleRepository;
+    this.locationRepository = locationRepository;
+    this.userService = userService;
+    this.passwordEncoder = passwordEncoder;
+  }
+
   @Override
   @Transactional
   public void run(String... args) throws Exception {
+    if (isNotEnableSeeding()) {
+      // Skip seeding if not enabled
+      log.info("User seeding is disabled in the current environment.");
+      return;
+    }
     // Check if users already exist
     if (userRepository.count() != 0) {
       // If users already exist, skip seeding
@@ -223,7 +242,6 @@ public class UserSeed implements CommandLineRunner {
     user.setRole(staffRole);
     user.setLocation(locationDN);
     user.setDisabled(false);
-    user.setFirstLogin(false);
     user.setJoinedDate(LocalDate.parse(joinedDate, formatter));
     // set user profile
     UserProfile userProfile = new UserProfile();
