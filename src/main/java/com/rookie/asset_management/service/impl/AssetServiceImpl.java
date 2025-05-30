@@ -291,7 +291,7 @@ public class AssetServiceImpl implements AssetService {
     Location location = admin.getLocation();
 
     Optional<Asset> existingAssetOpt =
-        assetRepository.findByNameAndLocation(dto.getName(), location);
+        assetRepository.findByNameAndLocationAndIdNot(dto.getName(), location, assetId);
     if (existingAssetOpt.isPresent()) {
       Asset existingAsset = existingAssetOpt.get();
       if (!existingAsset.getDisabled()) {

@@ -64,4 +64,6 @@ public interface AssetRepository extends BaseRepository<Asset, Integer> {
   List<Asset> findAll(Specification<Asset> build, Sort sort);
 
   Optional<Asset> findByNameAndLocation(String name, Location location);
+
+  Optional<Asset> findByNameAndLocationAndIdNot(String name, Location location, Integer assetId);
 }
