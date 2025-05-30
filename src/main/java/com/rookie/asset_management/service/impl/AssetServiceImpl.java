@@ -432,7 +432,8 @@ public class AssetServiceImpl implements AssetService {
               .select(cb.literal(1L))
               .where(
                   cb.equal(root, subRoot),
-                  cb.equal(subRoot.join("assignments").get("status"), AssetStatus.WAITING));
+                  cb.equal(subRoot.join("assignments").get("status"), AssetStatus.WAITING),
+                  cb.equal(subRoot.join("assignments").get("deleted"), false));
           return cb.not(cb.exists(subquery));
         });
 
