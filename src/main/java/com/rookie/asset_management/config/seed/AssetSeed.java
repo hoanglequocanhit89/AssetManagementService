@@ -10,24 +10,39 @@ import com.rookie.asset_management.repository.LocationRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 
 @Slf4j
 @Configuration
 @Order(5) // Uncomment this line if you want to specify the order of execution
-@RequiredArgsConstructor
-public class AssetSeed implements CommandLineRunner {
+public class AssetSeed extends Seeder implements CommandLineRunner {
 
   private final AssetRepository assetRepository;
   private final CategoryRepository categoryRepository;
   private final LocationRepository locationRepository;
 
+  public AssetSeed(
+      Environment environment,
+      AssetRepository assetRepository,
+      CategoryRepository categoryRepository,
+      LocationRepository locationRepository) {
+    super(environment);
+    this.assetRepository = assetRepository;
+    this.categoryRepository = categoryRepository;
+    this.locationRepository = locationRepository;
+  }
+
   @Override
   public void run(String... args) throws Exception {
+    if (isNotEnableSeeding()) {
+      // Skip seeding if not enabled
+      log.info("Asset seeding is disabled in the current environment.");
+      return;
+    }
     if (assetRepository.count() != 0) {
       // If assets already exist, skip seeding
       log.info("Assets already exist, skipping seeding.");
