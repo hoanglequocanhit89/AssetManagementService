@@ -180,10 +180,7 @@ class AuthenticationServiceTest {
   void changePassword_Fail_EmptyOldPassword() {
     // GIVEN
     ChangePasswordRequestDTO request =
-        ChangePasswordRequestDTO.builder()
-            .oldPassword("")
-            .newPassword("NewPass123!")
-            .build();
+        ChangePasswordRequestDTO.builder().oldPassword("").newPassword("NewPass123!").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
@@ -202,10 +199,7 @@ class AuthenticationServiceTest {
   void changePassword_Fail_NullOldPassword() {
     // GIVEN
     ChangePasswordRequestDTO request =
-        ChangePasswordRequestDTO.builder()
-            .oldPassword(null)
-            .newPassword("NewPass123!")
-            .build();
+        ChangePasswordRequestDTO.builder().oldPassword(null).newPassword("NewPass123!").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
@@ -224,10 +218,7 @@ class AuthenticationServiceTest {
   void changePassword_Fail_EmptyNewPassword() {
     // GIVEN
     ChangePasswordRequestDTO request =
-        ChangePasswordRequestDTO.builder()
-            .oldPassword("OldPass123!")
-            .newPassword("")
-            .build();
+        ChangePasswordRequestDTO.builder().oldPassword("OldPass123!").newPassword("").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
@@ -246,10 +237,7 @@ class AuthenticationServiceTest {
   void changePassword_Fail_NewPasswordTooShort() {
     // GIVEN
     ChangePasswordRequestDTO request =
-        ChangePasswordRequestDTO.builder()
-            .oldPassword("OldPass123!")
-            .newPassword("Ab1!")
-            .build();
+        ChangePasswordRequestDTO.builder().oldPassword("OldPass123!").newPassword("Ab1!").build();
 
     when(jwtService.extractUsername()).thenReturn("testuser");
     when(userRepository.findByUsername("testuser")).thenReturn(Optional.of(user));
@@ -476,7 +464,8 @@ class AuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName("First login change password fails due to new password being the same as old password")
+  @DisplayName(
+      "First login change password fails due to new password being the same as old password")
   void firstLoginChangePassword_Fail_NewPasswordSameAsOld() {
     // GIVEN
     FirstLoginChangePasswordRequestDTO request =

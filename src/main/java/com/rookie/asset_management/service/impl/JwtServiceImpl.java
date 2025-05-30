@@ -46,7 +46,13 @@ public class JwtServiceImpl implements JwtService {
     cookie.setSecure(true);
     cookie.setPath("/");
     cookie.setMaxAge(24 * 60 * 60);
-    response.addCookie(cookie);
+
+    String cookieValue =
+        String.format(
+            "%s=%s; Max-Age=%d; Path=%s; Secure; HttpOnly; SameSite=None",
+            cookie.getName(), cookie.getValue(), cookie.getMaxAge(), cookie.getPath());
+
+    response.addHeader("Set-Cookie", cookieValue);
   }
 
   @Override
