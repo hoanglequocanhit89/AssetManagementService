@@ -10,23 +10,38 @@ import com.rookie.asset_management.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 
 @Slf4j
 @Configuration
 @Order(8)
-@RequiredArgsConstructor
-public class ReturningRequestSeed implements CommandLineRunner {
+public class ReturningRequestSeed extends Seeder implements CommandLineRunner {
   private final ReturningRequestRepository returningRequestRepository;
   private final UserRepository userRepository;
   private final AssignmentRepository assignmentRepository;
 
+  public ReturningRequestSeed(
+      Environment environment,
+      ReturningRequestRepository returningRequestRepository,
+      UserRepository userRepository,
+      AssignmentRepository assignmentRepository) {
+    super(environment);
+    this.returningRequestRepository = returningRequestRepository;
+    this.userRepository = userRepository;
+    this.assignmentRepository = assignmentRepository;
+  }
+
   @Override
   public void run(String... args) throws Exception {
+    if (isNotEnableSeeding()) {
+      // Skip seeding if not enabled
+      log.info("Returning request seeding is disabled in the current environment.");
+      return;
+    }
     if (returningRequestRepository.count() != 0) {
       // If returning requests already exist, skip seeding
       log.info("Returning requests already exist, skipping seeding.");
