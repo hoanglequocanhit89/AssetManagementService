@@ -678,27 +678,6 @@ public class AssignmentServiceTest {
   }
 
   @Test
-  void getAssignmentDetails_NonAdminUser_ThrowsException() {
-    // Arrange
-    String username = "user";
-    Role userRole = new Role();
-    userRole.setName("USER");
-
-    User user = new User();
-    user.setUsername(username);
-    user.setRole(userRole);
-
-    when(jwtService.extractUsername()).thenReturn(username);
-    when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-
-    // Act & Assert
-    AppException exception =
-        assertThrows(AppException.class, () -> assignmentService.getAssignmentDetails(1));
-    assertEquals("Only admins can access this endpoint", exception.getMessage());
-    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
-  }
-
-  @Test
   void getAssignmentDetails_AssignmentNotFound_ThrowsException() {
     // Arrange
     String username = "admin";

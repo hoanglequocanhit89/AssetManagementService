@@ -10,24 +10,39 @@ import com.rookie.asset_management.repository.UserRepository;
 import java.time.LocalDate;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.CommandLineRunner;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
+import org.springframework.core.env.Environment;
 
 @Slf4j
 @Configuration
 @Order(7)
-@RequiredArgsConstructor
-public class AssignmentSeed implements CommandLineRunner {
+public class AssignmentSeed extends Seeder implements CommandLineRunner {
 
   private final AssignmentRepository assignmentRepository;
   private final UserRepository userRepository;
   private final AssetRepository assetRepository;
 
+  public AssignmentSeed(
+      Environment environment,
+      AssignmentRepository assignmentRepository,
+      UserRepository userRepository,
+      AssetRepository assetRepository) {
+    super(environment);
+    this.assignmentRepository = assignmentRepository;
+    this.userRepository = userRepository;
+    this.assetRepository = assetRepository;
+  }
+
   @Override
   public void run(String... args) throws Exception {
+    if (isNotEnableSeeding()) {
+      // Skip seeding if not enabled
+      log.info("Asset seeding is disabled in the current environment.");
+      return;
+    }
     // Check if assignments already exist
     if (assignmentRepository.count() != 0) {
       // If assignments already exist, skip seeding
