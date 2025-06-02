@@ -210,6 +210,10 @@ public class AssetSeed extends Seeder implements CommandLineRunner {
     asset15.setStatus(AssetStatus.WAITING);
     asset15.setAssetCode("ASSET015");
 
+    laptop.setAssets(List.of(asset1, asset4, asset7, asset10, asset13));
+    phone.setAssets(List.of(asset2, asset5, asset8, asset11, asset14));
+    monitor.setAssets(List.of(asset3, asset6, asset9, asset12, asset15));
+
     return List.of(
         asset1, asset2, asset3, asset4, asset5, asset6, asset7, asset8, asset9, asset10, asset11,
         asset12, asset13, asset14, asset15);
