@@ -1,0 +1,33 @@
+package com.rookie.asset_management.service;
+
+import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
+import com.rookie.asset_management.enums.ReturningRequestStatus;
+
+/**
+ * ReturningRequestService defines the business operations for managing returning requests. It
+ * provides functionalities to create, view, complete, or cancel returning requests.
+ */
+public interface ReturningRequestService {
+
+  /**
+   * Retrieves a paginated list of returning requests based on the provided filters.
+   *
+   * @param status the status of the returning requests to filter by
+   * @param returnedDate the date the items were returned, used as a filter
+   * @param query a search query to filter the returning requests
+   * @param page the page number for pagination
+   * @param size the number of items per page
+   * @param sortBy the field to sort the results by
+   * @param sortDir the direction of sorting (e.g., ASC or DESC)
+   * @return a paginated response containing the filtered returning requests
+   */
+  PagingDtoResponse<ReturningRequestDtoResponse> getAllReturningRequests(
+      ReturningRequestStatus status,
+      String returnedDate,
+      String query,
+      Integer page,
+      Integer size,
+      String sortBy,
+      String sortDir);
+}
