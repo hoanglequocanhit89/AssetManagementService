@@ -5,10 +5,15 @@ import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
+import com.rookie.asset_management.entity.Asset;
+import com.rookie.asset_management.entity.Assignment;
+import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.PagingMapper;
@@ -16,6 +21,7 @@ import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.SpecificationRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.ReturningRequestServiceImpl;
+import java.time.LocalDate;
 import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -357,5 +363,218 @@ public class ReturningRequestServiceTest {
     // Then
     assertNotNull(result);
     verify(spyService).getMany(any(Specification.class), any(Pageable.class));
+  }
+
+  @Test
+  void completeReturningRequest_WhenReturningRequestNotFound_ShouldThrowAppException() {
+    // Given
+    Integer requestId = 999;
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.empty());
+
+    // When & Then
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+
+    assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
+    assertEquals("Returning Request Not Found", exception.getMessage());
+    verify(returningRequestRepository).findById(requestId);
+  }
+
+  @Test
+  void completeReturningRequest_WhenUserNotFound_ShouldThrowAppException() {
+    // Given
+    Integer requestId = 1;
+    ReturningRequest returningRequest = createMockReturningRequest();
+    String username = "nonexistent";
+
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.of(returningRequest));
+    when(jwtService.extractUsername()).thenReturn(username);
+    when(userRepository.findByUsername(username)).thenReturn(Optional.empty());
+
+    // When & Then
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("User Not Found", exception.getMessage());
+  }
+
+  @Test
+  void completeReturningRequest_WhenUserIsNotAdmin_ShouldThrowAppException() {
+    // Given
+    Integer requestId = 1;
+    ReturningRequest returningRequest = createMockReturningRequest();
+
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.of(returningRequest));
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(nonAdminUser));
+
+    // When & Then
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("Only admins can access this endpoint", exception.getMessage());
+  }
+
+  @Test
+  void completeReturningRequest_WhenAdminDifferentLocation_ShouldThrowAppException() {
+    // Given
+    Integer requestId = 1;
+    ReturningRequest returningRequest = createMockReturningRequest();
+
+    // Setup locations
+    Location adminLocation = new Location();
+    adminLocation.setId(1);
+    adminUser.setLocation(adminLocation);
+
+    Location assetLocation = new Location();
+    assetLocation.setId(2);
+    returningRequest.getAssignment().getAsset().setLocation(assetLocation);
+
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.of(returningRequest));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+    // When & Then
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("You do not have permission to complete this request", exception.getMessage());
+  }
+
+  @Test
+  void completeReturningRequest_WhenRequestAlreadyCompleted_ShouldReturnNull() {
+    // Given
+    Integer requestId = 1;
+    ReturningRequest returningRequest = createMockReturningRequest();
+    returningRequest.setStatus(ReturningRequestStatus.COMPLETED);
+
+    // Setup same location
+    Location location = new Location();
+    location.setId(1);
+    adminUser.setLocation(location);
+    returningRequest.getAssignment().getAsset().setLocation(location);
+
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.of(returningRequest));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+
+    // When
+    CompleteReturningRequestDtoResponse result =
+        returningRequestService.completeReturningRequest(requestId);
+
+    // Then
+    assertNull(result);
+
+    // Verify that save method is not called when request is already completed
+    verify(returningRequestRepository, never()).save(any(ReturningRequest.class));
+  }
+
+  @Test
+  void completeReturningRequest_WhenValidRequest_ShouldCompleteSuccessfully() {
+    // Given
+    Integer requestId = 1;
+    ReturningRequest returningRequest = createMockReturningRequest();
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+
+    // Setup same location
+    Location location = new Location();
+    location.setId(1);
+    adminUser.setLocation(location);
+    returningRequest.getAssignment().getAsset().setLocation(location);
+
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.of(returningRequest));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
+
+    // When
+    CompleteReturningRequestDtoResponse result =
+        returningRequestService.completeReturningRequest(requestId);
+
+    // Then
+    assertNotNull(result);
+    assertEquals(requestId, result.getId());
+    assertEquals(ReturningRequestStatus.COMPLETED.name(), result.getStatus());
+
+    // Verify the returningRequest was updated correctly
+    assertEquals(ReturningRequestStatus.COMPLETED, returningRequest.getStatus());
+    assertEquals(LocalDate.now(), returningRequest.getReturnedDate());
+    assertEquals(AssignmentStatus.RETURNED, returningRequest.getAssignment().getStatus());
+    assertEquals(adminUser, returningRequest.getAcceptedBy());
+
+    verify(returningRequestRepository).save(returningRequest);
+  }
+
+  @Test
+  void completeReturningRequest_WhenValidRequest_ShouldUpdateAllRelatedEntities() {
+    // Given
+    Integer requestId = 1;
+    ReturningRequest returningRequest = createMockReturningRequest();
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+
+    // Setup same location
+    Location location = new Location();
+    location.setId(1);
+    adminUser.setLocation(location);
+    returningRequest.getAssignment().getAsset().setLocation(location);
+
+    when(returningRequestRepository.findById(requestId)).thenReturn(Optional.of(returningRequest));
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
+
+    // When
+    returningRequestService.completeReturningRequest(requestId);
+
+    // Then
+    verify(returningRequestRepository).findById(requestId);
+    verify(jwtService).extractUsername();
+    verify(userRepository).findByUsername("admin");
+    verify(returningRequestRepository).save(returningRequest);
+
+    // Verify all entities were updated
+    assertEquals(ReturningRequestStatus.COMPLETED, returningRequest.getStatus());
+    assertNotNull(returningRequest.getReturnedDate());
+    assertEquals(LocalDate.now(), returningRequest.getReturnedDate());
+    assertEquals(AssignmentStatus.RETURNED, returningRequest.getAssignment().getStatus());
+    assertEquals(adminUser, returningRequest.getAcceptedBy());
+  }
+
+  // Helper method to create mock ReturningRequest
+  private ReturningRequest createMockReturningRequest() {
+    // Create mock entities
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setName("Test Asset");
+    asset.setAssetCode("TST001");
+
+    Location location = new Location();
+    location.setId(1);
+    asset.setLocation(location);
+
+    Assignment assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAsset(asset);
+    assignment.setStatus(AssignmentStatus.ACCEPTED);
+    assignment.setAssignedDate(LocalDate.now().minusDays(7));
+
+    User requestedByUser = new User();
+    requestedByUser.setId(3);
+    requestedByUser.setUsername("requester");
+
+    ReturningRequest returningRequest = new ReturningRequest();
+    returningRequest.setId(1);
+    returningRequest.setAssignment(assignment);
+    returningRequest.setRequestedBy(requestedByUser);
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+
+    return returningRequest;
   }
 }
