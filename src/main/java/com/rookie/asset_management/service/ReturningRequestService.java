@@ -1,6 +1,7 @@
 package com.rookie.asset_management.service;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 
@@ -30,4 +31,12 @@ public interface ReturningRequestService {
       Integer size,
       String sortBy,
       String sortDir);
+
+  /**
+   * Completes a returning request by its unique identifier.
+   *
+   * @param id the unique identifier of the returning request to complete
+   * @return a response containing the details of the completed returning request
+   */
+  CompleteReturningRequestDtoResponse completeReturningRequest(Integer id);
 }
