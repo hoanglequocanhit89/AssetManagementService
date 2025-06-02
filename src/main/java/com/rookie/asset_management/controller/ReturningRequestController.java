@@ -3,6 +3,7 @@ package com.rookie.asset_management.controller;
 import com.rookie.asset_management.constant.ApiPaths;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.service.ReturningRequestService;
@@ -11,6 +12,8 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
@@ -44,6 +47,25 @@ public class ReturningRequestController {
         ApiDtoResponse.<PagingDtoResponse<ReturningRequestDtoResponse>>builder()
             .message("Returning requests retrieved successfully")
             .data(result)
+            .build();
+
+    return ResponseEntity.ok(response);
+  }
+
+  @PatchMapping("{id}/complete")
+  public ResponseEntity<ApiDtoResponse<Void>> completeReturningRequest(@PathVariable Integer id) {
+
+    // Call service to complete returning request
+    CompleteReturningRequestDtoResponse result =
+        returningRequestService.completeReturningRequest(id);
+
+    // Create success response
+    ApiDtoResponse<Void> response =
+        ApiDtoResponse.<Void>builder()
+            .message(
+                result != null
+                    ? "Returning request completed successfully"
+                    : "Request has been completed already")
             .build();
 
     return ResponseEntity.ok(response);

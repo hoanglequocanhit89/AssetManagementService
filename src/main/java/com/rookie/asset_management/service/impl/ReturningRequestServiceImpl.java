@@ -1,9 +1,11 @@
 package com.rookie.asset_management.service.impl;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.PagingMapper;
@@ -14,6 +16,7 @@ import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.ReturningRequestService;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
+import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.Pageable;
@@ -108,5 +111,61 @@ public class ReturningRequestServiceImpl
     PagingDtoResponse<ReturningRequestDtoResponse> result = getMany(spec, pageable);
 
     return result;
+  }
+
+  @Override
+  public CompleteReturningRequestDtoResponse completeReturningRequest(Integer id) {
+    ReturningRequest returningRequest =
+        returningRequestRepository
+            .findById(id)
+            .orElseThrow(
+                () -> new AppException(HttpStatus.NOT_FOUND, "Returning Request Not Found"));
+
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Check if user is admin
+    if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
+    }
+
+    // Check if admin has the same location as the returning request
+    if (!returningRequest
+        .getAssignment()
+        .getAsset()
+        .getLocation()
+        .getId()
+        .equals(user.getLocation().getId())) {
+      throw new AppException(
+          HttpStatus.FORBIDDEN, "You do not have permission to complete this request");
+    }
+
+    // Check if the request is already completed
+    if (returningRequest.getStatus() == ReturningRequestStatus.COMPLETED) {
+      return null;
+    }
+
+    // Update the status to COMPLETED
+    returningRequest.setStatus(ReturningRequestStatus.COMPLETED);
+
+    // Update the returned date to the current date
+    returningRequest.setReturnedDate(LocalDate.now());
+
+    // Update status of the assignment to RETURNED
+    returningRequest.getAssignment().setStatus(AssignmentStatus.RETURNED);
+
+    // Update acceptedBy to the current user
+    returningRequest.setAcceptedBy(user);
+
+    // Save the updated request
+    returningRequestRepository.save(returningRequest);
+
+    return CompleteReturningRequestDtoResponse.builder()
+        .id(returningRequest.getId())
+        .status(returningRequest.getStatus().name())
+        .build();
   }
 }
