@@ -144,7 +144,8 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
 
   /**
    * default method to check if the user can be disabled. A user can be disabled if all their
-   * assignments are not in WAITING status.
+   * assignments are not in WAITING status and all their returning requests are not in WAITING
+   * status.
    *
    * @param assignments the list of assignments
    * @return true if the user can be disabled, false otherwise
@@ -156,12 +157,21 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
         return false;
       }
       ReturningRequest returningRequest = assignment.getReturningRequest();
+      // Check if there is a returning request
+      // If there is no returning request, that means the assignment is not in process to return
+      if (assignmentStatus == AssignmentStatus.ACCEPTED && returningRequest == null) {
+        return false;
+      }
+      // If the assignment is accepted and the returning request is still waiting,
+      // the user cannot be disabled
       if (assignmentStatus == AssignmentStatus.ACCEPTED
-          && returningRequest != null
           && returningRequest.getStatus() == ReturningRequestStatus.WAITING) {
         return false;
       }
     }
+    // If all assignments are not in WAITING status and all returning requests of all assignments
+    // have been returned
+    // the user can be disabled
     return true;
   }
 
