@@ -57,9 +57,9 @@ public abstract class PagingServiceImpl<D, E, K extends Serializable>
       sortDir = "asc"; // Default sort direction
     }
     Sort sort =
-        sortDir.equalsIgnoreCase(Sort.Direction.ASC.name())
-            ? Sort.by(sortBy).ascending()
-            : Sort.by(sortBy).descending();
+        sortDir.equalsIgnoreCase("asc")
+            ? Sort.by(Sort.Order.asc(sortBy).ignoreCase())
+            : Sort.by(Sort.Order.desc(sortBy).ignoreCase());
     return PageRequest.of(pageNo, pageSize, sort);
   }
 
