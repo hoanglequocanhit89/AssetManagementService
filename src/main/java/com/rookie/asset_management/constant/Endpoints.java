@@ -9,9 +9,14 @@ public class Endpoints {
 
   //    Admin endpoints go here
   public static final String[] ADMIN_ENDPOINTS = {
-    ApiPaths.V1 + "/assets/**", "/assignments/**", "/return/**", ApiPaths.V1 + "/reports/**",
+    ApiPaths.V1 + "/assets/**",
+    "/assignments/**",
+    "/return",
+    "/return/{returningRequestId}",
+    "/return/**",
+    ApiPaths.V1 + "/reports/**"
   };
 
   //   Staff endpoints go here
-  public static final String[] STAFF_ENDPOINTS = {"abc"};
+  public static final String[] STAFF_ENDPOINTS = {ApiPaths.V1 + "/return/me"};
 }

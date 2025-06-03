@@ -1,6 +1,7 @@
 package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
+import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
 import org.mapstruct.Mapper;
@@ -36,6 +37,14 @@ public interface ReturningRequestMapper
   @Mapping(target = "acceptedBy", expression = "java(toUser(dto.getAcceptedBy()))")
   @Mapping(target = "requestedBy", expression = "java(toUser(dto.getRequestedBy()))")
   ReturningRequest toEntity(ReturningRequestDtoResponse dto);
+
+  @Mapping(target = "id", source = "id")
+  @Mapping(target = "assetCode", source = "assignment.asset.assetCode")
+  @Mapping(target = "assetName", source = "assignment.asset.name")
+  @Mapping(target = "requestedBy", source = "requestedBy.username")
+  @Mapping(target = "assignedDate", source = "assignment.assignedDate", dateFormat = "yyyy-MM-dd")
+  @Mapping(target = "status", source = "status")
+  ReturningRequestDetailDtoResponse toDetailDto(ReturningRequest returningRequest);
 
   /**
    * Converts a username to a User entity.
