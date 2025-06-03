@@ -1,28 +1,34 @@
 package com.rookie.asset_management.service.impl;
 
+import com.rookie.asset_management.dto.request.returning.CreateReturningRequestDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
+import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
+import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
-import com.rookie.asset_management.mapper.PagingMapper;
+import com.rookie.asset_management.mapper.ReturningRequestMapper;
+import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.ReturningRequestRepository;
-import com.rookie.asset_management.repository.SpecificationRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.ReturningRequestService;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import java.time.LocalDate;
+import java.util.List;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -31,19 +37,24 @@ public class ReturningRequestServiceImpl
     implements ReturningRequestService {
 
   ReturningRequestRepository returningRequestRepository;
+  AssignmentRepository assignmentRepository;
   UserRepository userRepository;
+  ReturningRequestMapper returningRequestMapper;
   JwtService jwtService;
 
+  @Autowired
   public ReturningRequestServiceImpl(
-      PagingMapper<ReturningRequest, ReturningRequestDtoResponse> pagingMapper,
-      SpecificationRepository<ReturningRequest, Integer> specificationRepository,
       ReturningRequestRepository returningRequestRepository,
+      AssignmentRepository assignmentRepository,
       UserRepository userRepository,
+      ReturningRequestMapper returningRequestMapper,
       JwtService jwtService) {
-    super(pagingMapper, specificationRepository);
+    super(returningRequestMapper, returningRequestRepository);
     this.returningRequestRepository = returningRequestRepository;
-    this.jwtService = jwtService;
     this.userRepository = userRepository;
+    this.returningRequestMapper = returningRequestMapper;
+    this.jwtService = jwtService;
+    this.assignmentRepository = assignmentRepository;
   }
 
   @Override
@@ -169,5 +180,149 @@ public class ReturningRequestServiceImpl
         .id(returningRequest.getId())
         .status(returningRequest.getStatus().name())
         .build();
+  }
+
+  @Override
+  @Transactional
+  public ReturningRequestDetailDtoResponse createReturningRequest(
+      CreateReturningRequestDtoRequest request) {
+    // Get current admin from JWT
+    String username = jwtService.extractUsername();
+    User admin =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    if (!"ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can create returning requests");
+    }
+
+    // Find the assignment
+    Assignment assignment =
+        assignmentRepository
+            .findById(request.getAssignmentId())
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
+
+    // Check if assignment is in ACCEPTED state
+    if (!assignment.getStatus().equals(AssignmentStatus.ACCEPTED)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Only accepted assignments can have returning requests");
+    }
+
+    // Check location consistency
+    if (!assignment.getAsset().getLocation().getId().equals(admin.getLocation().getId())
+        || !assignment.getAssignedTo().getLocation().getId().equals(admin.getLocation().getId())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Assignment not in admin's location");
+    }
+
+    // Create new returning request
+    ReturningRequest returningRequest = new ReturningRequest();
+    returningRequest.setAssignment(assignment);
+    returningRequest.setRequestedBy(admin);
+    returningRequest.setReturnedDate(LocalDate.now());
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+
+    // Update Assignment status to WAITING_FOR_RETURNING
+    assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
+    assignmentRepository.save(assignment);
+
+    // Save and return
+    return returningRequestMapper.toDetailDto(returningRequestRepository.save(returningRequest));
+  }
+
+  @Override
+  @Transactional
+  public ReturningRequestDetailDtoResponse createUserReturningRequest(
+      CreateReturningRequestDtoRequest request) {
+    // Get current user from JWT
+    String username = jwtService.extractUsername();
+    User user =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    // Find the assignment
+    Assignment assignment =
+        assignmentRepository
+            .findById(request.getAssignmentId())
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
+
+    // Check if the user is the one assigned to this assignment
+    if (!assignment.getAssignedTo().getId().equals(user.getId())) {
+      throw new AppException(
+          HttpStatus.FORBIDDEN, "You can only create returning requests for your own assignments");
+    }
+
+    // Check if assignment is in ACCEPTED state
+    if (!assignment.getStatus().equals(AssignmentStatus.ACCEPTED)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Only accepted assignments can have returning requests");
+    }
+
+    // Check if there is already a WAITING returning request for this assignment
+    if (assignment.getReturningRequest() != null
+        && assignment.getReturningRequest().getStatus().equals(ReturningRequestStatus.WAITING)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "A waiting returning request already exists for this assignment");
+    }
+
+    // Create new returning request
+    ReturningRequest returningRequest = new ReturningRequest();
+    returningRequest.setAssignment(assignment);
+    returningRequest.setRequestedBy(user);
+    returningRequest.setReturnedDate(LocalDate.now());
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+
+    // Update Assignment status to WAITING_FOR_RETURNING
+    assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
+    assignmentRepository.save(assignment);
+
+    // Save and return
+    return returningRequestMapper.toDetailDto(returningRequestRepository.save(returningRequest));
+  }
+
+  @Override
+  @Transactional
+  public ReturningRequestDetailDtoResponse cancelReturningRequest(Integer returningRequestId) {
+    // Get current admin from JWT
+    String username = jwtService.extractUsername();
+    User admin =
+        userRepository
+            .findByUsername(username)
+            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+
+    if (!"ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Only admins can cancel returning requests");
+    }
+
+    // Find the returning request
+    ReturningRequest returningRequest =
+        returningRequestRepository
+            .findByIdAndDeletedFalse(returningRequestId)
+            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Returning request not found"));
+
+    // Check if the request is in WAITING state
+    if (!returningRequest.getStatus().equals(ReturningRequestStatus.WAITING)) {
+      throw new AppException(
+          HttpStatus.BAD_REQUEST, "Only waiting returning requests can be cancelled");
+    }
+
+    // Check location consistency
+    Assignment assignment = returningRequest.getAssignment();
+    if (!assignment.getAsset().getLocation().getId().equals(admin.getLocation().getId())
+        || !assignment.getAssignedTo().getLocation().getId().equals(admin.getLocation().getId())) {
+      throw new AppException(HttpStatus.FORBIDDEN, "Returning request not in admin's location");
+    }
+
+    // Update ReturningRequest status to CANCELLED
+    returningRequest.setStatus(ReturningRequestStatus.CANCELLED);
+
+    // Update Assignment status back to ACCEPTED
+    assignment.setStatus(AssignmentStatus.ACCEPTED);
+    assignmentRepository.save(assignment);
+
+    // Save and return
+    returningRequest = returningRequestRepository.save(returningRequest);
+    return returningRequestMapper.toDetailDto(returningRequest);
   }
 }

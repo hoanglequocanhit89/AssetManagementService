@@ -1,9 +1,12 @@
 package com.rookie.asset_management.service;
 
+import com.rookie.asset_management.dto.request.returning.CreateReturningRequestDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
+import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
+import java.util.List;
 
 /**
  * ReturningRequestService defines the business operations for managing returning requests. It
@@ -39,4 +42,30 @@ public interface ReturningRequestService {
    * @return a response containing the details of the completed returning request
    */
   CompleteReturningRequestDtoResponse completeReturningRequest(Integer id);
+
+  /**
+   * Creates a new returning request based on the provided request (for admin).
+   *
+   * @param request the DTO containing the details of the returning request to be created
+   * @return the response DTO containing the details of the created returning request
+   */
+  ReturningRequestDetailDtoResponse createReturningRequest(
+      CreateReturningRequestDtoRequest request);
+
+  /**
+   * Creates a new returning request for the current user.
+   *
+   * @param request the DTO containing the details of the returning request to be created
+   * @return the response DTO containing the details of the created returning request
+   */
+  ReturningRequestDetailDtoResponse createUserReturningRequest(
+      CreateReturningRequestDtoRequest request);
+
+  /**
+   * Cancels a returning request by its ID (for admin).
+   *
+   * @param returningRequestId the ID of the returning request to cancel
+   * @return the response DTO containing the details of the cancelled returning request
+   */
+  ReturningRequestDetailDtoResponse cancelReturningRequest(Integer returningRequestId);
 }

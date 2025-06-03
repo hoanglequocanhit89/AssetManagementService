@@ -35,15 +35,16 @@ public class ReportServiceImpl implements ReportService {
       int total = assets.size();
       // if total is 0, continue to the next category
       if (total == 0) {
-        ReportDtoResponse reportDtoResponse = ReportDtoResponse.builder()
-            .category(categoryName)
-            .total(0)
-            .assigned(0)
-            .available(0)
-            .notAvailable(0)
-            .waiting(0)
-            .recycled(0)
-            .build();
+        ReportDtoResponse reportDtoResponse =
+            ReportDtoResponse.builder()
+                .category(categoryName)
+                .total(0)
+                .assigned(0)
+                .available(0)
+                .notAvailable(0)
+                .waiting(0)
+                .recycled(0)
+                .build();
         reportDtoResponses.add(reportDtoResponse);
         // Skip to the next category if there are no assets
         continue;
@@ -77,15 +78,16 @@ public class ReportServiceImpl implements ReportService {
         }
       }
       // Create a ReportDtoResponse object with the calculated data
-      ReportDtoResponse reportDtoResponse = ReportDtoResponse.builder()
-          .category(categoryName)
-          .total(total)
-          .assigned(totalAssigned)
-          .available(totalAvailable)
-          .notAvailable(totalNotAvailable)
-          .waiting(totalWaiting)
-          .recycled(totalRecycled)
-          .build();
+      ReportDtoResponse reportDtoResponse =
+          ReportDtoResponse.builder()
+              .category(categoryName)
+              .total(total)
+              .assigned(totalAssigned)
+              .available(totalAvailable)
+              .notAvailable(totalNotAvailable)
+              .waiting(totalWaiting)
+              .recycled(totalRecycled)
+              .build();
       reportDtoResponses.add(reportDtoResponse);
     }
 
