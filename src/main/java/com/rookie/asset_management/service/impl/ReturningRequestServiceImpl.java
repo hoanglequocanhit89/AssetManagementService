@@ -20,7 +20,6 @@ import com.rookie.asset_management.service.ReturningRequestService;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import java.time.LocalDate;
-import java.util.List;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -299,7 +298,8 @@ public class ReturningRequestServiceImpl
     ReturningRequest returningRequest =
         returningRequestRepository
             .findByIdAndDeletedFalse(returningRequestId)
-            .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Returning request not found"));
+            .orElseThrow(
+                () -> new AppException(HttpStatus.NOT_FOUND, "Returning request not found"));
 
     // Check if the request is in WAITING state
     if (!returningRequest.getStatus().equals(ReturningRequestStatus.WAITING)) {
