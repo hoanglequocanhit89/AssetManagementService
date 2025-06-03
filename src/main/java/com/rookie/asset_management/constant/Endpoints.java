@@ -4,17 +4,18 @@ public class Endpoints {
 
   //    Public endpoints go here
   public static final String[] PUBLIC_ENDPOINTS = {
-    ApiPaths.V1 + "/auth/login", "/swagger-ui/**", "/v3/api-docs/**", "/actuator/**",
+    ApiPaths.V1 + "/auth/login",
+    ApiPaths.V1 + "/swagger-ui/**",
+    ApiPaths.V1 + "/v3/api-docs/**",
+    ApiPaths.V1 + "/actuator/**",
   };
 
   //    Admin endpoints go here
   public static final String[] ADMIN_ENDPOINTS = {
     ApiPaths.V1 + "/assets/**",
-    "/assignments/**",
-    "/return",
-    "/return/{returningRequestId}",
-    "/return/**",
-    ApiPaths.V1 + "/reports/**"
+    ApiPaths.V1 + "/assignments/**",
+    ApiPaths.V1 + "/return/**",
+    ApiPaths.V1 + "/reports/**",
   };
 
   //   Staff endpoints go here

@@ -1,4 +1,4 @@
-package com.rookie.asset_management.config.bean;
+package com.rookie.asset_management.config.audit;
 
 import com.rookie.asset_management.entity.User;
 import java.util.Optional;
