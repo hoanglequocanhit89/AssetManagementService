@@ -154,7 +154,8 @@ public class ReturningRequestServiceTest {
     when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
 
     // Act
-    ReturningRequestDetailDtoResponse result = returningRequestService.createReturningRequest(createRequest);
+    ReturningRequestDetailDtoResponse result =
+        returningRequestService.createReturningRequest(createRequest);
 
     // Assert
     assertNotNull(result);
@@ -173,8 +174,10 @@ public class ReturningRequestServiceTest {
     when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createReturningRequest(createRequest));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("Only admins can create returning requests", exception.getMessage());
   }
@@ -187,8 +190,10 @@ public class ReturningRequestServiceTest {
     when(assignmentRepository.findById(1)).thenReturn(Optional.empty());
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createReturningRequest(createRequest));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("Assignment Not Found", exception.getMessage());
   }
@@ -202,8 +207,10 @@ public class ReturningRequestServiceTest {
     when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createReturningRequest(createRequest));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("Only accepted assignments can have returning requests", exception.getMessage());
   }
@@ -219,8 +226,10 @@ public class ReturningRequestServiceTest {
     when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createReturningRequest(createRequest));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("Assignment not in admin's location", exception.getMessage());
   }
@@ -236,7 +245,8 @@ public class ReturningRequestServiceTest {
     when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
 
     // Act
-    ReturningRequestDetailDtoResponse result = returningRequestService.createUserReturningRequest(createRequest);
+    ReturningRequestDetailDtoResponse result =
+        returningRequestService.createUserReturningRequest(createRequest);
 
     // Assert
     assertNotNull(result);
@@ -256,10 +266,13 @@ public class ReturningRequestServiceTest {
     when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createUserReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createUserReturningRequest(createRequest));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
-    assertEquals("You can only create returning requests for your own assignments", exception.getMessage());
+    assertEquals(
+        "You can only create returning requests for your own assignments", exception.getMessage());
   }
 
   @Test
@@ -271,8 +284,10 @@ public class ReturningRequestServiceTest {
     when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createUserReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createUserReturningRequest(createRequest));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("Only accepted assignments can have returning requests", exception.getMessage());
   }
@@ -286,10 +301,13 @@ public class ReturningRequestServiceTest {
     when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.createUserReturningRequest(createRequest));
+    AppException exception =
+        assertThrows(
+            AppException.class,
+            () -> returningRequestService.createUserReturningRequest(createRequest));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
-    assertEquals("A waiting returning request already exists for this assignment", exception.getMessage());
+    assertEquals(
+        "A waiting returning request already exists for this assignment", exception.getMessage());
   }
 
   // Test cho chức năng Cancel Returning Request
@@ -298,7 +316,8 @@ public class ReturningRequestServiceTest {
     // Arrange
     when(jwtService.extractUsername()).thenReturn("admin");
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
-    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(returningRequest));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1))
+        .thenReturn(Optional.of(returningRequest));
     when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
     when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
 
@@ -323,8 +342,8 @@ public class ReturningRequestServiceTest {
     when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.cancelReturningRequest(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> returningRequestService.cancelReturningRequest(1));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("Only admins can cancel returning requests", exception.getMessage());
   }
@@ -337,8 +356,8 @@ public class ReturningRequestServiceTest {
     when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.empty());
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.cancelReturningRequest(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> returningRequestService.cancelReturningRequest(1));
     assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
     assertEquals("Returning request not found", exception.getMessage());
   }
@@ -349,11 +368,12 @@ public class ReturningRequestServiceTest {
     returningRequest.setStatus(ReturningRequestStatus.COMPLETED);
     when(jwtService.extractUsername()).thenReturn("admin");
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
-    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(returningRequest));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1))
+        .thenReturn(Optional.of(returningRequest));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.cancelReturningRequest(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> returningRequestService.cancelReturningRequest(1));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("Only waiting returning requests can be cancelled", exception.getMessage());
   }
@@ -366,11 +386,12 @@ public class ReturningRequestServiceTest {
     admin.setLocation(differentLocation);
     when(jwtService.extractUsername()).thenReturn("admin");
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
-    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(returningRequest));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1))
+        .thenReturn(Optional.of(returningRequest));
 
     // Act & Assert
-    AppException exception = assertThrows(AppException.class, () ->
-        returningRequestService.cancelReturningRequest(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> returningRequestService.cancelReturningRequest(1));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("Returning request not in admin's location", exception.getMessage());
   }

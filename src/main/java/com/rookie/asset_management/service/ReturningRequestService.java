@@ -6,7 +6,6 @@ import com.rookie.asset_management.dto.response.return_request.CompleteReturning
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
-import java.util.List;
 
 /**
  * ReturningRequestService defines the business operations for managing returning requests. It

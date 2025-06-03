@@ -7,18 +7,17 @@ import java.util.Arrays;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
 import org.springframework.security.authentication.ProviderManager;
-import org.springframework.security.authentication.dao.DaoAuthenticationProvider;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
-import org.springframework.security.core.userdetails.UserDetailsService;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
-import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
@@ -32,6 +31,7 @@ import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 public class SecurityConfig {
 
   JwtAuthenticationFilter jwtAuthenticationFilter;
+  LimitLoginAuthenticationProvider limitLoginAuthenticationProvider;
 
   @Bean
   SecurityFilterChain securityFilterChain(
@@ -46,7 +46,7 @@ public class SecurityConfig {
         exceptionHandling -> exceptionHandling.authenticationEntryPoint(new AuthEntryPointJwt()));
     // configure authorization
     http.authorizeHttpRequests(
-        (auth) ->
+        auth ->
             auth.requestMatchers(Endpoints.PUBLIC_ENDPOINTS)
                 .permitAll()
                 .requestMatchers(Endpoints.ADMIN_ENDPOINTS)
@@ -64,18 +64,11 @@ public class SecurityConfig {
 
   @Bean
   public AuthenticationManager authenticationManager(
-      UserDetailsService userDetailsService, PasswordEncoder passwordEncoder) {
-
-    DaoAuthenticationProvider authenticationProvider = new DaoAuthenticationProvider();
-    authenticationProvider.setUserDetailsService(userDetailsService);
-    authenticationProvider.setPasswordEncoder(passwordEncoder);
-
-    return new ProviderManager(authenticationProvider);
-  }
-
-  @Bean
-  public PasswordEncoder passwordEncoder() {
-    return new BCryptPasswordEncoder();
+      ApplicationEventPublisher applicationEventPublisher) {
+    ProviderManager providerManager = new ProviderManager(limitLoginAuthenticationProvider);
+    providerManager.setAuthenticationEventPublisher(
+        authenticationEventPublisher(applicationEventPublisher));
+    return providerManager;
   }
 
   @Bean
@@ -90,5 +83,11 @@ public class SecurityConfig {
     UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
     source.registerCorsConfiguration("/**", configuration);
     return source;
+  }
+
+  @Bean
+  public AuthenticationEventPublisher authenticationEventPublisher(
+      ApplicationEventPublisher applicationEventPublisher) {
+    return new DefaultAuthenticationEventPublisher(applicationEventPublisher);
   }
 }
