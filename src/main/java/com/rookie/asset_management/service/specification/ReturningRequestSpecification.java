@@ -113,4 +113,16 @@ public class ReturningRequestSpecification {
       return null;
     };
   }
+
+  /**
+   * Creates a specification to exclude ReturningRequest entities that were requested by the admin
+   * with the specified ID.
+   *
+   * @param adminId the ID of the admin whose requests should be excluded
+   * @return a Specification for excluding ReturningRequest entities requested by the admin
+   */
+  public static Specification<ReturningRequest> excludeAdminRequests(Integer adminId) {
+    return (root, query, criteriaBuilder) ->
+        criteriaBuilder.notEqual(root.get("requestedBy").get("id"), adminId);
+  }
 }
