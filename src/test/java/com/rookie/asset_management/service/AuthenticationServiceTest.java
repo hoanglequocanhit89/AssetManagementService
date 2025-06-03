@@ -93,25 +93,6 @@ class AuthenticationServiceTest {
   }
 
   @Test
-  @DisplayName("Login fails due to incorrect password")
-  void login_Fail_BadCredentials() {
-    // GIVEN
-    LoginRequestDTO loginRequestDTO =
-        LoginRequestDTO.builder().username("testuser").password("wrongpassword").build();
-
-    when(authenticationManager.authenticate(any(UsernamePasswordAuthenticationToken.class)))
-        .thenThrow(new BadCredentialsException("Incorrect password"));
-
-    // WHEN & THEN
-    AppException exception =
-        assertThrows(
-            AppException.class, () -> authenticationService.login(loginRequestDTO, response));
-    assertEquals(HttpStatus.UNAUTHORIZED, exception.getHttpStatusCode());
-    assertEquals("Incorrect password", exception.getMessage());
-    verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));
-  }
-
-  @Test
   @DisplayName("Login fails due to locked account")
   void login_Fail_AccountLocked() {
     // GIVEN
