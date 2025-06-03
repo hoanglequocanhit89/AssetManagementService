@@ -1,5 +1,6 @@
 package com.rookie.asset_management.config.security;
 
+import com.rookie.asset_management.constant.Endpoints;
 import com.rookie.asset_management.service.CustomUserDetailsService;
 import com.rookie.asset_management.service.JwtService;
 import jakarta.servlet.FilterChain;
@@ -7,6 +8,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import java.io.IOException;
+import java.util.Arrays;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -38,6 +40,13 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
       return;
     }
 
+    String endpoint = request.getRequestURI();
+
+    if (isPublicEndpoints(endpoint)) {
+      filterChain.doFilter(request, response);
+      return;
+    }
+
     try {
       jwtService.validateToken(jwt);
       String username = jwtService.extractUsername();
@@ -56,5 +65,9 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     filterChain.doFilter(request, response);
+  }
+
+  private boolean isPublicEndpoints(String endpoint) {
+    return Arrays.stream(Endpoints.PUBLIC_ENDPOINTS).anyMatch(endpoint::startsWith);
   }
 }
