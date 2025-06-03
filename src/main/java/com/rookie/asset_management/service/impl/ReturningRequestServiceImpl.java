@@ -96,6 +96,8 @@ public class ReturningRequestServiceImpl
             .addIfNotNull(returnedDate, ReturningRequestSpecification.hasReturnedDate(returnedDate))
             .addIfNotNull(query, ReturningRequestSpecification.hasAssetOrRequesterLike(query))
             .addIfNotNull(
+                user.getId(), ReturningRequestSpecification.excludeAdminRequests(user.getId()))
+            .addIfNotNull(
                 user.getId(), ReturningRequestSpecification.hasSameLocationAs(user.getId()))
             .build();
 
