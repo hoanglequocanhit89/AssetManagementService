@@ -4,9 +4,11 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.*;
 import static org.mockito.Mockito.*;
 
+import com.rookie.asset_management.dto.request.returning.CreateReturningRequestDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
+import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Location;
@@ -17,6 +19,8 @@ import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.PagingMapper;
+import com.rookie.asset_management.mapper.ReturningRequestMapper;
+import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.SpecificationRepository;
 import com.rookie.asset_management.repository.UserRepository;
@@ -26,6 +30,7 @@ import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Pageable;
@@ -45,21 +50,32 @@ public class ReturningRequestServiceTest {
 
   @Mock private JwtService jwtService;
 
-  private ReturningRequestServiceImpl returningRequestService;
+  @Mock private ReturningRequestMapper returningRequestMapper;
+
+  @Mock private AssignmentRepository assignmentRepository;
+
+  @InjectMocks private ReturningRequestServiceImpl returningRequestService;
 
   private User adminUser;
   private User nonAdminUser;
   private Role adminRole;
   private Role userRole;
 
+  private User admin;
+  private User user;
+  private Assignment assignment;
+  private ReturningRequest returningRequest;
+  private CreateReturningRequestDtoRequest createRequest;
+  private ReturningRequestDetailDtoResponse responseDto;
+
   @BeforeEach
   void setUp() {
     returningRequestService =
         new ReturningRequestServiceImpl(
-            pagingMapper,
-            specificationRepository,
             returningRequestRepository,
+            assignmentRepository,
             userRepository,
+            returningRequestMapper,
             jwtService);
 
     // Setup roles
@@ -80,6 +96,283 @@ public class ReturningRequestServiceTest {
     nonAdminUser.setId(2);
     nonAdminUser.setUsername("user");
     nonAdminUser.setRole(userRole);
+
+    // Setup common test data
+    Location location = new Location();
+    location.setId(1);
+
+    Role adminRole = new Role();
+    adminRole.setName("ADMIN");
+
+    Role staffRole = new Role();
+    staffRole.setName("STAFF");
+
+    admin = new User();
+    admin.setId(1);
+    admin.setUsername("admin");
+    admin.setRole(adminRole);
+    admin.setLocation(location);
+
+    user = new User();
+    user.setId(2);
+    user.setUsername("user");
+    user.setRole(staffRole);
+    user.setLocation(location);
+
+    Asset asset = new Asset();
+    asset.setId(1);
+    asset.setLocation(location);
+
+    assignment = new Assignment();
+    assignment.setId(1);
+    assignment.setAsset(asset);
+    assignment.setAssignedTo(user);
+    assignment.setStatus(AssignmentStatus.ACCEPTED);
+
+    returningRequest = new ReturningRequest();
+    returningRequest.setId(1);
+    returningRequest.setAssignment(assignment);
+    returningRequest.setRequestedBy(admin);
+    returningRequest.setStatus(ReturningRequestStatus.WAITING);
+    returningRequest.setDeleted(false);
+
+    createRequest = new CreateReturningRequestDtoRequest();
+    createRequest.setAssignmentId(1);
+
+    responseDto = new ReturningRequestDetailDtoResponse();
+    responseDto.setId(1);
+  }
+
+  // Test cho chức năng Admin Creates Returning Request
+  @Test
+  void createReturningRequest_byAdmin_success() {
+    // Arrange
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+    when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
+    when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
+
+    // Act
+    ReturningRequestDetailDtoResponse result = returningRequestService.createReturningRequest(createRequest);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(responseDto.getId(), result.getId());
+    assertEquals(AssignmentStatus.WAITING_FOR_RETURNING, assignment.getStatus());
+    verify(assignmentRepository, times(1)).save(assignment);
+    verify(returningRequestRepository, times(1)).save(any(ReturningRequest.class));
+  }
+
+  @Test
+  void createReturningRequest_byAdmin_notAdmin_throwsException() {
+    // Arrange
+    user.setRole(new Role()); // Role không phải ADMIN
+    user.getRole().setName("STAFF");
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createReturningRequest(createRequest));
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("Only admins can create returning requests", exception.getMessage());
+  }
+
+  @Test
+  void createReturningRequest_byAdmin_assignmentNotFound_throwsException() {
+    // Arrange
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createReturningRequest(createRequest));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("Assignment Not Found", exception.getMessage());
+  }
+
+  @Test
+  void createReturningRequest_byAdmin_assignmentNotAccepted_throwsException() {
+    // Arrange
+    assignment.setStatus(AssignmentStatus.DECLINED);
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createReturningRequest(createRequest));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("Only accepted assignments can have returning requests", exception.getMessage());
+  }
+
+  @Test
+  void createReturningRequest_byAdmin_locationMismatch_throwsException() {
+    // Arrange
+    Location differentLocation = new Location();
+    differentLocation.setId(2);
+    admin.setLocation(differentLocation);
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createReturningRequest(createRequest));
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("Assignment not in admin's location", exception.getMessage());
+  }
+
+  // Test cho chức năng User Creates Returning Request
+  @Test
+  void createUserReturningRequest_success() {
+    // Arrange
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+    when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
+    when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
+
+    // Act
+    ReturningRequestDetailDtoResponse result = returningRequestService.createUserReturningRequest(createRequest);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(responseDto.getId(), result.getId());
+    assertEquals(AssignmentStatus.WAITING_FOR_RETURNING, assignment.getStatus());
+    verify(assignmentRepository, times(1)).save(assignment);
+    verify(returningRequestRepository, times(1)).save(any(ReturningRequest.class));
+  }
+
+  @Test
+  void createUserReturningRequest_userNotAssigned_throwsException() {
+    // Arrange
+    assignment.setAssignedTo(new User()); // User khác
+    assignment.getAssignedTo().setId(3);
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createUserReturningRequest(createRequest));
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("You can only create returning requests for your own assignments", exception.getMessage());
+  }
+
+  @Test
+  void createUserReturningRequest_assignmentNotAccepted_throwsException() {
+    // Arrange
+    assignment.setStatus(AssignmentStatus.DECLINED);
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createUserReturningRequest(createRequest));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("Only accepted assignments can have returning requests", exception.getMessage());
+  }
+
+  @Test
+  void createUserReturningRequest_existingWaitingRequest_throwsException() {
+    // Arrange
+    assignment.setReturningRequest(returningRequest);
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+    when(assignmentRepository.findById(1)).thenReturn(Optional.of(assignment));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.createUserReturningRequest(createRequest));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("A waiting returning request already exists for this assignment", exception.getMessage());
+  }
+
+  // Test cho chức năng Cancel Returning Request
+  @Test
+  void cancelReturningRequest_success() {
+    // Arrange
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(returningRequest));
+    when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
+    when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
+
+    // Act
+    ReturningRequestDetailDtoResponse result = returningRequestService.cancelReturningRequest(1);
+
+    // Assert
+    assertNotNull(result);
+    assertEquals(responseDto.getId(), result.getId());
+    assertEquals(ReturningRequestStatus.CANCELLED, returningRequest.getStatus());
+    assertEquals(AssignmentStatus.ACCEPTED, assignment.getStatus());
+    verify(assignmentRepository, times(1)).save(assignment);
+    verify(returningRequestRepository, times(1)).save(returningRequest);
+  }
+
+  @Test
+  void cancelReturningRequest_notAdmin_throwsException() {
+    // Arrange
+    user.setRole(new Role());
+    user.getRole().setName("STAFF");
+    when(jwtService.extractUsername()).thenReturn("user");
+    when(userRepository.findByUsername("user")).thenReturn(Optional.of(user));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.cancelReturningRequest(1));
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("Only admins can cancel returning requests", exception.getMessage());
+  }
+
+  @Test
+  void cancelReturningRequest_requestNotFound_throwsException() {
+    // Arrange
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.empty());
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.cancelReturningRequest(1));
+    assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
+    assertEquals("Returning request not found", exception.getMessage());
+  }
+
+  @Test
+  void cancelReturningRequest_notWaiting_throwsException() {
+    // Arrange
+    returningRequest.setStatus(ReturningRequestStatus.COMPLETED);
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(returningRequest));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.cancelReturningRequest(1));
+    assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
+    assertEquals("Only waiting returning requests can be cancelled", exception.getMessage());
+  }
+
+  @Test
+  void cancelReturningRequest_locationMismatch_throwsException() {
+    // Arrange
+    Location differentLocation = new Location();
+    differentLocation.setId(2);
+    admin.setLocation(differentLocation);
+    when(jwtService.extractUsername()).thenReturn("admin");
+    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(admin));
+    when(returningRequestRepository.findByIdAndDeletedFalse(1)).thenReturn(Optional.of(returningRequest));
+
+    // Act & Assert
+    AppException exception = assertThrows(AppException.class, () ->
+        returningRequestService.cancelReturningRequest(1));
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
+    assertEquals("Returning request not in admin's location", exception.getMessage());
   }
 
   @Test

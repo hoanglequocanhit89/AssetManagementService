@@ -53,4 +53,7 @@ public class ReturningRequest {
   @Column(columnDefinition = "RETURNING_STATUS")
   @JdbcTypeCode(SqlTypes.NAMED_ENUM)
   private ReturningRequestStatus status;
+
+  @Column(nullable = false)
+  private boolean deleted = false;
 }
