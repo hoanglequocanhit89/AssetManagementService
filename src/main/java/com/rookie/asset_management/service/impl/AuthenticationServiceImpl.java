@@ -85,8 +85,6 @@ public class AuthenticationServiceImpl implements AuthenticationService {
           .isFirstLogin(isFirstLogin)
           .build();
 
-    } catch (BadCredentialsException e) {
-      throw new AppException(HttpStatus.UNAUTHORIZED, "Incorrect password");
     } catch (DisabledException e) {
       throw new AppException(HttpStatus.UNAUTHORIZED, "Account is disabled");
     } catch (LockedException e) {

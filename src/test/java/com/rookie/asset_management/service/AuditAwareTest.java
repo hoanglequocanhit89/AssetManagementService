@@ -3,7 +3,7 @@ package com.rookie.asset_management.service;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNull;
 
-import com.rookie.asset_management.config.bean.AuditorAwareImpl;
+import com.rookie.asset_management.config.audit.AuditorAwareImpl;
 import com.rookie.asset_management.entity.User;
 import java.util.Collections;
 import java.util.Optional;
