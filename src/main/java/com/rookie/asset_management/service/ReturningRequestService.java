@@ -1,6 +1,5 @@
 package com.rookie.asset_management.service;
 
-import com.rookie.asset_management.dto.request.returning.CreateReturningRequestDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
@@ -43,22 +42,20 @@ public interface ReturningRequestService {
   CompleteReturningRequestDtoResponse completeReturningRequest(Integer id);
 
   /**
-   * Creates a new returning request based on the provided request (for admin).
+   * Creates a new returning request based on the provided assignment ID (for admin).
    *
-   * @param request the DTO containing the details of the returning request to be created
+   * @param assignmentId the ID of the assignment to create a returning request for
    * @return the response DTO containing the details of the created returning request
    */
-  ReturningRequestDetailDtoResponse createReturningRequest(
-      CreateReturningRequestDtoRequest request);
+  ReturningRequestDetailDtoResponse createReturningRequest(Integer assignmentId);
 
   /**
    * Creates a new returning request for the current user.
    *
-   * @param request the DTO containing the details of the returning request to be created
+   * @param assignmentId the ID of the assignment to create a returning request for
    * @return the response DTO containing the details of the created returning request
    */
-  ReturningRequestDetailDtoResponse createUserReturningRequest(
-      CreateReturningRequestDtoRequest request);
+  ReturningRequestDetailDtoResponse createUserReturningRequest(Integer assignmentId);
 
   /**
    * Cancels a returning request by its ID (for admin).

@@ -15,6 +15,8 @@ public class Endpoints {
     ApiPaths.V1 + "/assets/**",
     ApiPaths.V1 + "/assignments/**",
     ApiPaths.V1 + "/return/**",
+    ApiPaths.V1 + "/return/{assignmentId}",
+    ApiPaths.V1 + "/return/{returningRequestId}",
     ApiPaths.V1 + "/reports/**",
   };
 
