@@ -52,7 +52,7 @@ public class SecurityConfig {
                 .permitAll()
                 .requestMatchers(HttpMethod.GET, Endpoints.STAFF_ENDPOINTS)
                 .hasAnyAuthority(UserRoles.STAFF, UserRoles.ADMIN)
-                .requestMatchers(HttpMethod.PATCH, Endpoints.ASSIGNMENT_STAFF_ENDPOINTS)
+                .requestMatchers(HttpMethod.PATCH, Endpoints.ASSIGNMENT_STAFF_PATCH_ENDPOINTS)
                 .hasAnyAuthority(UserRoles.STAFF, UserRoles.ADMIN)
                 .requestMatchers(HttpMethod.POST, Endpoints.RETURNING_REQUEST_STAFF_ENDPOINTS)
                 .hasAnyAuthority(UserRoles.STAFF, UserRoles.ADMIN)
