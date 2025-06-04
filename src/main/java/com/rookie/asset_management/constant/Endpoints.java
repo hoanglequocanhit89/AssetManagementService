@@ -16,6 +16,7 @@ public class Endpoints {
     ApiPaths.V1 + "/assignments/**",
     ApiPaths.V1 + "/return/**",
     ApiPaths.V1 + "/return/{assignmentId}",
+    ApiPaths.V1 + "/return/me/{assignmentId}",
     ApiPaths.V1 + "/return/{returningRequestId}",
     ApiPaths.V1 + "/reports/**",
   };
@@ -27,5 +28,7 @@ public class Endpoints {
 
   public static final String[] ASSIGNMENT_STAFF_ENDPOINTS = {ApiPaths.V1 + "/assignments/*"};
 
-  public static final String[] RETURNING_REQUEST_STAFF_ENDPOINTS = {ApiPaths.V1 + "/return/me"};
+  public static final String[] RETURNING_REQUEST_STAFF_ENDPOINTS = {
+    ApiPaths.V1 + "/return/me/{assignmentId}"
+  };
 }
