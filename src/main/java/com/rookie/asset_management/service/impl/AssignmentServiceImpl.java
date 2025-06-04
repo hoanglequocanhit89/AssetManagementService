@@ -337,7 +337,8 @@ public class AssignmentServiceImpl
                     Arrays.asList(
                         AssignmentStatus.WAITING,
                         AssignmentStatus.ACCEPTED,
-                        AssignmentStatus.WAITING_FOR_RETURNING)))
+                        AssignmentStatus.WAITING_FOR_RETURNING,
+                        AssignmentStatus.RETURNED)))
             .add(AssignmentSpecification.excludeDeleted())
             .add(AssignmentSpecification.hasAssignedDateBeforeOrEqualToCurrent())
             .build();
@@ -349,8 +350,16 @@ public class AssignmentServiceImpl
 
       List<AssignmentStatus> statusOrder =
           sortDir.equalsIgnoreCase("asc")
-              ? List.of(AssignmentStatus.ACCEPTED, AssignmentStatus.WAITING)
-              : List.of(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED);
+              ? List.of(
+                  AssignmentStatus.ACCEPTED,
+                  AssignmentStatus.RETURNED,
+                  AssignmentStatus.WAITING,
+                  AssignmentStatus.WAITING_FOR_RETURNING)
+              : List.of(
+                  AssignmentStatus.WAITING_FOR_RETURNING,
+                  AssignmentStatus.WAITING,
+                  AssignmentStatus.RETURNED,
+                  AssignmentStatus.ACCEPTED);
       assignments.sort(
           (a1, a2) -> {
             int i1 = statusOrder.indexOf(a1.getStatus());
