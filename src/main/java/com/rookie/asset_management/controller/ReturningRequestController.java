@@ -1,7 +1,6 @@
 package com.rookie.asset_management.controller;
 
 import com.rookie.asset_management.constant.ApiPaths;
-import com.rookie.asset_management.dto.request.returning.CreateReturningRequestDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
@@ -9,7 +8,6 @@ import com.rookie.asset_management.dto.response.return_request.ReturningRequestD
 import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.service.ReturningRequestService;
-import jakarta.validation.Valid;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -19,7 +17,6 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 
 @Validated
 @RestController
@@ -75,31 +72,31 @@ public class ReturningRequestController {
     return ResponseEntity.ok(response);
   }
 
-  // Endpoint for Admin create request for returning asset
-  @PostMapping
+  // Endpoint cho Admin tạo yêu cầu trả tài sản
+  @PostMapping("/{assignmentId}")
   public ResponseEntity<ApiDtoResponse<ReturningRequestDetailDtoResponse>> createReturningRequest(
-      @RequestBody @Valid CreateReturningRequestDtoRequest request) {
+      @PathVariable Integer assignmentId) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             ApiDtoResponse.<ReturningRequestDetailDtoResponse>builder()
                 .message("Returning request created successfully.")
-                .data(returningRequestService.createReturningRequest(request))
+                .data(returningRequestService.createReturningRequest(assignmentId))
                 .build());
   }
 
-  // Endpoint for user create request for returning asset
-  @PostMapping("/me")
+  // Endpoint cho User tạo yêu cầu trả tài sản
+  @PostMapping("/me/{assignmentId}")
   public ResponseEntity<ApiDtoResponse<ReturningRequestDetailDtoResponse>>
-      createUserReturningRequest(@RequestBody @Valid CreateReturningRequestDtoRequest request) {
+      createUserReturningRequest(@PathVariable Integer assignmentId) {
     return ResponseEntity.status(HttpStatus.CREATED)
         .body(
             ApiDtoResponse.<ReturningRequestDetailDtoResponse>builder()
                 .message("Returning request created successfully by user.")
-                .data(returningRequestService.createUserReturningRequest(request))
+                .data(returningRequestService.createUserReturningRequest(assignmentId))
                 .build());
   }
 
-  // Endpoint for Admin cancel request for returning asset
+  // Endpoint cho Admin hủy yêu cầu trả tài sản
   @DeleteMapping("/{returningRequestId}")
   public ResponseEntity<ApiDtoResponse<ReturningRequestDetailDtoResponse>> cancelReturningRequest(
       @PathVariable Integer returningRequestId) {
