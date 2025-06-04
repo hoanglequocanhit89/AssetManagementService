@@ -72,7 +72,7 @@ public class ReturningRequestController {
     return ResponseEntity.ok(response);
   }
 
-  // Endpoint cho Admin tạo yêu cầu trả tài sản
+  // Endpoint for Admin create for returning request asset
   @PostMapping("/{assignmentId}")
   public ResponseEntity<ApiDtoResponse<ReturningRequestDetailDtoResponse>> createReturningRequest(
       @PathVariable Integer assignmentId) {
@@ -84,7 +84,7 @@ public class ReturningRequestController {
                 .build());
   }
 
-  // Endpoint cho User tạo yêu cầu trả tài sản
+  // Endpoint for Admin create request for returning request asset
   @PostMapping("/me/{assignmentId}")
   public ResponseEntity<ApiDtoResponse<ReturningRequestDetailDtoResponse>>
       createUserReturningRequest(@PathVariable Integer assignmentId) {
@@ -96,7 +96,7 @@ public class ReturningRequestController {
                 .build());
   }
 
-  // Endpoint cho Admin hủy yêu cầu trả tài sản
+  // Endpoint for Admin cancel for returning request asset
   @DeleteMapping("/{returningRequestId}")
   public ResponseEntity<ApiDtoResponse<ReturningRequestDetailDtoResponse>> cancelReturningRequest(
       @PathVariable Integer returningRequestId) {
