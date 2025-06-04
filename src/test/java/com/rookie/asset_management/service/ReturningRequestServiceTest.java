@@ -230,7 +230,8 @@ public class ReturningRequestServiceTest {
     when(returningRequestMapper.toDetailDto(returningRequest)).thenReturn(responseDto);
 
     // Act
-    ReturningRequestDetailDtoResponse result = returningRequestService.createUserReturningRequest(1);
+    ReturningRequestDetailDtoResponse result =
+        returningRequestService.createUserReturningRequest(1);
 
     // Assert
     assertNotNull(result);
@@ -251,9 +252,11 @@ public class ReturningRequestServiceTest {
 
     // Act & Assert
     AppException exception =
-        assertThrows(AppException.class, () -> returningRequestService.createUserReturningRequest(1));
+        assertThrows(
+            AppException.class, () -> returningRequestService.createUserReturningRequest(1));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
-    assertEquals("You can only create returning requests for your own assignments", exception.getMessage());
+    assertEquals(
+        "You can only create returning requests for your own assignments", exception.getMessage());
   }
 
   @Test
@@ -266,7 +269,8 @@ public class ReturningRequestServiceTest {
 
     // Act & Assert
     AppException exception =
-        assertThrows(AppException.class, () -> returningRequestService.createUserReturningRequest(1));
+        assertThrows(
+            AppException.class, () -> returningRequestService.createUserReturningRequest(1));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("Only accepted assignments can have returning requests", exception.getMessage());
   }
@@ -363,7 +367,9 @@ public class ReturningRequestServiceTest {
     AppException exception =
         assertThrows(
             AppException.class,
-            () -> returningRequestService.getAllReturningRequests(ReturningRequestStatus.WAITING, null, null, 0, 10, "id", "asc"));
+            () ->
+                returningRequestService.getAllReturningRequests(
+                    ReturningRequestStatus.WAITING, null, null, 0, 10, "id", "asc"));
 
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("User Not Found", exception.getMessage());
@@ -379,7 +385,9 @@ public class ReturningRequestServiceTest {
     AppException exception =
         assertThrows(
             AppException.class,
-            () -> returningRequestService.getAllReturningRequests(ReturningRequestStatus.WAITING, null, null, 0, 10, "id", "asc"));
+            () ->
+                returningRequestService.getAllReturningRequests(
+                    ReturningRequestStatus.WAITING, null, null, 0, 10, "id", "asc"));
 
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("Only admins can access this endpoint", exception.getMessage());
@@ -400,7 +408,8 @@ public class ReturningRequestServiceTest {
 
     // When
     PagingDtoResponse<ReturningRequestDtoResponse> result =
-        spyService.getAllReturningRequests(ReturningRequestStatus.WAITING, null, null, 0, 10, "id", "asc");
+        spyService.getAllReturningRequests(
+            ReturningRequestStatus.WAITING, null, null, 0, 10, "id", "asc");
 
     // Then
     assertNotNull(result);
@@ -555,7 +564,8 @@ public class ReturningRequestServiceTest {
 
     // When
     PagingDtoResponse<ReturningRequestDtoResponse> result =
-        spyService.getAllReturningRequests(ReturningRequestStatus.WAITING, "2024-01-01", "test query", 0, 10, "id", "asc");
+        spyService.getAllReturningRequests(
+            ReturningRequestStatus.WAITING, "2024-01-01", "test query", 0, 10, "id", "asc");
 
     // Then
     assertNotNull(result);
@@ -636,7 +646,8 @@ public class ReturningRequestServiceTest {
 
     // When & Then
     AppException exception =
-        assertThrows(AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
 
     assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
     assertEquals("Returning Request Not Found", exception.getMessage());
@@ -656,7 +667,8 @@ public class ReturningRequestServiceTest {
 
     // When & Then
     AppException exception =
-        assertThrows(AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
 
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals("User Not Found", exception.getMessage());
@@ -674,7 +686,8 @@ public class ReturningRequestServiceTest {
 
     // When & Then
     AppException exception =
-        assertThrows(AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
 
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("Only admins can access this endpoint", exception.getMessage());
@@ -701,7 +714,8 @@ public class ReturningRequestServiceTest {
 
     // When & Then
     AppException exception =
-        assertThrows(AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
 
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
     assertEquals("You do not have permission to complete this request", exception.getMessage());
@@ -725,7 +739,8 @@ public class ReturningRequestServiceTest {
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
 
     // When
-    CompleteReturningRequestDtoResponse result = returningRequestService.completeReturningRequest(requestId);
+    CompleteReturningRequestDtoResponse result =
+        returningRequestService.completeReturningRequest(requestId);
 
     // Then
     assertNull(result);
@@ -751,7 +766,8 @@ public class ReturningRequestServiceTest {
     when(returningRequestRepository.save(any(ReturningRequest.class))).thenReturn(returningRequest);
 
     // When
-    CompleteReturningRequestDtoResponse result = returningRequestService.completeReturningRequest(requestId);
+    CompleteReturningRequestDtoResponse result =
+        returningRequestService.completeReturningRequest(requestId);
 
     // Then
     assertNotNull(result);
