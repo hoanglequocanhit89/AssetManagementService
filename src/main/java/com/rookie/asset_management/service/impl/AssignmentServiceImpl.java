@@ -334,7 +334,10 @@ public class AssignmentServiceImpl
             .add(AssignmentSpecification.hasAssignedTo(user.getId()))
             .add(
                 AssignmentSpecification.hasStatusIn(
-                    Arrays.asList(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED)))
+                    Arrays.asList(
+                        AssignmentStatus.WAITING,
+                        AssignmentStatus.ACCEPTED,
+                        AssignmentStatus.WAITING_FOR_RETURNING)))
             .add(AssignmentSpecification.excludeDeleted())
             .add(AssignmentSpecification.hasAssignedDateBeforeOrEqualToCurrent())
             .build();
@@ -348,7 +351,6 @@ public class AssignmentServiceImpl
           sortDir.equalsIgnoreCase("asc")
               ? List.of(AssignmentStatus.ACCEPTED, AssignmentStatus.WAITING)
               : List.of(AssignmentStatus.WAITING, AssignmentStatus.ACCEPTED);
-
       assignments.sort(
           (a1, a2) -> {
             int i1 = statusOrder.indexOf(a1.getStatus());
