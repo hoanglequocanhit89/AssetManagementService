@@ -24,6 +24,8 @@ public class UserDetailModel implements UserDetails {
   boolean accountNonLocked;
   boolean credentialsNonExpired;
 
+  User user;
+
   public UserDetailModel(User user) {
     this.username = user.getUsername();
     this.password = user.getPassword();
@@ -36,6 +38,7 @@ public class UserDetailModel implements UserDetails {
     this.accountNonExpired = true;
     this.accountNonLocked = true;
     this.credentialsNonExpired = true;
+    this.user = user;
   }
 
   @Override

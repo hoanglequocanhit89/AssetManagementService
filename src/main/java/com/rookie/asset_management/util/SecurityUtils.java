@@ -1,11 +1,14 @@
 package com.rookie.asset_management.util;
 
+import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.entity.UserDetailModel;
+import com.rookie.asset_management.exception.AppException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 @Slf4j
@@ -51,5 +54,20 @@ public final class SecurityUtils {
 
     log.debug("Remote Address: {}", request.getRemoteAddr());
     return request.getRemoteAddr();
+  }
+
+  /**
+   * Retrieves the current authenticated user from the security context. This method checks the
+   * principal object in the security context and casts it to UserDetailModel. If the principal is
+   * not an instance of UserDetailModel, it throws an AppException with an UNAUTHORIZED status.
+   *
+   * @return the current authenticated User object
+   */
+  public static User getCurrentUser() {
+    Object principal = SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+    if (principal instanceof UserDetailModel userDetailModel) {
+      return userDetailModel.getUser();
+    }
+    throw new AppException(HttpStatus.UNAUTHORIZED, "User not found in security context");
   }
 }
