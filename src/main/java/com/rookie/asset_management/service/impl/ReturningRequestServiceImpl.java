@@ -8,6 +8,7 @@ import com.rookie.asset_management.dto.response.returning.ReturningRequestDetail
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
@@ -168,6 +169,9 @@ public class ReturningRequestServiceImpl
 
     // Update status of the assignment to RETURNED
     returningRequest.getAssignment().setStatus(AssignmentStatus.RETURNED);
+
+    // Update status of asset to AVAILABLE
+    returningRequest.getAssignment().getAsset().setStatus(AssetStatus.AVAILABLE);
 
     // Update acceptedBy to the current user
     returningRequest.setAcceptedBy(user);
