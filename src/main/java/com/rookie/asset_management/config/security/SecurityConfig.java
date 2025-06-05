@@ -10,6 +10,7 @@ import lombok.experimental.FieldDefaults;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.authentication.AuthenticationEventPublisher;
 import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.DefaultAuthenticationEventPublisher;
@@ -49,10 +50,14 @@ public class SecurityConfig {
         auth ->
             auth.requestMatchers(Endpoints.PUBLIC_ENDPOINTS)
                 .permitAll()
+                .requestMatchers(HttpMethod.GET, Endpoints.STAFF_ENDPOINTS)
+                .hasAnyAuthority(UserRoles.STAFF, UserRoles.ADMIN)
+                .requestMatchers(HttpMethod.PATCH, Endpoints.ASSIGNMENT_STAFF_PATCH_ENDPOINTS)
+                .hasAnyAuthority(UserRoles.STAFF, UserRoles.ADMIN)
+                .requestMatchers(HttpMethod.POST, Endpoints.RETURNING_REQUEST_STAFF_ENDPOINTS)
+                .hasAnyAuthority(UserRoles.STAFF, UserRoles.ADMIN)
                 .requestMatchers(Endpoints.ADMIN_ENDPOINTS)
                 .hasAuthority(UserRoles.ADMIN)
-                .requestMatchers(Endpoints.STAFF_ENDPOINTS)
-                .hasAuthority(UserRoles.STAFF)
                 .anyRequest()
                 .authenticated());
     // configure session management

@@ -1,4 +1,4 @@
-package com.rookie.asset_management.service.impl;
+package com.rookie.asset_management.service.abstraction;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.mapper.PagingMapper;

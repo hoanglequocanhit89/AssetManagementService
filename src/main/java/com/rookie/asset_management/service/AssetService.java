@@ -30,11 +30,7 @@ public interface AssetService {
    * @return a paginated response of asset list items
    */
   PagingDtoResponse<ViewAssetListDtoResponse> getAllAssets(
-      Integer locationId,
-      String keyword,
-      String categoryName,
-      List<AssetStatus> states,
-      Pageable pageable);
+      String keyword, String categoryName, List<AssetStatus> states, Pageable pageable);
 
   /**
    * Creates a new asset based on the given request DTO and assigns it to the user's location. The

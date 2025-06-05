@@ -19,5 +19,13 @@ public class Endpoints {
   };
 
   //   Staff endpoints go here
-  public static final String[] STAFF_ENDPOINTS = {ApiPaths.V1 + "/return/me"};
+  public static final String[] STAFF_ENDPOINTS = {
+    ApiPaths.V1 + "/return/*", ApiPaths.V1 + "/assignments/*"
+  };
+
+  public static final String[] ASSIGNMENT_STAFF_PATCH_ENDPOINTS = {ApiPaths.V1 + "/assignments/*"};
+
+  public static final String[] RETURNING_REQUEST_STAFF_ENDPOINTS = {
+    ApiPaths.V1 + "/return/me/{assignmentId}"
+  };
 }

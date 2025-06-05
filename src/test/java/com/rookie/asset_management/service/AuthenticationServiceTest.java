@@ -251,7 +251,7 @@ class AuthenticationServiceTest {
             AppException.class, () -> authenticationService.changePassword(request, response));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals(
-        "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$%^&+=!)",
+        "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
         exception.getMessage());
     verify(userRepository, never()).save(any(User.class));
   }
@@ -438,7 +438,7 @@ class AuthenticationServiceTest {
             () -> authenticationService.firstLoginChangePassword(request, response));
     assertEquals(HttpStatus.BAD_REQUEST, exception.getHttpStatusCode());
     assertEquals(
-        "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$%^&+=!)",
+        "New password must contain at least one uppercase letter, one lowercase letter, one number, and one special character",
         exception.getMessage());
     verify(userRepository, never()).save(any(User.class));
     verify(jwtService, never()).generateToken(anyString(), any(HttpServletResponse.class));

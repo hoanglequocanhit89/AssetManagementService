@@ -36,7 +36,6 @@ public class AssetController {
   @GetMapping
   public ResponseEntity<ApiDtoResponse<PagingDtoResponse<ViewAssetListDtoResponse>>>
       getAssetsByFilterSearchAndSort(
-          @RequestParam Integer locationId,
           @RequestParam(required = false) String keyword,
           @RequestParam(required = false) String categoryName,
           @RequestParam(required = false) List<AssetStatus> states,
@@ -56,7 +55,7 @@ public class AssetController {
 
     // Call service method to fetch filtered, searched, sorted, and paginated asset list
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(locationId, keyword, categoryName, states, pageable);
+        assetService.getAllAssets(keyword, categoryName, states, pageable);
 
     // Return the response wrapped in ApiDtoResponse with a success message
     return ResponseEntity.ok(
