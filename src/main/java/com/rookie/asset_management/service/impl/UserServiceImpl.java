@@ -18,6 +18,7 @@ import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.UserService;
+import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.UserSpecification;
 import com.rookie.asset_management.util.SecurityUtils;
 import com.rookie.asset_management.util.SpecificationBuilder;

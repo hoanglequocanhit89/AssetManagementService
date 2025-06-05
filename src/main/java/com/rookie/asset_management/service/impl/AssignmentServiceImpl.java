@@ -20,6 +20,7 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.AssignmentService;
 import com.rookie.asset_management.service.JwtService;
+import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.AssignmentSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import java.util.Arrays;

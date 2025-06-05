@@ -4,7 +4,6 @@ import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -36,7 +35,8 @@ class JwtServiceImplTest {
 
   @Mock private HttpServletResponse response;
 
-  private static final String SECRET = "dGhpc2lzYXNlY3JldGtleWZvcmp3dHRlc3RpbmcxMjM0NTY3ODkw"; // Base64 encoded
+  private static final String SECRET =
+      "dGhpc2lzYXNlY3JldGtleWZvcmp3dHRlc3RpbmcxMjM0NTY3ODkw"; // Base64 encoded
   private static final Long JWT_EXPIRES_MINUTES = 60L; // 60 minutes
   private static final String USERNAME = "testUser";
   private SecretKey secretKey;
@@ -155,7 +155,8 @@ class JwtServiceImplTest {
   }
 
   @Test
-  void extractUsername_shouldReturnUsernameFromClaims() throws NoSuchFieldException, IllegalAccessException {
+  void extractUsername_shouldReturnUsernameFromClaims()
+      throws NoSuchFieldException, IllegalAccessException {
     // Arrange
     setField(jwtService, "claims", null); // Đảm bảo claims ban đầu là null
     String token =
@@ -175,7 +176,8 @@ class JwtServiceImplTest {
   }
 
   @Test
-  void extractUsername_shouldThrowExceptionWhenClaimsNotSet() throws NoSuchFieldException, IllegalAccessException {
+  void extractUsername_shouldThrowExceptionWhenClaimsNotSet()
+      throws NoSuchFieldException, IllegalAccessException {
     // Arrange
     setField(jwtService, "claims", null);
 
