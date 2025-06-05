@@ -110,6 +110,13 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
             .findById(assetId)
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Asset not found"));
 
+    // New check: asset was disabled by another user
+    if (Boolean.TRUE.equals(asset.getDisabled())) {
+      throw new AppException(
+          HttpStatus.CONFLICT,
+          "Update failed: The asset was modified by another user. Please refresh and try again.");
+    }
+
     // Check if the asset has been assigned — cannot be edited if assigned
     if (asset.getStatus() == AssetStatus.ASSIGNED) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Cannot edit assigned asset");
