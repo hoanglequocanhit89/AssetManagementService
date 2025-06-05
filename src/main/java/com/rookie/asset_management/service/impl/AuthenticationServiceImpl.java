@@ -9,6 +9,7 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.AuthenticationService;
 import com.rookie.asset_management.service.JwtService;
+import com.rookie.asset_management.service.MailService;
 import com.rookie.asset_management.util.SecurityUtils;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.AccessLevel;
@@ -23,6 +24,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
+import org.thymeleaf.context.Context;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -33,6 +35,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
   PasswordEncoder passwordEncoder;
   UserRepository userRepository;
   JwtService jwtService;
+  MailService mailService;
 
   private void validatePassword(String password, String fieldName) {
     if (password == null || password.trim().isEmpty()) {
@@ -78,6 +81,10 @@ public class AuthenticationServiceImpl implements AuthenticationService {
                       new AppException(HttpStatus.INTERNAL_SERVER_ERROR, "No role found for user"));
 
       Boolean isFirstLogin = SecurityUtils.isFirstLogin();
+
+      Context context = new Context();
+      context.setVariable("fullName", "hi");
+      mailService.sendMail("tranthihienluong2003@gmail.com", "Hello", "hihih");
 
       return LoginResponseDTO.builder()
           .role(role)
