@@ -1,5 +1,8 @@
 package com.rookie.asset_management.service.impl;
 
+import com.rookie.asset_management.dto.asset.AssetGroupedByStatusDto;
+import com.rookie.asset_management.dto.asset.CategoryGroupedAssetDto;
+import com.rookie.asset_management.dto.asset.GetAllGroupedAssetResponse;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
@@ -22,8 +25,8 @@ import com.rookie.asset_management.util.SecurityUtils;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
-import java.util.Date;
-import java.util.List;
+import java.util.*;
+import java.util.stream.Collectors;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -255,5 +258,44 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
     if (installedDate == null) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Installed date is required");
     }
+  }
+
+  @Override
+  public GetAllGroupedAssetResponse getAllGroupedAssets() {
+    User admin = SecurityUtils.getCurrentUser();
+    Integer locationId = admin.getLocation().getId();
+
+    List<Asset> assets = assetRepository.findByLocationIdAndDisabledFalse(locationId);
+
+    Map<String, Map<AssetStatus, List<Asset>>> grouped =
+        assets.stream()
+            .collect(
+                Collectors.groupingBy(
+                    a -> a.getCategory().getName(), Collectors.groupingBy(Asset::getStatus)));
+
+    List<CategoryGroupedAssetDto> categoryDtos = new ArrayList<>();
+
+    for (Map.Entry<String, Map<AssetStatus, List<Asset>>> categoryEntry : grouped.entrySet()) {
+      String categoryName = categoryEntry.getKey();
+      Map<AssetStatus, List<Asset>> statusMap = categoryEntry.getValue();
+
+      List<AssetGroupedByStatusDto> statusDtos = new ArrayList<>();
+
+      for (Map.Entry<AssetStatus, List<Asset>> statusEntry : statusMap.entrySet()) {
+        AssetStatus status = statusEntry.getKey();
+        List<ViewAssetListDtoResponse> assetDtos =
+            statusEntry.getValue().stream()
+                .map(assetMapper::toAssetListDto)
+                .collect(Collectors.toList());
+
+        statusDtos.add(new AssetGroupedByStatusDto(status.name(), assetDtos));
+      }
+      categoryDtos.add(new CategoryGroupedAssetDto(categoryName, statusDtos));
+    }
+
+    Map<String, List<CategoryGroupedAssetDto>> responseData = new HashMap<>();
+    responseData.put("categories", categoryDtos);
+
+    return new GetAllGroupedAssetResponse("Get All asset successfully", responseData);
   }
 }
