@@ -17,6 +17,7 @@ import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.ReturningRequestService;
+import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import java.time.LocalDate;

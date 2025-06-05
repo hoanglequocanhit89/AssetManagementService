@@ -1,5 +1,6 @@
 package com.rookie.asset_management.entity;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
@@ -24,7 +25,7 @@ public class UserDetailModel implements UserDetails {
   boolean accountNonLocked;
   boolean credentialsNonExpired;
 
-  User user;
+  @JsonIgnore User user;
 
   public UserDetailModel(User user) {
     this.username = user.getUsername();

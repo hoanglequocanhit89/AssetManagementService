@@ -16,6 +16,7 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.AssetMapper;
 import com.rookie.asset_management.repository.AssetRepository;
 import com.rookie.asset_management.service.AssetService;
+import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.AssetSpecification;
 import com.rookie.asset_management.util.SecurityUtils;
 import com.rookie.asset_management.util.SpecificationBuilder;
