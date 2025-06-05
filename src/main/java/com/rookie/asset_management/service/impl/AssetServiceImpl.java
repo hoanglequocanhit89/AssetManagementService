@@ -80,11 +80,9 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
     // Get location from admin
     Location location = admin.getLocation();
 
-    Optional<Asset> existingAssetOpt =
-        assetRepository.findByNameAndLocation(dto.getName(), location);
-    if (existingAssetOpt.isPresent()) {
-      Asset existingAsset = existingAssetOpt.get();
-      if (!existingAsset.getDisabled()) {
+    List<Asset> assets = assetRepository.findByNameAndLocation(dto.getName(), location);
+    for (Asset asset : assets) {
+      if (!asset.getDisabled()) {
         throw new AppException(
             HttpStatus.CONFLICT,
             "Asset name already exists in this location and is active. Please choose a different name.");
