@@ -16,6 +16,7 @@ import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.entity.UserDetailModel;
 import com.rookie.asset_management.entity.UserProfile;
 import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.Gender;
@@ -25,7 +26,9 @@ import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.UserServiceImpl;
+import com.rookie.asset_management.util.SecurityUtils;
 import java.time.LocalDate;
+import java.util.Collections;
 import java.util.List;
 import java.util.Optional;
 import java.util.function.Function;
@@ -35,11 +38,14 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
 @ExtendWith(MockitoExtension.class)
@@ -74,6 +80,29 @@ class UserServiceTest {
     adminUser.setDisabled(false);
   }
 
+  @BeforeEach
+  void setupSecurityContext() {
+    // Clear any existing authentication
+    SecurityContextHolder.clearContext();
+  }
+
+  private void mockAuthenticatedUser(User user) {
+    UserDetailModel userDetails = new UserDetailModel(user); // hoặc mock(UserDetailModel.class)
+    try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
+      // Create authentication with the user
+      UsernamePasswordAuthenticationToken auth =
+          new UsernamePasswordAuthenticationToken(userDetails, "password", Collections.emptyList());
+
+      // Add user principal to the authentication
+      auth.setDetails(user);
+
+      // Set the authentication in the security context
+      SecurityContextHolder.getContext().setAuthentication(auth);
+
+      mockedSecurityUtils.when(SecurityUtils::getCurrentUser).thenReturn(user);
+    }
+  }
+
   @Test
   @DisplayName("Test getAllUsers with valid request")
   void testGetAllUsers() {
@@ -88,8 +117,7 @@ class UserServiceTest {
             .build();
 
     // Mock JWT service
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
 
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(mockUserDtoResponse)));
@@ -111,8 +139,7 @@ class UserServiceTest {
     UserFilterRequest userFilterRequest = UserFilterRequest.builder().build();
 
     // Mock JWT service
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
 
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of()));
@@ -133,8 +160,13 @@ class UserServiceTest {
     UserFilterRequest userFilterRequest = UserFilterRequest.builder().build();
 
     // Mock JWT service to return username but user not found
-    when(jwtService.extractUsername()).thenReturn("nonexistent");
-    when(userRepository.findByUsername("nonexistent")).thenReturn(Optional.empty());
+    mockAuthenticatedUser(adminUser);
+
+    when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
+        .thenReturn(new PageImpl<>(List.of()));
+
+    when(userMapper.toPagingResult(any(PageImpl.class), any(Function.class)))
+        .thenThrow(new AppException(HttpStatus.NOT_FOUND, "User Not Found"));
 
     AppException exception =
         assertThrows(
@@ -159,8 +191,7 @@ class UserServiceTest {
         UserDtoResponse.builder().id(3).fullName("C C").staffCode("SD1234").role("Admin").build();
 
     // Mock JWT service
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
 
     when(userRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(new PageImpl<>(List.of(first, second, third)));
@@ -374,8 +405,7 @@ class UserServiceTest {
             "Male");
 
     // Mock JWT and PasswordEncoder
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
 
     when(userMapper.toEntity(request)).thenReturn(user);
@@ -437,8 +467,7 @@ class UserServiceTest {
             "Female");
 
     // Mock JWT and PasswordEncoder
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
 
     when(userMapper.toEntity(request)).thenReturn(user);
@@ -500,8 +529,7 @@ class UserServiceTest {
             "Male");
 
     // Mock JWT and PasswordEncoder
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
 
     when(userMapper.toEntity(request)).thenReturn(user);
@@ -563,8 +591,7 @@ class UserServiceTest {
             "Male");
 
     // Mock for user 1
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
 
     when(userMapper.toEntity(request1)).thenReturn(user1);
@@ -617,8 +644,7 @@ class UserServiceTest {
             "Male");
 
     // Mock for user 2
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
 
     when(userMapper.toEntity(request2)).thenReturn(user2);
@@ -673,8 +699,7 @@ class UserServiceTest {
             "Male");
 
     // Mock for user 3
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
 
     when(userMapper.toEntity(request3)).thenReturn(user3);
@@ -738,9 +763,8 @@ class UserServiceTest {
             LocalDate.of(1995, 1, 1),
             "Male");
 
-    // Mock JWT service
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    // Mock authentication
+    mockAuthenticatedUser(adminUser);
 
     // Mock password encoder
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
@@ -802,8 +826,7 @@ class UserServiceTest {
             "Male");
 
     // Mock JWT service
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
 
     // Mock password encoder
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");
@@ -865,8 +888,7 @@ class UserServiceTest {
             "Male");
 
     // Mock JWT service
-    when(jwtService.extractUsername()).thenReturn("admin");
-    when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
+    mockAuthenticatedUser(adminUser);
 
     // Mock password encoder
     when(passwordEncoder.encode(anyString())).thenReturn("hashedPassword");

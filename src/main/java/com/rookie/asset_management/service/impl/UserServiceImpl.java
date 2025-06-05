@@ -17,9 +17,10 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
-import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.UserService;
+import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.UserSpecification;
+import com.rookie.asset_management.util.SecurityUtils;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
 import java.text.Normalizer;
@@ -49,7 +50,6 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   RoleRepository roleRepository;
   UserMapper userMapper;
   PasswordEncoder passwordEncoder;
-  JwtService jwtService;
 
   // Autowired constructor for paging service implementation
   @Autowired
@@ -57,26 +57,20 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
       UserRepository userRepository,
       UserMapper userMapper,
       RoleRepository roleRepository,
-      PasswordEncoder passwordEncoder,
-      JwtService jwtService) {
+      PasswordEncoder passwordEncoder) {
     super(userMapper, userRepository);
     this.userRepository = userRepository;
     this.userMapper = userMapper;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
-    this.jwtService = jwtService;
   }
 
   @Transactional
   @Override
   public PagingDtoResponse<UserDtoResponse> getAllUsers(
       UserFilterRequest userFilterRequest, int page, int size, String sortBy, String sortDir) {
-    // Get the user from JWT token
-    String username = jwtService.extractUsername();
-    User admin =
-        userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+    // Get authenticated user from security context
+    User admin = SecurityUtils.getCurrentUser();
     // check if the sortBy is sort by firstName or lastName
     // must set to related.property because of the join
     if (sortBy != null && sortBy.equals("firstName")) {
@@ -116,12 +110,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   @Override
   public UserDetailDtoResponse createUser(UserRequestDTO request) {
     // Get the user from JWT token
-    String currentUsername = jwtService.extractUsername();
-    User admin =
-        userRepository
-            .findByUsername(currentUsername)
-            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
-
+    User admin = SecurityUtils.getCurrentUser();
     if (!"ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
       throw new AppException(HttpStatus.FORBIDDEN, "Only admins can create users");
     }
@@ -159,7 +148,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
       throw new AppException(HttpStatus.CONFLICT, "Username already exists");
     }
 
-    //    Bscrypt password
+    // Bcrypt password
     String hashedPassword =
         passwordEncoder.encode(generatePassword(username, user.getUserProfile().getDob()));
 
@@ -290,11 +279,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   @Transactional
   public List<UserBriefDtoResponse> getAllUserBrief(String query, String sortBy, String sortDir) {
     // Get the username from JWT token
-    String username = jwtService.extractUsername();
-    User user =
-        userRepository
-            .findByUsername(username)
-            .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
+    User user = SecurityUtils.getCurrentUser();
     // check if the sortBy is sort by firstName or lastName
     // must set to related.property because of the join
     if (sortBy != null && sortBy.equals("firstName")) {

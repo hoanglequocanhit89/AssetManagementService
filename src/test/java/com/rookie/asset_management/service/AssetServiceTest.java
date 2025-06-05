@@ -3,6 +3,7 @@ package com.rookie.asset_management.service;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mockStatic;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -15,19 +16,22 @@ import com.rookie.asset_management.dto.response.asset.AssetDetailDtoResponse;
 import com.rookie.asset_management.dto.response.asset.CreateNewAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.EditAssetDtoResponse;
 import com.rookie.asset_management.dto.response.asset.ViewAssetListDtoResponse;
+import com.rookie.asset_management.dto.response.assignment.AssignmentDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.entity.Location;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.entity.UserDetailModel;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.exception.AppException;
+import com.rookie.asset_management.mapper.AssetMapper;
 import com.rookie.asset_management.repository.AssetRepository;
-import com.rookie.asset_management.repository.CategoryRepository;
-import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.AssetServiceImpl;
+import com.rookie.asset_management.util.SecurityUtils;
 import java.time.LocalDate;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Date;
 import java.util.List;
 import java.util.Optional;
@@ -37,6 +41,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.Page;
@@ -46,23 +51,22 @@ import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 
 @ExtendWith(MockitoExtension.class)
 class AssetServiceTest {
 
   @Mock private AssetRepository assetRepository;
-  @Mock private CategoryRepository categoryRepository;
-  @Mock private UserRepository userRepository;
+  @Mock private AssetMapper assetMapper;
   @InjectMocks private AssetServiceImpl assetService;
-  @Mock private JwtService jwtService;
 
   private Asset asset;
-  private Category category;
   private Location location;
 
   @BeforeEach
   void setUp() {
-    category = new Category();
+    Category category = new Category();
     category.setId(1);
     category.setName("Laptop");
 
@@ -82,6 +86,29 @@ class AssetServiceTest {
     asset.setDisabled(false);
   }
 
+  @BeforeEach
+  void setupSecurityContext() {
+    // Clear any existing authentication
+    SecurityContextHolder.clearContext();
+  }
+
+  private void mockAuthenticatedUser(User user) {
+    UserDetailModel userDetails = new UserDetailModel(user); // hoặc mock(UserDetailModel.class)
+    try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
+      // Create authentication with the user
+      UsernamePasswordAuthenticationToken auth =
+          new UsernamePasswordAuthenticationToken(userDetails, "password", Collections.emptyList());
+
+      // Add user principal to the authentication
+      auth.setDetails(user);
+
+      // Set the authentication in the security context
+      SecurityContextHolder.getContext().setAuthentication(auth);
+
+      mockedSecurityUtils.when(SecurityUtils::getCurrentUser).thenReturn(user);
+    }
+  }
+
   @Test
   void searchFilterAndSortAssets_ShouldReturnPagedAssets() {
     // Arrange
@@ -91,9 +118,29 @@ class AssetServiceTest {
 
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
+    // Create expected response
+    ViewAssetListDtoResponse responseDto = new ViewAssetListDtoResponse();
+    responseDto.setAssetCode("LA0001");
+    responseDto.setName("Laptop Dell");
+    responseDto.setCategoryName("Laptop");
+    responseDto.setStatus(AssetStatus.AVAILABLE);
+    responseDto.setLocationName("HCM");
+
+    PagingDtoResponse<ViewAssetListDtoResponse> expectedResponse = new PagingDtoResponse<>();
+    expectedResponse.setContent(List.of(responseDto));
+
+    when(assetMapper.toPagingResult(any(Page.class), any())).thenReturn(expectedResponse);
+
+    User user = new User();
+    user.setId(1);
+    user.setUsername("admin1");
+    user.setLocation(location);
+    user.setDisabled(false);
+    mockAuthenticatedUser(user);
+
     // Act
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(1, "laptop", "Laptop", List.of(AssetStatus.AVAILABLE), pageable);
+        assetService.getAllAssets("laptop", "Laptop", List.of(AssetStatus.AVAILABLE), pageable);
 
     // Assert
     assertNotNull(result);
@@ -113,14 +160,38 @@ class AssetServiceTest {
 
   @Test
   void searchAssets_WithOnlyLocationId_ShouldReturnPagedAssets() {
+    // Arrange
     Pageable pageable = PageRequest.of(0, 10);
-    Page<Asset> pageAssets = new PageImpl<>(List.of(asset), pageable, 1);
+    List<Asset> assets = List.of(asset);
+    Page<Asset> pageAssets = new PageImpl<>(assets, pageable, 1);
 
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
-    PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(1, null, null, null, pageable);
+    // Create expected response
+    ViewAssetListDtoResponse responseDto = new ViewAssetListDtoResponse();
+    responseDto.setAssetCode("LA0001");
+    responseDto.setName("Laptop Dell");
+    responseDto.setCategoryName("Laptop");
+    responseDto.setStatus(AssetStatus.AVAILABLE);
+    responseDto.setLocationName("HCM");
 
+    PagingDtoResponse<ViewAssetListDtoResponse> expectedResponse = new PagingDtoResponse<>();
+    expectedResponse.setContent(List.of(responseDto));
+
+    when(assetMapper.toPagingResult(any(Page.class), any())).thenReturn(expectedResponse);
+
+    User user = new User();
+    user.setId(1);
+    user.setUsername("admin1");
+    user.setLocation(location);
+    user.setDisabled(false);
+    mockAuthenticatedUser(user);
+
+    // Act
+    PagingDtoResponse<ViewAssetListDtoResponse> result =
+        assetService.getAllAssets(null, null, null, pageable);
+
+    // Assert
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
     verify(assetRepository).findAll(any(Specification.class), eq(pageable));
@@ -128,14 +199,38 @@ class AssetServiceTest {
 
   @Test
   void searchAssets_WithKeywordOnly_ShouldReturnPagedAssets() {
+    // Arrange
     Pageable pageable = PageRequest.of(0, 10);
-    Page<Asset> pageAssets = new PageImpl<>(List.of(asset), pageable, 1);
+    List<Asset> assets = List.of(asset);
+    Page<Asset> pageAssets = new PageImpl<>(assets, pageable, 1);
 
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
-    PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(1, "laptop", null, null, pageable);
+    // Create expected response
+    ViewAssetListDtoResponse responseDto = new ViewAssetListDtoResponse();
+    responseDto.setAssetCode("LA0001");
+    responseDto.setName("Laptop Dell");
+    responseDto.setCategoryName("Laptop");
+    responseDto.setStatus(AssetStatus.AVAILABLE);
+    responseDto.setLocationName("HCM");
 
+    PagingDtoResponse<ViewAssetListDtoResponse> expectedResponse = new PagingDtoResponse<>();
+    expectedResponse.setContent(List.of(responseDto));
+
+    when(assetMapper.toPagingResult(any(Page.class), any())).thenReturn(expectedResponse);
+
+    User user = new User();
+    user.setId(1);
+    user.setUsername("admin1");
+    user.setLocation(location);
+    user.setDisabled(false);
+    mockAuthenticatedUser(user);
+
+    // Act
+    PagingDtoResponse<ViewAssetListDtoResponse> result =
+        assetService.getAllAssets("laptop", null, null, pageable);
+
+    // Assert
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
     verify(assetRepository).findAll(any(Specification.class), eq(pageable));
@@ -148,8 +243,28 @@ class AssetServiceTest {
 
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
+    // Create expected response
+    ViewAssetListDtoResponse responseDto = new ViewAssetListDtoResponse();
+    responseDto.setAssetCode("LA0001");
+    responseDto.setName("Laptop Dell");
+    responseDto.setCategoryName("Laptop");
+    responseDto.setStatus(AssetStatus.AVAILABLE);
+    responseDto.setLocationName("HCM");
+
+    PagingDtoResponse<ViewAssetListDtoResponse> expectedResponse = new PagingDtoResponse<>();
+    expectedResponse.setContent(List.of(responseDto));
+
+    when(assetMapper.toPagingResult(any(Page.class), any())).thenReturn(expectedResponse);
+
+    User user = new User();
+    user.setId(1);
+    user.setUsername("admin1");
+    user.setLocation(location);
+    user.setDisabled(false);
+    mockAuthenticatedUser(user);
+
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(1, null, "Laptop", null, pageable);
+        assetService.getAllAssets(null, "Laptop", null, pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -163,8 +278,29 @@ class AssetServiceTest {
 
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
+    // Create expected response
+    ViewAssetListDtoResponse responseDto = new ViewAssetListDtoResponse();
+    responseDto.setAssetCode("LA0001");
+    responseDto.setName("Laptop Dell");
+    responseDto.setCategoryName("Laptop");
+    responseDto.setStatus(AssetStatus.AVAILABLE);
+    responseDto.setLocationName("HCM");
+
+    PagingDtoResponse<ViewAssetListDtoResponse> expectedResponse = new PagingDtoResponse<>();
+    expectedResponse.setContent(List.of(responseDto));
+
+    when(assetMapper.toPagingResult(any(Page.class), any())).thenReturn(expectedResponse);
+
+    // Setup authenticated user
+    User user = new User();
+    user.setId(1);
+    user.setUsername("admin1");
+    user.setLocation(location);
+    user.setDisabled(false);
+    mockAuthenticatedUser(user);
+
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(1, null, null, List.of(AssetStatus.AVAILABLE), pageable);
+        assetService.getAllAssets(null, null, List.of(AssetStatus.AVAILABLE), pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -178,8 +314,29 @@ class AssetServiceTest {
 
     when(assetRepository.findAll(any(Specification.class), eq(pageable))).thenReturn(pageAssets);
 
+    // Create expected response
+    ViewAssetListDtoResponse responseDto = new ViewAssetListDtoResponse();
+    responseDto.setAssetCode("LA0001");
+    responseDto.setName("Laptop Dell");
+    responseDto.setCategoryName("Laptop");
+    responseDto.setStatus(AssetStatus.AVAILABLE);
+    responseDto.setLocationName("HCM");
+
+    PagingDtoResponse<ViewAssetListDtoResponse> expectedResponse = new PagingDtoResponse<>();
+    expectedResponse.setContent(List.of(responseDto));
+
+    when(assetMapper.toPagingResult(any(Page.class), any())).thenReturn(expectedResponse);
+
+    // Setup authenticated user
+    User user = new User();
+    user.setId(1);
+    user.setUsername("admin1");
+    user.setLocation(location);
+    user.setDisabled(false);
+    mockAuthenticatedUser(user);
+
     PagingDtoResponse<ViewAssetListDtoResponse> result =
-        assetService.getAllAssets(1, "   ", "", List.of(), pageable);
+        assetService.getAllAssets("   ", "", List.of(), pageable);
 
     assertNotNull(result);
     assertEquals(1, result.getContent().size());
@@ -211,6 +368,7 @@ class AssetServiceTest {
     admin.setId(1);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false);
 
     Asset savedAsset = new Asset();
     savedAsset.setId(123); // mock ID after save
@@ -224,12 +382,15 @@ class AssetServiceTest {
     savedAsset.setCreatedAt(new Date());
     savedAsset.setDisabled(false);
 
-    Optional<Asset> mockAsset = Optional.of(asset);
-
-    // Mock JWT service to return username
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    // Add mock for the DTO to entity conversion
+    Asset mappedAsset = new Asset();
+    mappedAsset.setName(request.getName());
+    mappedAsset.setSpecification(request.getSpecification());
+    mappedAsset.setInstalledDate(request.getInstalledDate());
+    mappedAsset.setStatus(request.getState());
+    mappedAsset.setCategory(category);
+    when(assetMapper.toEntity(request)).thenReturn(mappedAsset);
+    mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocation("Laptop Dell", location))
         .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
@@ -241,6 +402,19 @@ class AssetServiceTest {
               }
               return a;
             });
+
+    when(assetMapper.toCreationDto(any(Asset.class)))
+        .thenReturn(
+            CreateNewAssetDtoResponse.builder()
+                .id(123)
+                .assetCode("LA000123")
+                .name("Laptop Dell")
+                .specification("i7, 16GB RAM")
+                .installedDate(request.getInstalledDate())
+                .state(AssetStatus.AVAILABLE)
+                .categoryName("Laptop")
+                .locationName("HCM")
+                .build());
 
     // Act
     CreateNewAssetDtoResponse response = assetService.createNewAsset(request);
@@ -257,13 +431,11 @@ class AssetServiceTest {
     assertEquals(123, response.getId());
 
     // Verify interactions
-    verify(jwtService, times(1)).extractUsername();
-    verify(categoryRepository, times(1)).findById(1);
-    verify(userRepository, times(1)).findByUsername("admin1");
     verify(assetRepository, times(1)).findByNameAndLocation("Laptop Dell", location);
-    verify(assetRepository, times(2))
+    verify(assetRepository, times(1))
         .save(
             any(Asset.class)); // Called twice: first for ID generation, second for assetCode update
+    verify(assetMapper, times(1)).toCreationDto(any(Asset.class));
   }
 
   @Test
@@ -279,16 +451,15 @@ class AssetServiceTest {
             .build();
 
     // Act & Assert
-    IllegalArgumentException ex =
-        assertThrows(IllegalArgumentException.class, () -> assetService.createNewAsset(request));
+    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
 
+    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
     assertEquals("Asset state must be AVAILABLE or NOT_AVAILABLE", ex.getMessage());
 
     // Verify no interactions with repositories since validation fails early
-    verify(jwtService, never()).extractUsername();
-    verify(categoryRepository, never()).findById(any());
-    verify(userRepository, never()).findByUsername(any());
+    verify(assetRepository, never()).findByNameAndLocation(any(), any());
     verify(assetRepository, never()).save(any());
+    verify(assetMapper, never()).toCreationDto(any());
   }
 
   @Test
@@ -310,9 +481,6 @@ class AssetServiceTest {
     assertEquals("Asset name is required", ex.getMessage());
 
     // Verify no interactions with repositories since validation fails early
-    verify(jwtService, never()).extractUsername();
-    verify(categoryRepository, never()).findById(any());
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -335,9 +503,6 @@ class AssetServiceTest {
     assertEquals("Specification is required", ex.getMessage());
 
     // Verify no interactions with repositories since validation fails early
-    verify(jwtService, never()).extractUsername();
-    verify(categoryRepository, never()).findById(any());
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -360,9 +525,6 @@ class AssetServiceTest {
     assertEquals("Installed date is required", ex.getMessage());
 
     // Verify no interactions with repositories since validation fails early
-    verify(jwtService, never()).extractUsername();
-    verify(categoryRepository, never()).findById(any());
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -385,70 +547,6 @@ class AssetServiceTest {
     assertEquals("Category ID is required", ex.getMessage());
 
     // Verify no interactions with repositories since validation fails early
-    verify(jwtService, never()).extractUsername();
-    verify(categoryRepository, never()).findById(any());
-    verify(userRepository, never()).findByUsername(any());
-    verify(assetRepository, never()).save(any());
-  }
-
-  @Test
-  void createNewAsset_CategoryNotFound_ThrowsException() {
-    // Arrange
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Laptop Dell")
-            .specification("i7, 16GB RAM")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(999) // Non-existent category
-            .build();
-
-    when(categoryRepository.findById(999)).thenReturn(Optional.empty());
-
-    // Act & Assert
-    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
-
-    assertEquals(HttpStatus.NOT_FOUND, ex.getHttpStatusCode());
-    assertEquals("Category not found", ex.getMessage());
-
-    // Verify limited interactions since category lookup fails
-    verify(jwtService, never()).extractUsername();
-    verify(categoryRepository, times(1)).findById(999);
-    verify(userRepository, never()).findByUsername(any());
-    verify(assetRepository, never()).save(any());
-  }
-
-  @Test
-  void createNewAsset_UserNotFound_ThrowsException() {
-    // Arrange
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Laptop Dell")
-            .specification("i7, 16GB RAM")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(1)
-            .build();
-
-    Category category = new Category();
-    category.setId(1);
-    category.setName("Laptop");
-    category.setPrefix("LA");
-
-    when(jwtService.extractUsername()).thenReturn("nonexistent_user");
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findByUsername("nonexistent_user")).thenReturn(Optional.empty());
-
-    // Act & Assert
-    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
-
-    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
-    assertEquals("User Not Found", ex.getMessage());
-
-    // Verify interactions up to user lookup
-    verify(jwtService, times(1)).extractUsername();
-    verify(categoryRepository, times(1)).findById(1);
-    verify(userRepository, times(1)).findByUsername("nonexistent_user");
     verify(assetRepository, never()).save(any());
   }
 
@@ -477,10 +575,9 @@ class AssetServiceTest {
     admin.setId(1);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false); // Set disabled status to prevent NPE
 
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    mockAuthenticatedUser(admin);
     Asset existingAsset = new Asset();
     existingAsset.setDisabled(false); // simulate an active (not deleted) asset
     when(assetRepository.findByNameAndLocation("Laptop Dell", location))
@@ -493,122 +590,8 @@ class AssetServiceTest {
     assertTrue(ex.getMessage().contains("Asset name already exists in this location"));
 
     // Verify all interactions up to duplicate check
-    verify(jwtService, times(1)).extractUsername();
-    verify(categoryRepository, times(1)).findById(1);
-    verify(userRepository, times(1)).findByUsername("admin1");
     verify(assetRepository, times(1)).findByNameAndLocation("Laptop Dell", location);
     verify(assetRepository, never()).save(any());
-  }
-
-  @Test
-  void createNewAsset_CategoryPrefixMissing_ThrowsException() {
-    // Arrange
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Laptop Dell")
-            .specification("i7, 16GB RAM")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(1)
-            .build();
-
-    Category category = new Category();
-    category.setId(1);
-    category.setName("Laptop");
-    category.setPrefix(null); // Missing prefix
-
-    Location location = new Location();
-    location.setId(1);
-    location.setName("HCM");
-
-    User admin = new User();
-    admin.setId(1);
-    admin.setUsername("admin1");
-    admin.setLocation(location);
-
-    Asset asset = new Asset();
-    asset.setName("Laptop Dell");
-    asset.setLocation(location);
-    asset.setDisabled(false);
-    Optional<Asset> mockAsset = Optional.of(asset);
-
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
-        .thenReturn(Optional.empty());
-    when(assetRepository.save(any(Asset.class)))
-        .thenAnswer(
-            invocation -> {
-              Asset a = invocation.getArgument(0);
-              a.setId(123); // Set ID for first save
-              return a;
-            });
-
-    // Act & Assert
-    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
-
-    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
-    assertEquals("Category prefix is missing", ex.getMessage());
-
-    // Verify interactions up to the point where prefix is checked
-    verify(jwtService, times(1)).extractUsername();
-    verify(categoryRepository, times(1)).findById(1);
-    verify(userRepository, times(1)).findByUsername("admin1");
-    verify(assetRepository, times(1)).findByNameAndLocation("Laptop Dell", location);
-    verify(assetRepository, times(1)).save(any(Asset.class)); // First save to get ID
-  }
-
-  @Test
-  void createNewAsset_EmptyPrefix_ThrowsException() {
-    // Arrange
-    CreateNewAssetDtoRequest request =
-        CreateNewAssetDtoRequest.builder()
-            .name("Laptop Dell")
-            .specification("i7, 16GB RAM")
-            .installedDate(LocalDate.now())
-            .state(AssetStatus.AVAILABLE)
-            .categoryId(1)
-            .build();
-
-    Category category = new Category();
-    category.setId(1);
-    category.setName("Laptop");
-    category.setPrefix("   "); // Empty prefix
-
-    Location location = new Location();
-    location.setId(1);
-    location.setName("HCM");
-
-    User admin = new User();
-    admin.setId(1);
-    admin.setUsername("admin1");
-    admin.setLocation(location);
-
-    Asset asset = new Asset();
-    asset.setName("Laptop Dell");
-    asset.setLocation(location);
-    asset.setDisabled(false);
-    Optional<Asset> mockAsset = Optional.of(asset);
-
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(assetRepository.findByNameAndLocation("Laptop Dell", location))
-        .thenReturn(Optional.empty());
-    when(assetRepository.save(any(Asset.class)))
-        .thenAnswer(
-            invocation -> {
-              Asset a = invocation.getArgument(0);
-              a.setId(123);
-              return a;
-            });
-
-    // Act & Assert
-    AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
-
-    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
-    assertEquals("Category prefix is missing", ex.getMessage());
   }
 
   @Test
@@ -636,18 +619,21 @@ class AssetServiceTest {
     admin.setId(1);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false);
 
-    Asset asset = new Asset();
-    asset.setName("Laptop Dell");
-    asset.setLocation(location);
-    asset.setDisabled(false);
-    Optional<Asset> mockAsset = Optional.of(asset);
-
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
-    when(categoryRepository.findById(1)).thenReturn(Optional.of(category));
+    mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocation("Laptop Dell", location))
         .thenReturn(Optional.empty());
+
+    // Add mock for assetMapper.toEntity
+    Asset mappedAsset = new Asset();
+    mappedAsset.setName(request.getName());
+    mappedAsset.setSpecification(request.getSpecification());
+    mappedAsset.setInstalledDate(request.getInstalledDate());
+    mappedAsset.setStatus(request.getState());
+    mappedAsset.setCategory(category);
+    when(assetMapper.toEntity(request)).thenReturn(mappedAsset);
+
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
@@ -658,6 +644,19 @@ class AssetServiceTest {
               return a;
             });
 
+    when(assetMapper.toCreationDto(any(Asset.class)))
+        .thenReturn(
+            CreateNewAssetDtoResponse.builder()
+                .id(123)
+                .assetCode("LA000123")
+                .name("Laptop Dell")
+                .specification("i7, 16GB RAM")
+                .installedDate(request.getInstalledDate())
+                .state(AssetStatus.NOT_AVAILABLE)
+                .categoryName("Laptop")
+                .locationName("HCM")
+                .build());
+
     // Act
     CreateNewAssetDtoResponse response = assetService.createNewAsset(request);
 
@@ -667,7 +666,7 @@ class AssetServiceTest {
     assertEquals("LA000123", response.getAssetCode());
     assertEquals("Laptop Dell", response.getName());
 
-    verify(assetRepository, times(2)).save(any(Asset.class));
+    verify(assetRepository, times(1)).save(any(Asset.class));
   }
 
   @Test
@@ -695,6 +694,7 @@ class AssetServiceTest {
     admin.setId(2);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false);
 
     Asset asset = new Asset();
     asset.setId(assetId);
@@ -706,15 +706,27 @@ class AssetServiceTest {
     asset.setCategory(category);
     asset.setLocation(location);
     asset.setDisabled(false);
-    Optional<Asset> mockAsset = Optional.of(asset);
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocationAndIdNot("Updated Laptop", location, assetId))
         .thenReturn(Optional.empty());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    when(assetMapper.toEditionDto(any(Asset.class)))
+        .thenReturn(
+            EditAssetDtoResponse.builder()
+                .id(assetId)
+                .assetCode("LA0001")
+                .name("Updated Laptop")
+                .specification("Updated Specs")
+                .installedDate(request.getInstalledDate())
+                .state(AssetStatus.NOT_AVAILABLE)
+                .categoryName("Laptop")
+                .locationName("HCM")
+                .updatedAt(new Date())
+                .build());
 
     // Act
     EditAssetDtoResponse response = assetService.editAsset(assetId, request);
@@ -733,8 +745,6 @@ class AssetServiceTest {
 
     // Verify interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, times(1)).extractUsername();
-    verify(userRepository, times(1)).findByUsername("admin1");
     verify(assetRepository, times(1))
         .findByNameAndLocationAndIdNot("Updated Laptop", location, assetId);
     verify(assetRepository, times(1)).save(asset);
@@ -763,8 +773,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -795,8 +803,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -827,8 +833,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -859,8 +863,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -891,8 +893,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -923,8 +923,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -955,8 +953,6 @@ class AssetServiceTest {
 
     // Verify no further interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, never()).extractUsername();
-    verify(userRepository, never()).findByUsername(any());
     verify(assetRepository, never()).save(any());
   }
 
@@ -977,20 +973,23 @@ class AssetServiceTest {
             .build();
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(jwtService.extractUsername()).thenReturn("nonexistent_user");
-    when(userRepository.findByUsername("nonexistent_user")).thenReturn(Optional.empty());
 
-    // Act & Assert
-    AppException ex =
-        assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
+    // Mock SecurityUtils to throw exception when getCurrentUser is called
+    try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
+      mockedSecurityUtils
+          .when(SecurityUtils::getCurrentUser)
+          .thenThrow(new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
-    assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
-    assertEquals("User Not Found", ex.getMessage());
+      // Act & Assert
+      AppException ex =
+          assertThrows(AppException.class, () -> assetService.editAsset(assetId, request));
 
-    // Verify interactions up to user lookup
+      assertEquals(HttpStatus.BAD_REQUEST, ex.getHttpStatusCode());
+      assertEquals("User Not Found", ex.getMessage());
+    }
+
+    // Verify interactions
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, times(1)).extractUsername();
-    verify(userRepository, times(1)).findByUsername("nonexistent_user");
     verify(assetRepository, never()).findByNameAndLocationAndIdNot(any(), any(), any());
     verify(assetRepository, never()).save(any());
   }
@@ -1012,6 +1011,7 @@ class AssetServiceTest {
     admin.setId(2);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false);
 
     Asset asset = new Asset();
     asset.setId(assetId);
@@ -1021,7 +1021,12 @@ class AssetServiceTest {
     asset.setCategory(category);
     asset.setDisabled(false);
 
-    Optional<Asset> mockAsset = Optional.of(asset);
+    Asset existingAsset = new Asset();
+    existingAsset.setId(2); // Different ID
+    existingAsset.setName("Existing Asset Name");
+    existingAsset.setLocation(location);
+    existingAsset.setDisabled(false);
+    Optional<Asset> mockAsset = Optional.of(existingAsset);
 
     EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()
@@ -1032,8 +1037,7 @@ class AssetServiceTest {
             .build();
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocationAndIdNot("Existing Asset Name", location, assetId))
         .thenReturn(mockAsset);
 
@@ -1048,8 +1052,6 @@ class AssetServiceTest {
 
     // Verify all interactions up to duplicate check
     verify(assetRepository, times(1)).findById(assetId);
-    verify(jwtService, times(1)).extractUsername();
-    verify(userRepository, times(1)).findByUsername("admin1");
     verify(assetRepository, times(1))
         .findByNameAndLocationAndIdNot("Existing Asset Name", location, assetId);
     verify(assetRepository, never()).save(any());
@@ -1072,6 +1074,7 @@ class AssetServiceTest {
     admin.setId(2);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false);
 
     Asset asset = new Asset();
     asset.setId(assetId);
@@ -1092,10 +1095,23 @@ class AssetServiceTest {
             .build();
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    mockAuthenticatedUser(admin);
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    when(assetMapper.toEditionDto(any(Asset.class)))
+        .thenReturn(
+            EditAssetDtoResponse.builder()
+                .id(assetId)
+                .assetCode("LA0001")
+                .name("Test Asset")
+                .specification("Test Spec")
+                .installedDate(request.getInstalledDate())
+                .state(AssetStatus.WAITING)
+                .categoryName("Laptop")
+                .locationName("HCM")
+                .updatedAt(new Date())
+                .build());
 
     // Act
     EditAssetDtoResponse response = assetService.editAsset(assetId, request);
@@ -1104,6 +1120,7 @@ class AssetServiceTest {
     assertNotNull(response);
     assertEquals(AssetStatus.WAITING, response.getState());
 
+    verify(assetRepository, times(1)).findById(assetId);
     verify(assetRepository, times(1)).save(asset);
   }
 
@@ -1124,6 +1141,7 @@ class AssetServiceTest {
     admin.setId(2);
     admin.setUsername("admin1");
     admin.setLocation(location);
+    admin.setDisabled(false);
 
     Asset asset = new Asset();
     asset.setId(assetId);
@@ -1144,10 +1162,23 @@ class AssetServiceTest {
             .build();
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
-    when(jwtService.extractUsername()).thenReturn("admin1");
-    when(userRepository.findByUsername("admin1")).thenReturn(Optional.of(admin));
+    mockAuthenticatedUser(admin);
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
+
+    when(assetMapper.toEditionDto(any(Asset.class)))
+        .thenReturn(
+            EditAssetDtoResponse.builder()
+                .id(assetId)
+                .assetCode("LA0001")
+                .name("Test Asset")
+                .specification("Test Spec")
+                .installedDate(request.getInstalledDate())
+                .state(AssetStatus.RECYCLED)
+                .categoryName("Laptop")
+                .locationName("HCM")
+                .updatedAt(new Date())
+                .build());
 
     // Act
     EditAssetDtoResponse response = assetService.editAsset(assetId, request);
@@ -1156,6 +1187,7 @@ class AssetServiceTest {
     assertNotNull(response);
     assertEquals(AssetStatus.RECYCLED, response.getState());
 
+    verify(assetRepository, times(1)).findById(assetId);
     verify(assetRepository, times(1)).save(asset);
   }
 
@@ -1190,11 +1222,20 @@ class AssetServiceTest {
     mockedAsset.setAssignments(List.of());
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(mockedAsset));
+    when(assetMapper.toDetailDto(mockedAsset)).thenReturn(expectedAssetDetail);
 
+    // When
     AssetDetailDtoResponse result = assetService.getAssetDetail(assetId);
 
+    // Then
     assertEquals(expectedAssetDetail.getId(), result.getId());
     assertEquals(expectedAssetDetail.getName(), result.getName());
+    assertEquals(expectedAssetDetail.getSpecification(), result.getSpecification());
+    assertEquals(expectedAssetDetail.getInstalledDate(), result.getInstalledDate());
+    assertEquals(expectedAssetDetail.getLocation(), result.getLocation());
+    assertEquals(expectedAssetDetail.getAssignments(), result.getAssignments());
+
+    verify(assetRepository, times(1)).findById(assetId);
   }
 
   @Test
@@ -1247,11 +1288,39 @@ class AssetServiceTest {
 
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(mockedAsset));
 
+    AssetDetailDtoResponse expectedResponse = new AssetDetailDtoResponse();
+    expectedResponse.setId(assetId);
+    expectedResponse.setName("Test Asset");
+    expectedResponse.setSpecification("Test Specification");
+    expectedResponse.setInstalledDate(LocalDate.now());
+    expectedResponse.setLocation("Test Location");
+
+    List<AssignmentDtoResponse> assignmentDtos = new ArrayList<>();
+    AssignmentDtoResponse assignmentDto = new AssignmentDtoResponse();
+    assignmentDto.setAssignedDate(LocalDate.now());
+    assignmentDto.setReturnedDate(null);
+    assignmentDto.setAssignedBy("assigner");
+    assignmentDto.setAssignedTo("assignee");
+    assignmentDtos.add(assignmentDto);
+    expectedResponse.setAssignments(assignmentDtos);
+
+    when(assetMapper.toDetailDto(mockedAsset)).thenReturn(expectedResponse);
+
     // When
     AssetDetailDtoResponse result = assetService.getAssetDetail(assetId);
 
     // Then
-    assertEquals(null, result.getAssignments().get(0).getReturnedDate());
+    assertNotNull(result);
+    assertEquals(assetId, result.getId());
+    assertEquals("Test Asset", result.getName());
+    assertEquals("Test Specification", result.getSpecification());
+    assertEquals("Test Location", result.getLocation());
+    assertNotNull(result.getAssignments());
+    assertEquals(1, result.getAssignments().size());
+    assertNull(result.getAssignments().get(0).getReturnedDate());
+
+    verify(assetRepository, times(1)).findById(assetId);
+    verify(assetMapper, times(1)).toDetailDto(mockedAsset);
   }
 
   @Test
