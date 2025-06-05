@@ -47,7 +47,7 @@ public class AuthenticationServiceImpl implements AuthenticationService {
       throw new AppException(
           HttpStatus.BAD_REQUEST,
           fieldName
-              + " must contain at least one uppercase letter, one lowercase letter, one number, and one special character (@#$%^&+=!)");
+              + " must contain at least one uppercase letter, one lowercase letter, one number, and one special character");
     }
   }
 

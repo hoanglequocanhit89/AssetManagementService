@@ -1,6 +1,5 @@
 package com.rookie.asset_management.service.impl;
 
-import com.rookie.asset_management.dto.request.returning.CreateReturningRequestDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
@@ -8,6 +7,7 @@ import com.rookie.asset_management.dto.response.returning.ReturningRequestDetail
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
@@ -17,6 +17,7 @@ import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.ReturningRequestService;
+import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import java.time.LocalDate;
@@ -169,6 +170,9 @@ public class ReturningRequestServiceImpl
     // Update status of the assignment to RETURNED
     returningRequest.getAssignment().setStatus(AssignmentStatus.RETURNED);
 
+    // Update status of asset to AVAILABLE
+    returningRequest.getAssignment().getAsset().setStatus(AssetStatus.AVAILABLE);
+
     // Update acceptedBy to the current user
     returningRequest.setAcceptedBy(user);
 
@@ -183,8 +187,7 @@ public class ReturningRequestServiceImpl
 
   @Override
   @Transactional
-  public ReturningRequestDetailDtoResponse createReturningRequest(
-      CreateReturningRequestDtoRequest request) {
+  public ReturningRequestDetailDtoResponse createReturningRequest(Integer assignmentId) {
     // Get current admin from JWT
     String username = jwtService.extractUsername();
     User admin =
@@ -199,7 +202,7 @@ public class ReturningRequestServiceImpl
     // Find the assignment
     Assignment assignment =
         assignmentRepository
-            .findById(request.getAssignmentId())
+            .findById(assignmentId)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
 
     // Check if assignment is in ACCEPTED state
@@ -221,7 +224,7 @@ public class ReturningRequestServiceImpl
     returningRequest.setReturnedDate(LocalDate.now());
     returningRequest.setStatus(ReturningRequestStatus.WAITING);
 
-    // Update Assignment status to WAITING_FOR_RETURNING
+    // Update assignment status to WAITING_FOR_RETURNING
     assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
     assignmentRepository.save(assignment);
 
@@ -231,8 +234,7 @@ public class ReturningRequestServiceImpl
 
   @Override
   @Transactional
-  public ReturningRequestDetailDtoResponse createUserReturningRequest(
-      CreateReturningRequestDtoRequest request) {
+  public ReturningRequestDetailDtoResponse createUserReturningRequest(Integer assignmentId) {
     // Get current user from JWT
     String username = jwtService.extractUsername();
     User user =
@@ -243,7 +245,7 @@ public class ReturningRequestServiceImpl
     // Find the assignment
     Assignment assignment =
         assignmentRepository
-            .findById(request.getAssignmentId())
+            .findById(assignmentId)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
 
     // Check if the user is the one assigned to this assignment
@@ -258,13 +260,6 @@ public class ReturningRequestServiceImpl
           HttpStatus.BAD_REQUEST, "Only accepted assignments can have returning requests");
     }
 
-    // Check if there is already a WAITING returning request for this assignment
-    if (assignment.getReturningRequest() != null
-        && assignment.getReturningRequest().getStatus().equals(ReturningRequestStatus.WAITING)) {
-      throw new AppException(
-          HttpStatus.BAD_REQUEST, "A waiting returning request already exists for this assignment");
-    }
-
     // Create new returning request
     ReturningRequest returningRequest = new ReturningRequest();
     returningRequest.setAssignment(assignment);
@@ -272,7 +267,7 @@ public class ReturningRequestServiceImpl
     returningRequest.setReturnedDate(LocalDate.now());
     returningRequest.setStatus(ReturningRequestStatus.WAITING);
 
-    // Update Assignment status to WAITING_FOR_RETURNING
+    // Update assignment status to WAITING_FOR_RETURNING
     assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
     assignmentRepository.save(assignment);
 
@@ -297,7 +292,7 @@ public class ReturningRequestServiceImpl
     // Find the returning request
     ReturningRequest returningRequest =
         returningRequestRepository
-            .findByIdAndDeletedFalse(returningRequestId)
+            .findById(returningRequestId)
             .orElseThrow(
                 () -> new AppException(HttpStatus.NOT_FOUND, "Returning request not found"));
 
@@ -314,15 +309,15 @@ public class ReturningRequestServiceImpl
       throw new AppException(HttpStatus.FORBIDDEN, "Returning request not in admin's location");
     }
 
-    // Update ReturningRequest status to CANCELLED
-    returningRequest.setStatus(ReturningRequestStatus.CANCELLED);
-
-    // Update Assignment status back to ACCEPTED
+    // Update assignment status back to ACCEPTED
     assignment.setStatus(AssignmentStatus.ACCEPTED);
+    assignment.setReturningRequest(null); // Clear the relationship
     assignmentRepository.save(assignment);
 
-    // Save and return
-    returningRequest = returningRequestRepository.save(returningRequest);
+    // Hard delete the returning request
+    returningRequestRepository.delete(returningRequest);
+
+    // Return the deleted returning request details
     return returningRequestMapper.toDetailDto(returningRequest);
   }
 }
