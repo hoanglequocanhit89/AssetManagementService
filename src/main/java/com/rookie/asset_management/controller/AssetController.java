@@ -1,5 +1,6 @@
 package com.rookie.asset_management.controller;
 
+import com.rookie.asset_management.dto.asset.GetAllGroupedAssetResponse;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
@@ -145,5 +146,10 @@ public class AssetController {
             .message("Assets retrieved successfully.")
             .data(assetBriefs)
             .build());
+  }
+
+  @GetMapping("/getAll")
+  public ResponseEntity<GetAllGroupedAssetResponse> getAllGroupedAsset() {
+    return ResponseEntity.ok(assetService.getAllGroupedAssets());
   }
 }

@@ -1,5 +1,6 @@
 package com.rookie.asset_management.service;
 
+import com.rookie.asset_management.dto.asset.GetAllGroupedAssetResponse;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
@@ -79,4 +80,6 @@ public interface AssetService {
    */
   List<AssetBriefDtoResponse> getAllAvailableAssetBrief(
       String keyword, String sortBy, String sortDir);
+
+  GetAllGroupedAssetResponse getAllGroupedAssets();
 }
