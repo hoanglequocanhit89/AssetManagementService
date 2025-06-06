@@ -6,6 +6,7 @@ import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.user.CreateUserDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
@@ -69,11 +70,11 @@ public class UserController {
   }
 
   @PostMapping
-  public ResponseEntity<ApiDtoResponse<UserDetailDtoResponse>> createUser(
+  public ResponseEntity<ApiDtoResponse<CreateUserDtoResponse>> createUser(
       @Valid @RequestBody UserRequestDTO request) {
-    UserDetailDtoResponse response = userService.createUser(request);
-    ApiDtoResponse<UserDetailDtoResponse> apiResponse =
-        ApiDtoResponse.<UserDetailDtoResponse>builder()
+    CreateUserDtoResponse response = userService.createUser(request);
+    ApiDtoResponse<CreateUserDtoResponse> apiResponse =
+        ApiDtoResponse.<CreateUserDtoResponse>builder()
             .message("User created successfully")
             .data(response)
             .build();

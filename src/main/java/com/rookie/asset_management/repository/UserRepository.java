@@ -33,4 +33,12 @@ public interface UserRepository extends SpecificationRepository<User, Integer> {
    * @return true if a user with the given username exists, false otherwise
    */
   boolean existsByUsername(String username);
+
+  /**
+   * Checks if a user with the given email exists (case-insensitive).
+   *
+   * @param email email of the user to check
+   * @return true if a user with the given email exists and is not disabled, false otherwise
+   */
+  boolean existsByEmailAndDisabledFalse(String email);
 }
