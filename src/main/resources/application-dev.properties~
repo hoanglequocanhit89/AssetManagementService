@@ -3,6 +3,7 @@ spring.application.name=asset-management
 server.compression.enabled=true
 server.compression.mime-types=application/json,application/xml,text/html,text/plain
 server.compression.min-response-size=1024
+server.port=8081
 #DB
 spring.datasource.url=${SPRING_DATASOURCE_URL}
 spring.datasource.username=${SPRING_DATASOURCE_USERNAME}
@@ -19,18 +20,12 @@ jwt.expiration=84000
 # Flyway
 spring.flyway.enabled=false
 #spring.flyway.baseline-on-migrate=true
-#spring.flyway.baseline-version=3
-#Cookie
-server.servlet.session.cookie.same-site=none
-server.servlet.session.cookie.secure=true
 
 # mail
 spring.mail.host=smtp.gmail.com
 spring.mail.port=587
-spring.mail.username=${SPRING_MAIL_USERNAME}
-spring.mail.password=${SPRING_MAIL_PASSWORD}
+spring.mail.username=rookiejavadn@gmail.com
+spring.mail.password=qcjyloinxzrruwmy
 spring.mail.properties.mail.smtp.auth=true
 spring.mail.properties.mail.smtp.starttls.enable=true
 spring.mail.properties.mail.debug=true
-
-com.rookie.asset_management.ui.url=${ROOKIE_ASSET_MANAGEMENT_UI_URL}

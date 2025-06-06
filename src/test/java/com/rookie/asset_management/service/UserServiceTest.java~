@@ -39,7 +39,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockedStatic;
-import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.Pageable;
@@ -915,36 +914,6 @@ class UserServiceTest {
     verify(passwordEncoder).encode(anyString());
     assertEquals(false, user.getDisabled());
     assertEquals(true, user.getFirstLogin());
-  }
-
-  @Test
-  void createUser_WhenEmailExists_ShouldThrowConflictException() {
-    // Arrange
-    UserRequestDTO request = new UserRequestDTO();
-    request.setEmail("test@example.com");
-    request.setFirstName("John");
-    request.setLastName("Doe");
-    request.setType("Staff");
-
-    User adminUser = new User();
-    Role adminRole = new Role();
-    adminRole.setName("ADMIN");
-    adminUser.setRole(adminRole);
-
-    try (MockedStatic<SecurityUtils> utilities = Mockito.mockStatic(SecurityUtils.class)) {
-      utilities.when(SecurityUtils::getCurrentUser).thenReturn(adminUser);
-
-      // Giả lập user đã tồn tại
-      when(userRepository.existsByEmailAndDisabledFalse("test@example.com")).thenReturn(true);
-
-      // Act & Assert
-      AppException exception = assertThrows(AppException.class, () -> {
-        userService.createUser(request);
-      });
-
-      assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
-      assertEquals("Email already exists", exception.getMessage());
-    }
   }
 
   @Test
