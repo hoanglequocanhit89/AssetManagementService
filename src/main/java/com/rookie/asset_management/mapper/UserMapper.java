@@ -2,6 +2,7 @@ package com.rookie.asset_management.mapper;
 
 import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
+import com.rookie.asset_management.dto.response.user.CreateUserDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
@@ -73,6 +74,8 @@ public interface UserMapper extends PagingMapper<User, UserDtoResponse> {
   @Mapping(target = "dob", source = "userProfile.dob")
   @Mapping(target = "gender", source = "userProfile.gender")
   UserDetailDtoResponse toUserDetailsDto(User user);
+
+  CreateUserDtoResponse toCreateUserDtoResponse(UserDetailDtoResponse user);
 
   /**
    * default method to map a role name to a {@link Role} entity. This helps to convert a role name
