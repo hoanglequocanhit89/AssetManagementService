@@ -9,6 +9,7 @@ import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.user.CreateUserDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
 import com.rookie.asset_management.entity.Assignment;
@@ -60,6 +61,8 @@ class UserServiceTest {
   @Mock private JwtService jwtService;
 
   @Mock private PasswordEncoder passwordEncoder;
+
+  @Mock private EmailService emailService;
 
   @InjectMocks private UserServiceImpl userService;
 
@@ -236,6 +239,7 @@ class UserServiceTest {
             1,
             "SD1234",
             "nhatnl",
+            "nhatnl@gmail.com",
             LocalDate.of(2023, 5, 1),
             "DN",
             "Admin",
@@ -396,6 +400,7 @@ class UserServiceTest {
             1,
             "SD0001",
             "anhnv",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -414,8 +419,21 @@ class UserServiceTest {
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setStaffCode("SD0001");
+    createUserResponse.setUsername("anhnv");
+    createUserResponse.setLocation("HCM");
+    createUserResponse.setRole("Staff");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
+
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request);
+    CreateUserDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("SD0001", result.getStaffCode());
@@ -458,6 +476,7 @@ class UserServiceTest {
             1,
             "SD0002",
             "letbn",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -476,8 +495,21 @@ class UserServiceTest {
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setStaffCode("SD0002");
+    createUserResponse.setUsername("letbn");
+    createUserResponse.setLocation("HCM");
+    createUserResponse.setRole("Staff");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
+
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request);
+    CreateUserDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("SD0002", result.getStaffCode());
@@ -520,6 +552,7 @@ class UserServiceTest {
             1,
             "SD0003",
             "tranm",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -538,8 +571,21 @@ class UserServiceTest {
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setStaffCode("SD0003");
+    createUserResponse.setUsername("tranm");
+    createUserResponse.setLocation("HCM");
+    createUserResponse.setRole("Staff");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
+
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request);
+    CreateUserDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("SD0003", result.getStaffCode());
@@ -582,6 +628,7 @@ class UserServiceTest {
             1,
             "SD0001",
             "anhnv",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -600,8 +647,18 @@ class UserServiceTest {
     when(userRepository.save(user1)).thenReturn(user1);
     when(userMapper.toUserDetailsDto(user1)).thenReturn(responseDto1);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setUsername("anhnv");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
+
     // WHEN
-    UserDetailDtoResponse result1 = userService.createUser(request1);
+    CreateUserDtoResponse result1 = userService.createUser(request1);
 
     // THEN
     assertEquals("anhnv", result1.getUsername());
@@ -635,6 +692,7 @@ class UserServiceTest {
             1,
             "SD0002",
             "anhnv1",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -654,8 +712,18 @@ class UserServiceTest {
     when(userRepository.save(user2)).thenReturn(user2);
     when(userMapper.toUserDetailsDto(user2)).thenReturn(responseDto2);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse2 = new CreateUserDtoResponse();
+    createUserResponse2.setUsername("anhnv1");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse2);
+
     // WHEN
-    UserDetailDtoResponse result2 = userService.createUser(request2);
+    CreateUserDtoResponse result2 = userService.createUser(request2);
 
     // THEN
     assertEquals("anhnv1", result2.getUsername());
@@ -690,6 +758,7 @@ class UserServiceTest {
             1,
             "SD0003",
             "anhnv2",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -710,8 +779,18 @@ class UserServiceTest {
     when(userRepository.save(user3)).thenReturn(user3);
     when(userMapper.toUserDetailsDto(user3)).thenReturn(responseDto3);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse3 = new CreateUserDtoResponse();
+    createUserResponse3.setUsername("anhnv2");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse3);
+
     // WHEN
-    UserDetailDtoResponse result3 = userService.createUser(request3);
+    CreateUserDtoResponse result3 = userService.createUser(request3);
 
     // THEN
     assertEquals("anhnv2", result3.getUsername());
@@ -755,6 +834,7 @@ class UserServiceTest {
             1,
             "SD0001",
             "anhnv",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HN",
             "Admin",
@@ -775,8 +855,18 @@ class UserServiceTest {
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setRole("Admin");
+    createUserResponse.setLocation("HN");
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
+
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request);
+    CreateUserDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("Admin", result.getRole());
@@ -817,6 +907,7 @@ class UserServiceTest {
             1,
             "SD0001",
             "anhnv",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -837,8 +928,19 @@ class UserServiceTest {
     when(userRepository.save(any(User.class))).thenReturn(user);
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
 
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setLocation("HCM");
+    createUserResponse.setRole("Staff");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
+
     // WHEN
-    UserDetailDtoResponse result = userService.createUser(request);
+    CreateUserDtoResponse result = userService.createUser(request);
 
     // THEN
     assertEquals("Staff", result.getRole());
@@ -879,6 +981,7 @@ class UserServiceTest {
             1,
             "SD0001",
             "anhnv",
+            "nhatnl@gmail.com",
             LocalDate.of(2025, 5, 21),
             "HCM",
             "Staff",
@@ -906,6 +1009,17 @@ class UserServiceTest {
               return savedUser;
             });
     when(userMapper.toUserDetailsDto(any(User.class))).thenReturn(responseDto);
+
+    when(emailService.sendSimpleMessage(
+            nullable(String.class), nullable(String.class), nullable(String.class)))
+        .thenReturn(true);
+
+    CreateUserDtoResponse createUserResponse = new CreateUserDtoResponse();
+    createUserResponse.setRole("Staff");
+    createUserResponse.setLocation("HCM");
+
+    when(userMapper.toCreateUserDtoResponse(any(UserDetailDtoResponse.class)))
+        .thenReturn(createUserResponse);
 
     // WHEN
     userService.createUser(request);
@@ -938,9 +1052,12 @@ class UserServiceTest {
       when(userRepository.existsByEmailAndDisabledFalse("test@example.com")).thenReturn(true);
 
       // Act & Assert
-      AppException exception = assertThrows(AppException.class, () -> {
-        userService.createUser(request);
-      });
+      AppException exception =
+          assertThrows(
+              AppException.class,
+              () -> {
+                userService.createUser(request);
+              });
 
       assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
       assertEquals("Email already exists", exception.getMessage());
