@@ -5,9 +5,11 @@ public class Endpoints {
   //    Public endpoints go here
   public static final String[] PUBLIC_ENDPOINTS = {
     ApiPaths.V1 + "/auth/login",
-    ApiPaths.V1 + "/swagger-ui/**",
-    ApiPaths.V1 + "/v3/api-docs/**",
-    ApiPaths.V1 + "/actuator/**",
+    "/swagger-ui/**",
+    "/swagger-ui**",
+    "/v3/api-docs/**",
+    "/v3/api-docs**",
+    "/actuator/**",
   };
 
   //    Admin endpoints go here

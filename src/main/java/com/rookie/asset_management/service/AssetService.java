@@ -1,6 +1,5 @@
 package com.rookie.asset_management.service;
 
-import com.rookie.asset_management.dto.asset.GetAllGroupedAssetResponse;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
@@ -20,10 +19,9 @@ import org.springframework.data.domain.Pageable;
 public interface AssetService {
 
   /**
-   * Searches, filters, and sorts assets based on location, keyword, category, and states. This
-   * method is commonly used for listing assets in the admin view with pagination support.
+   * Searches, filters, and sorts assets based on keyword, category, and states. This method is
+   * commonly used for listing assets in the admin view with pagination support.
    *
-   * @param locationId the ID of the location where the assets belong
    * @param keyword keyword to search in asset name or code
    * @param categoryName the category name to filter assets (optional)
    * @param states a list of asset states to filter (e.g., AVAILABLE, NOT_AVAILABLE)
@@ -80,6 +78,4 @@ public interface AssetService {
    */
   List<AssetBriefDtoResponse> getAllAvailableAssetBrief(
       String keyword, String sortBy, String sortDir);
-
-  GetAllGroupedAssetResponse getAllGroupedAssets();
 }
