@@ -160,8 +160,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
 
     String password = generatePassword(username, user.getUserProfile().getDob());
     // Bcrypt password
-    String hashedPassword =
-        passwordEncoder.encode(password);
+    String hashedPassword = passwordEncoder.encode(password);
 
     user.setUsername(username);
     user.setStaffCode("SDTEMP");
@@ -170,8 +169,11 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     user = userRepository.save(user);
 
     // Send email
-    String content = EmailServiceImpl.generateEmailTemplate(user.getUserProfile().getFullName(), username, password);
-    boolean isSentEmail = emailService.sendSimpleMessage(user.getEmail(), "Your account has been created", content);
+    String content =
+        EmailServiceImpl.generateEmailTemplate(
+            user.getUserProfile().getFullName(), username, password);
+    boolean isSentEmail =
+        emailService.sendSimpleMessage(user.getEmail(), "Your account has been created", content);
 
     var createdUser = userMapper.toUserDetailsDto(user);
     var createdUserResponse = userMapper.toCreateUserDtoResponse(createdUser);
