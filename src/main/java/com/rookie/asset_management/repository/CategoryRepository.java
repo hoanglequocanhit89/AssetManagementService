@@ -9,7 +9,7 @@ import org.springframework.stereotype.Repository;
  * <p>Provides methods for checking the existence of categories by name and prefix.
  */
 @Repository
-public interface CategoryRepository extends BaseRepository<Category, Integer> {
+public interface CategoryRepository extends SpecificationRepository<Category, Integer> {
   /**
    * Checks whether a category with the given name exists (case-insensitive).
    *
