@@ -10,6 +10,7 @@ import com.rookie.asset_management.repository.CategoryRepository;
 import com.rookie.asset_management.service.ReportService;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReportSpecification;
+import com.rookie.asset_management.util.SpecificationBuilder;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +61,11 @@ public class ReportServiceImpl
   @Override
   public PagingDtoResponse<CategoryReportDtoResponse> getAllReports(
       int page, int size, String sortBy, String sortDir) {
-    Specification<Category> spec = ReportSpecification.getSortedByAssetsCount(sortBy, sortDir);
+    Specification<Category> spec =
+        new SpecificationBuilder<Category>()
+            .add(ReportSpecification.getSortedByAssetsCount(sortBy, sortDir))
+            .add(ReportSpecification.countDistinctCategorySpec())
+            .build();
     Pageable pageable = PageRequest.of(page, size);
     return getMany(spec, pageable, this::getReport);
   }
