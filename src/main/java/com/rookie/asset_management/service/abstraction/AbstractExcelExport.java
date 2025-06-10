@@ -49,7 +49,11 @@ public abstract class AbstractExcelExport<D> {
    * @return a byte array representing the generated Excel file
    */
   protected byte[] generateExcelFile(
-      String sheetTitle, String[] headers, List<D> reports, boolean autoSizeColumns, boolean filterHeaders) {
+      String sheetTitle,
+      String[] headers,
+      List<D> reports,
+      boolean autoSizeColumns,
+      boolean filterHeaders) {
     try (Workbook workbook = new XSSFWorkbook();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream()) {
 
@@ -75,7 +79,7 @@ public abstract class AbstractExcelExport<D> {
         decorator.applyHeaderStyle(workbook, headerRow, headers);
       }
 
-      if(filterHeaders) {
+      if (filterHeaders) {
         // Enable filtering on the header row
         sheet.setAutoFilter(new CellRangeAddress(0, 0, 0, headers.length - 1));
       }

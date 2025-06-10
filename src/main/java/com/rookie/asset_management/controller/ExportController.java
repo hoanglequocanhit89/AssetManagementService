@@ -30,20 +30,31 @@ public class ExportController {
 
   @GetMapping("/categories/xlsx")
   public ResponseEntity<byte[]> exportCategoriesToXlsx(
-      @RequestParam(required = false) String timestamp) {
+      @RequestParam(required = false) String timestamp,
+      @RequestParam(required = false) Integer pageNo,
+      @RequestParam(required = false) Integer pageSize,
+      @RequestParam(required = false) String sortBy,
+      @RequestParam(required = false) String sortDir) {
     // Use the provided timestamp or fallback to the server's current time
-    String formattedTimestamp;
-    if (timestamp != null && !timestamp.isEmpty()) {
-      formattedTimestamp = timestamp.replace(":", "-").replace(" ", "_"); // Sanitize input
+    String formattedTimestamp = sanitizeTimestamp(timestamp);
+    List<CategoryReportDtoResponse> data;
+    if (pageNo != null && pageSize != null) {
+      data =
+          reportService.getAllReports(pageNo, pageSize, sortBy, sortDir).getContent().stream()
+              .toList();
     } else {
-      SimpleDateFormat dateFormat = new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss");
-      formattedTimestamp = dateFormat.format(new Date());
+      data = reportService.getAllReports();
     }
-    // Initialize the export service strategy with the specific exporter for categories
-    List<CategoryReportDtoResponse> data = reportService.getAllReports();
     byte[] excelContent = exportServiceStrategy.export("category", "excel", data);
     String filename = "data_report_" + formattedTimestamp + ".xlsx";
     return createExcelResponse(excelContent, filename);
+  }
+
+  private String sanitizeTimestamp(String timestamp) {
+    if (timestamp == null || timestamp.isEmpty()) {
+      return new SimpleDateFormat("dd-MM-yyyy_HH-mm-ss").format(new Date());
+    }
+    return timestamp.replace(":", "-").replace(" ", "_");
   }
 
   private ResponseEntity<byte[]> createExcelResponse(byte[] content, String filename) {
