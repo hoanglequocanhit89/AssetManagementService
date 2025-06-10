@@ -6,8 +6,7 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.repository.CategoryRepository;
 import com.rookie.asset_management.service.CategoryService;
 import java.util.List;
-import java.util.stream.Collectors;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
@@ -16,9 +15,10 @@ import org.springframework.stereotype.Service;
  * such as retrieving category names and creating new categories.
  */
 @Service
+@RequiredArgsConstructor
 public class CategoryServiceImpl implements CategoryService {
 
-  @Autowired private CategoryRepository categoryRepository;
+  private final CategoryRepository categoryRepository;
 
   /**
    * Retrieves the list of all category names in the system.
@@ -29,12 +29,9 @@ public class CategoryServiceImpl implements CategoryService {
   @Override
   public List<CategoryDtoResponse> getAllCategory() {
     // Fetch all categories and extract their names
-    List<CategoryDtoResponse> categories =
-        categoryRepository.findAll().stream()
-            .map(c -> new CategoryDtoResponse(c.getId(), c.getName(), c.getPrefix()))
-            .collect(Collectors.toList());
-
-    return categories;
+    return categoryRepository.findAll().stream()
+        .map(c -> new CategoryDtoResponse(c.getId(), c.getName(), c.getPrefix()))
+        .toList();
   }
 
   /**

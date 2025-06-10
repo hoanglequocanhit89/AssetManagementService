@@ -8,8 +8,8 @@ import lombok.experimental.FieldDefaults;
 @Getter
 @Setter
 @Builder
-@FieldDefaults(level = lombok.AccessLevel.PRIVATE, makeFinal = true)
-public class ReportDtoResponse {
+@FieldDefaults(level = lombok.AccessLevel.PRIVATE)
+public class CategoryReportDtoResponse {
   String category;
   Integer total;
   Integer assigned;

@@ -9,7 +9,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
-import com.rookie.asset_management.dto.response.report.ReportDtoResponse;
+import com.rookie.asset_management.dto.response.report.CategoryReportDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.enums.AssetStatus;
@@ -70,7 +70,7 @@ class ReportServiceTest {
     when(categoryRepository.findAll()).thenReturn(List.of(category));
 
     // Call the method under test
-    List<ReportDtoResponse> reports = reportService.getAllReports();
+    List<CategoryReportDtoResponse> reports = reportService.getAllReports();
     // Verify the results
     assertEquals(1, reports.size());
     assertEquals("Test Category", reports.getFirst().getCategory());
@@ -89,7 +89,7 @@ class ReportServiceTest {
     when(categoryRepository.findAll()).thenReturn(List.of());
 
     // Call the method under test
-    List<ReportDtoResponse> reports = reportService.getAllReports();
+    List<CategoryReportDtoResponse> reports = reportService.getAllReports();
 
     assertEquals(0, reports.size());
 
@@ -110,11 +110,11 @@ class ReportServiceTest {
     when(categoryRepository.findAll()).thenReturn(List.of(category));
 
     // Call the method under test
-    List<ReportDtoResponse> reports = reportService.getAllReports();
+    List<CategoryReportDtoResponse> reports = reportService.getAllReports();
 
     // Verify the results
     assertEquals(1, reports.size());
-    ReportDtoResponse report = reports.get(0);
+    CategoryReportDtoResponse report = reports.get(0);
     assertEquals("Test Category", report.getCategory());
     assertEquals(0, report.getTotal());
     assertEquals(0, report.getAssigned());
@@ -137,7 +137,7 @@ class ReportServiceTest {
         .thenReturn(page);
 
     // Call method under test
-    PagingDtoResponse<ReportDtoResponse> response =
+    PagingDtoResponse<CategoryReportDtoResponse> response =
         reportService.getAllReports(0, 10, "total", "asc");
 
     // Verify results
@@ -162,7 +162,7 @@ class ReportServiceTest {
     when(categoryRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(emptyPage);
 
-    PagingDtoResponse<ReportDtoResponse> response =
+    PagingDtoResponse<CategoryReportDtoResponse> response =
         reportService.getAllReports(0, 10, "total", "asc");
 
     assertEquals(0, response.getContent().size());
@@ -199,7 +199,8 @@ class ReportServiceTest {
     when(categoryRepository.findAll(any(Specification.class), any(Pageable.class)))
         .thenReturn(page);
 
-    PagingDtoResponse<ReportDtoResponse> response = reportService.getAllReports(0, 10, null, "asc");
+    PagingDtoResponse<CategoryReportDtoResponse> response =
+        reportService.getAllReports(0, 10, null, "asc");
 
     assertEquals(1, response.getContent().size());
     assertEquals("Test Category", response.getContent().stream().toList().get(0).getCategory());
