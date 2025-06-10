@@ -1,7 +1,7 @@
 package com.rookie.asset_management.service.impl;
 
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
-import com.rookie.asset_management.dto.response.report.ReportDtoResponse;
+import com.rookie.asset_management.dto.response.report.CategoryReportDtoResponse;
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.enums.AssetStatus;
@@ -23,7 +23,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class ReportServiceImpl extends PagingServiceImpl<ReportDtoResponse, Category, Integer>
+public class ReportServiceImpl
+    extends PagingServiceImpl<CategoryReportDtoResponse, Category, Integer>
     implements ReportService {
   CategoryRepository categoryRepository;
 
@@ -34,12 +35,12 @@ public class ReportServiceImpl extends PagingServiceImpl<ReportDtoResponse, Cate
     super(
         new PagingMapper<>() {
           @Override
-          public ReportDtoResponse toDto(Category entity) {
+          public CategoryReportDtoResponse toDto(Category entity) {
             return null;
           }
 
           @Override
-          public Category toEntity(ReportDtoResponse dto) {
+          public Category toEntity(CategoryReportDtoResponse dto) {
             return null;
           }
         },
@@ -48,30 +49,30 @@ public class ReportServiceImpl extends PagingServiceImpl<ReportDtoResponse, Cate
   }
 
   @Override
-  public List<ReportDtoResponse> getAllReports() {
+  public List<CategoryReportDtoResponse> getAllReports() {
     // Retrieve all categories from the repository
     List<Category> categories = categoryRepository.findAll();
     return categories.stream()
         .map(this::getReport)
-        .toList(); // Convert each category to a ReportDtoResponse
+        .toList(); // Convert each category to a CategoryReportDtoResponse
   }
 
   @Override
-  public PagingDtoResponse<ReportDtoResponse> getAllReports(
+  public PagingDtoResponse<CategoryReportDtoResponse> getAllReports(
       int page, int size, String sortBy, String sortDir) {
     Specification<Category> spec = ReportSpecification.getSortedByAssetsCount(sortBy, sortDir);
     Pageable pageable = PageRequest.of(page, size);
     return getMany(spec, pageable, this::getReport);
   }
 
-  // mapping from Category to ReportDtoResponse
-  private ReportDtoResponse getReport(Category category) {
+  // mapping from Category to CategoryReportDtoResponse
+  private CategoryReportDtoResponse getReport(Category category) {
     String categoryName = category.getName();
     List<Asset> assets = category.getAssets();
 
     // If there are no assets, return a report with zero counts
     if (assets == null || assets.isEmpty()) {
-      return ReportDtoResponse.builder()
+      return CategoryReportDtoResponse.builder()
           .category(categoryName)
           .total(0)
           .assigned(0)
@@ -95,7 +96,7 @@ public class ReportServiceImpl extends PagingServiceImpl<ReportDtoResponse, Cate
       statusCounts.merge(asset.getStatus(), 1, Integer::sum);
     }
 
-    return ReportDtoResponse.builder()
+    return CategoryReportDtoResponse.builder()
         .category(categoryName)
         .total(assets.size())
         .assigned(statusCounts.get(AssetStatus.ASSIGNED))

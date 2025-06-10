@@ -215,7 +215,6 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     passwordBuilder.append("@");
     // format the date of birth to ddMMyyyy
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
-    System.out.println("new password:" + passwordBuilder);
     passwordBuilder.append(dob.format(formatter));
     return passwordBuilder.toString();
   }

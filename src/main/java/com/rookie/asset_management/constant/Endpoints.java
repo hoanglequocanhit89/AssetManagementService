@@ -18,6 +18,7 @@ public class Endpoints {
     ApiPaths.V1 + "/assignments/**",
     ApiPaths.V1 + "/return/**",
     ApiPaths.V1 + "/reports/**",
+    ApiPaths.V1 + "/exports/**",
   };
 
   //   Staff endpoints go here
