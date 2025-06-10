@@ -34,7 +34,6 @@ public class ReportSpecification {
    */
   public static Specification<Category> getSortedByAssetsCount(String sortBy, String sortDir) {
     return (root, query, cb) -> {
-
       // Join with assets
       Join<Object, Object> assetJoin = root.join("assets", JoinType.LEFT);
 
@@ -54,6 +53,21 @@ public class ReportSpecification {
     };
   }
 
+  /**
+   * Specification to count distinct categories.
+   *
+   * @return a Specification that counts distinct categories
+   */
+  public static Specification<Category> countDistinctCategorySpec() {
+    return (root, query, cb) -> {
+      assert query != null;
+      if (query.getResultType().equals(Long.class)) {
+        query.distinct(true); // for count queries, ensure distinct categories
+      }
+      return cb.conjunction();
+    };
+  }
+
   private static void applySorting(
       String sortBy,
       String sortDir,
@@ -66,6 +80,11 @@ public class ReportSpecification {
       // Default sorting by category ID if no sortBy is provided
       query.orderBy(cb.asc(root.get("id")));
       return;
+    }
+
+    if (sortDir == null || sortDir.isEmpty()) {
+      // Default sorting direction is ascending if not provided
+      sortDir = "asc";
     }
 
     boolean isDesc = sortDir.equalsIgnoreCase("desc");
