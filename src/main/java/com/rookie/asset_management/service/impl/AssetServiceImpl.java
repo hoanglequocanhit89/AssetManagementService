@@ -80,7 +80,7 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
 
     List<Asset> assets = assetRepository.findByNameAndLocation(dto.getName(), location);
     for (Asset asset : assets) {
-      if (!asset.getDisabled()) {
+      if (Boolean.FALSE.equals(asset.getDisabled())) {
         throw new AppException(
             HttpStatus.CONFLICT,
             "Asset name already exists in this location and is active. Please choose a different name.");
