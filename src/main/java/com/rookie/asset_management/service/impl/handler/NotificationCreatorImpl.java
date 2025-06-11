@@ -6,7 +6,7 @@ import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.enums.NotificationType;
 import com.rookie.asset_management.repository.NotificationRepository;
-import com.rookie.asset_management.service.NotificationService;
+import com.rookie.asset_management.service.NotificationCreator;
 import com.rookie.asset_management.service.UserService;
 import jakarta.transaction.Transactional;
 import java.util.Objects;
@@ -21,7 +21,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class NotificationServiceImpl implements NotificationService {
+public class NotificationCreatorImpl implements NotificationCreator {
 
   NotificationRepository notificationRepository;
   UserService userService;

@@ -6,6 +6,7 @@ import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.NotificationMapper;
 import com.rookie.asset_management.repository.NotificationRepository;
+import com.rookie.asset_management.service.NotificationService;
 import com.rookie.asset_management.util.SecurityUtils;
 import java.util.List;
 import lombok.AccessLevel;
@@ -17,7 +18,7 @@ import org.springframework.stereotype.Service;
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
-public class NotificationA implements com.rookie.asset_management.service.NotificationA {
+public class NotificationServiceImpl implements NotificationService {
 
   NotificationRepository notificationRepository;
   NotificationMapper notificationMapper;
@@ -64,11 +65,12 @@ public class NotificationA implements com.rookie.asset_management.service.Notifi
   public void markAllNotificationsAsRead() {
     User currentUser = SecurityUtils.getCurrentUser();
 
-    List<Notification> notifications = notificationRepository.findAllByRecipient(currentUser);
+    List<Notification> notifications = notificationRepository.findAllByRecipientAndRead(currentUser, false);
     for (Notification notification : notifications) {
-      if (!notification.isRead()) {
-        notification.setRead(true);
+      if (notification.isRead()) {
+        throw new AppException(HttpStatus.CONFLICT, "Some notifications are already marked as read");
       }
+      notification.setRead(true);
     }
     notificationRepository.saveAll(notifications);
   }

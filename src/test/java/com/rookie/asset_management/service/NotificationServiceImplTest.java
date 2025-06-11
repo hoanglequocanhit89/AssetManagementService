@@ -1,153 +1,229 @@
 package com.rookie.asset_management.service;
 
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import com.rookie.asset_management.entity.Assignment;
-import com.rookie.asset_management.entity.Location;
+import com.rookie.asset_management.dto.response.notification.NotificationDtoResponse;
 import com.rookie.asset_management.entity.Notification;
-import com.rookie.asset_management.entity.ReturningRequest;
-import com.rookie.asset_management.entity.Role;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.entity.UserDetailModel;
+import com.rookie.asset_management.exception.AppException;
+import com.rookie.asset_management.mapper.NotificationMapper;
 import com.rookie.asset_management.repository.NotificationRepository;
 import com.rookie.asset_management.service.impl.NotificationServiceImpl;
-import java.util.Collections;
-import java.util.List;
+import com.rookie.asset_management.util.SecurityUtils;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.http.HttpStatus;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
+
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceImplTest {
 
-  @Mock private NotificationRepository notificationRepository;
+  @Mock
+  private NotificationRepository notificationRepository;
 
-  @Mock private UserService userService;
+  @Mock
+  private NotificationMapper notificationMapper;
 
-  @InjectMocks private NotificationServiceImpl notificationService;
-
-  private User sender;
-  private User recipient;
-  private Assignment assignment;
-  private ReturningRequest returningRequest;
-  private Location location;
-  private Role adminRole;
+  @InjectMocks
+  private NotificationServiceImpl notificationServiceImpl;
 
   @BeforeEach
-  void setUp() {
+  void setupSecurityContext() {
+    // Clear any existing authentication
+    SecurityContextHolder.clearContext();
+  }
 
-    // Initialize test data
-    sender = new User();
-    sender.setId(1);
+  private void mockAuthenticatedUser(User user) {
+    UserDetailModel userDetails = new UserDetailModel(user);
+    try (MockedStatic<SecurityUtils> mockedSecurityUtils = mockStatic(SecurityUtils.class)) {
+      // Create authentication with the user
+      UsernamePasswordAuthenticationToken auth =
+          new UsernamePasswordAuthenticationToken(userDetails, "password", Collections.emptyList());
 
-    recipient = new User();
-    recipient.setId(2);
+      // Add user principal to the authentication
+      auth.setDetails(user);
 
-    location = new Location();
-    location.setId(1);
-    sender.setLocation(location);
+      // Set the authentication in the security context
+      SecurityContextHolder.getContext().setAuthentication(auth);
 
-    adminRole = new Role();
-    adminRole.setName("ADMIN");
-    sender.setRole(adminRole);
-
-    assignment = new Assignment();
-    assignment.setId(1);
-    assignment.setAssignedTo(recipient);
-
-    returningRequest = new ReturningRequest();
-    returningRequest.setId(1);
-    returningRequest.setAssignment(assignment);
+      mockedSecurityUtils.when(SecurityUtils::getCurrentUser).thenReturn(user);
+    }
   }
 
   @Test
-  void createAssignmentAcceptedNotification_success() {
-    notificationService.createAssignmentAcceptedNotification(sender, recipient, assignment);
+  @DisplayName("Should mark notification as read successfully")
+  void markNotificationAsRead_marksNotificationAsReadSuccessfully() {
+    User user = new User();
+    user.setDisabled(false);
+    Notification notification = new Notification();
+    notification.setRecipient(user);
+    notification.setRead(false);
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findById(anyInt())).thenReturn(Optional.of(notification));
+
+    notificationServiceImpl.markNotificationAsRead(1);
+
+    assertTrue(notification.isRead());
+    verify(notificationRepository, times(1)).save(notification);
   }
 
   @Test
-  void createAssignmentNotification_nullSender_logsWarning() {
-    notificationService.createAssignmentNotification(null, recipient, assignment);
+  @DisplayName("Should mark notification as read failure")
+  void markNotificationAsRead_throwsExceptionWhenNotificationDoesNotExist() {
+    User user = new User();
+    user.setDisabled(false);
 
-    verify(notificationRepository, times(0)).save(any());
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findById(anyInt())).thenReturn(Optional.empty());
+
+    assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
   }
 
   @Test
-  void createAssignmentNotification_repositoryThrowsException_logsError() {
-    doThrow(new RuntimeException("DB error"))
-        .when(notificationRepository)
-        .save(any(Notification.class));
+  @DisplayName("Should throw AppException if notification is already marked as read")
+  void markNotificationAsRead_throwsExceptionWhenNotificationIsAlreadyMarkedAsRead() {
+    User user = new User();
+    user.setDisabled(false);
+    Notification notification = new Notification();
+    notification.setRecipient(user);
+    notification.setRead(true);
 
-    notificationService.createAssignmentNotification(sender, recipient, assignment);
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findById(anyInt())).thenReturn(Optional.of(notification));
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
+
+    AppException exception = assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
+    assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
   }
 
   @Test
-  void createReturningRequestCompletedNotification_success() {
-    notificationService.createReturningRequestCompletedNotification(
-        sender, recipient, returningRequest);
+  @DisplayName("Should throw AppException if user does not have permission to mark notification as read")
+  void markNotificationAsRead_throwsExceptionWhenUserDoesNotHavePermission() {
+    User user = new User();
+    user.setDisabled(false);
+    Notification notification = new Notification();
+    notification.setRecipient(new User());
+    notification.setRead(false);
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findById(anyInt())).thenReturn(Optional.of(notification));
+
+
+    AppException exception = assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
+    assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
   }
 
   @Test
-  void createReturningRequestNotification_adminSender_notifiesAssigneeAndOtherAdmins() {
-    User admin2 = new User();
-    admin2.setId(3);
-    admin2.setRole(adminRole);
-    when(userService.getAdminsByLocation(1)).thenReturn(List.of(admin2));
+  @DisplayName("Should throw AppException if notification not found")
+  void markNotificationAsRead_throwsAppExceptionIfNotificationNotFound() {
+    // Given
+    User user = new User();
+    user.setDisabled(false);
 
-    notificationService.createReturningRequestNotification(sender, returningRequest);
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findById(anyInt())).thenReturn(Optional.empty());
 
-    verify(notificationRepository, times(2)).save(any(Notification.class));
-    verify(userService, times(1)).getAdminsByLocation(1);
+    // When & Then
+    AppException exception = assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
+    assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
+    assertEquals("Notification not found", exception.getMessage());
   }
 
   @Test
-  void createReturningRequestNotification_nonAdminSender_notifiesAdminsOnly() {
-    Role userRole = new Role();
-    userRole.setName("USER");
-    sender.setRole(userRole);
-    User admin = new User();
-    admin.setId(3);
-    when(userService.getAdminsByLocation(1)).thenReturn(List.of(admin));
+  @DisplayName("Should return all notifications successfully")
+  void getAllNotifications_returnsAllNotificationsSuccessfully() {
+    User user = new User();
+    user.setDisabled(false);
+    Notification notification1 = new Notification();
+    notification1.setRecipient(user);
+    Notification notification2 = new Notification();
+    notification2.setRecipient(user);
 
-    notificationService.createReturningRequestNotification(sender, returningRequest);
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findAllByRecipient(user)).thenReturn(List.of(notification1, notification2));
+    when(notificationMapper.toDto(notification1)).thenReturn(NotificationDtoResponse.builder().build());
+    when(notificationMapper.toDto(notification2)).thenReturn(NotificationDtoResponse.builder().build());
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
-    verify(userService, times(1)).getAdminsByLocation(1);
+    List<NotificationDtoResponse> result = notificationServiceImpl.getAllNotifications();
+
+    assertEquals(2, result.size());
+    verify(notificationRepository, times(1)).findAllByRecipient(user);
   }
 
   @Test
-  void createReturningRequestRejectedNotification_success() {
-    notificationService.createReturningRequestRejectedNotification(sender, recipient, assignment);
+  @DisplayName("Should return unread notifications count successfully")
+  void getUnreadNotificationsCount_returnsUnreadNotificationsCountSuccessfully() {
+    User user = new User();
+    user.setDisabled(false);
+    Notification notification1 = new Notification();
+    notification1.setRecipient(user);
+    notification1.setRead(false);
+    Notification notification2 = new Notification();
+    notification2.setRecipient(user);
+    notification2.setRead(true);
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findAllByRecipientAndRead(user, false)).thenReturn(List.of(notification1));
+
+    Integer unreadCount = notificationServiceImpl.getUnreadNotificationsCount();
+
+    assertEquals(1, unreadCount);
+    verify(notificationRepository, times(1)).findAllByRecipientAndRead(user, false);
   }
 
   @Test
-  void createAssignmentRejectedNotification_success() {
-    notificationService.createAssignmentRejectedNotification(sender, recipient, assignment);
+  @DisplayName("Should return zero unread notifications when no notifications exist")
+  void getUnreadNotificationsCount_returnsZeroWhenNoNotificationsExist() {
+    User user = new User();
+    user.setDisabled(false);
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findAllByRecipientAndRead(user, false)).thenReturn(Collections.emptyList());
+
+    Integer unreadCount = notificationServiceImpl.getUnreadNotificationsCount();
+
+    assertEquals(0, unreadCount);
+    verify(notificationRepository, times(1)).findAllByRecipientAndRead(user, false);
   }
 
   @Test
-  void createReturningRequestNotification_emptyAdminList_noNotifications() {
-    when(userService.getAdminsByLocation(1)).thenReturn(Collections.emptyList());
+  @DisplayName("Should mark all notifications as read successfully")
+  void markAllNotificationsAsRead_marksAllNotificationsAsReadSuccessfully() {
+    User user = new User();
+    user.setDisabled(false);
+    Notification notification1 = new Notification();
+    notification1.setRecipient(user);
+    notification1.setRead(false);
+    Notification notification2 = new Notification();
+    notification2.setRecipient(user);
+    notification2.setRead(false);
 
-    notificationService.createReturningRequestNotification(sender, returningRequest);
+    mockAuthenticatedUser(user);
+    when(notificationRepository.findAllByRecipient(user)).thenReturn(List.of(notification1, notification2));
 
-    verify(notificationRepository, times(1)).save(any(Notification.class));
-    verify(userService, times(1)).getAdminsByLocation(1);
+    notificationServiceImpl.markAllNotificationsAsRead();
+
+    assertTrue(notification1.isRead());
+    assertTrue(notification2.isRead());
+    verify(notificationRepository, times(1)).saveAll(List.of(notification1, notification2));
   }
 }

@@ -1,45 +1,35 @@
 package com.rookie.asset_management.service;
 
-import com.rookie.asset_management.entity.Assignment;
-import com.rookie.asset_management.entity.ReturningRequest;
-import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.dto.response.notification.NotificationDtoResponse;
+import java.util.List;
 
 /**
- * Interface for creating notifications in the asset management system.
- * This interface defines methods for creating different types of notifications
- * related to assignments and returning requests.
+ * Interface for notification services in the asset management system. This interface serves as a
+ * marker for notification-related services.
  */
 public interface NotificationService {
+  /**
+   * Retrieves all notifications for the current user.
+   *
+   * @return a list of NotificationDtoResponse objects representing the user's notifications.
+   */
+  List<NotificationDtoResponse> getAllNotifications();
 
   /**
-   * Creates a notification for an assignment.
-   * @param sender the user who is sending the notification
-   * @param recipient the user who is the recipient of the notification
-   * @param assignment the assignment related to the notification
+   * Retrieves all unread notifications for the current user.
+   *
+   * @return a number of NotificationDtoResponse objects representing the user's unread
+   *     notifications.
    */
-  void createAssignmentNotification(User sender, User recipient, Assignment assignment);
+  Integer getUnreadNotificationsCount();
 
   /**
-   * Creates a notification for a completed returning request.
-   * @param sender the user who is sending the notification
-   * @param recipient the user who is the recipient of the notification
-   * @param returningRequest the returning request related to the notification
+   * Marks a notification as read.
+   *
+   * @param notificationId the ID of the notification to mark as read.
    */
-  void createReturningRequestCompletedNotification(
-      User sender, User recipient, ReturningRequest returningRequest);
+  void markNotificationAsRead(Integer notificationId);
 
-
-  /**
-   * Creates a notification for a returning request.
-   * @param sender the user who is sending the notification
-   * @param returningRequest the returning request related to the notification
-   */
-  void createReturningRequestNotification(User sender, ReturningRequest returningRequest);
-
-  void createReturningRequestRejectedNotification(
-      User sender, User recipient, Assignment assignment);
-
-  void createAssignmentAcceptedNotification(User sender, User recipient, Assignment assignment);
-
-  void createAssignmentRejectedNotification(User sender, User recipient, Assignment assignment);
+  /** Marks all notifications as read for the current user. */
+  void markAllNotificationsAsRead();
 }
