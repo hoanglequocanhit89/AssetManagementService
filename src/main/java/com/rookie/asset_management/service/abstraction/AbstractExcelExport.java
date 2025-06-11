@@ -75,8 +75,8 @@ public abstract class AbstractExcelExport<D> {
       setData(sheet, reports);
 
       if (decorator != null) {
-        // Apply styles to the header row
-        decorator.applyHeaderStyle(workbook, headerRow, headers);
+        // Apply styles using the decorator
+        decorator.applyStyle(workbook, headerRow, headers);
       }
 
       if (filterHeaders) {

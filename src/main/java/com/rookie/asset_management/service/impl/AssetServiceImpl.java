@@ -21,7 +21,6 @@ import com.rookie.asset_management.service.specification.AssetSpecification;
 import com.rookie.asset_management.util.SecurityUtils;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
-import java.time.LocalDate;
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
@@ -68,10 +67,6 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
 
   @Override
   public CreateNewAssetDtoResponse createNewAsset(CreateNewAssetDtoRequest dto) {
-
-    // Validate asset state
-    validateCreationDto(dto);
-
     // Get admin user from token
     User admin = SecurityUtils.getCurrentUser();
 
@@ -107,24 +102,7 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Asset not found"));
 
     // New check: asset was disabled by another user
-    if (Boolean.TRUE.equals(asset.getDisabled())) {
-      throw new AppException(
-          HttpStatus.CONFLICT,
-          "Update failed: The asset was modified by another user. Please refresh and try again.");
-    }
-
-    // Check if the asset has been assigned — cannot be edited if assigned
-    if (asset.getStatus() == AssetStatus.ASSIGNED) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Cannot edit assigned asset");
-    }
-
-    // Validate name
-    validateEditDto(dto);
-
-    // Get admin user from token
-    User admin = SecurityUtils.getCurrentUser();
-
-    Location location = admin.getLocation();
+    Location location = getLocation(asset);
 
     List<Asset> existingAssets =
         assetRepository.findByNameAndLocationAndIdNot(dto.getName(), location, assetId);
@@ -218,45 +196,21 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
     return assetMapper.toAssetBriefDtoResponses(assets);
   }
 
-  private void validateCreationDto(CreateNewAssetDtoRequest dto) {
-
-    validateRequiredFields(dto.getName(), dto.getSpecification(), dto.getInstalledDate());
-
-    // Validate category ID
-    if (dto.getCategoryId() == null) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Category ID is required");
-    }
-
-    // Redundant state check (already validated above, but added for extra safety)
-    if (dto.getState() != AssetStatus.AVAILABLE && dto.getState() != AssetStatus.NOT_AVAILABLE) {
+  private static Location getLocation(Asset asset) {
+    if (Boolean.TRUE.equals(asset.getDisabled())) {
       throw new AppException(
-          HttpStatus.BAD_REQUEST, "Asset state must be AVAILABLE or NOT_AVAILABLE");
+          HttpStatus.CONFLICT,
+          "Update failed: The asset was modified by another user. Please refresh and try again.");
     }
-  }
 
-  private void validateEditDto(EditAssetDtoRequest dto) {
+    // Check if the asset has been assigned — cannot be edited if assigned
+    if (asset.getStatus() == AssetStatus.ASSIGNED) {
+      throw new AppException(HttpStatus.BAD_REQUEST, "Cannot edit assigned asset");
+    }
 
-    validateRequiredFields(dto.getName(), dto.getSpecification(), dto.getInstalledDate());
+    // Get admin user from token
+    User admin = SecurityUtils.getCurrentUser();
 
-    // Validate state
-    if (dto.getState() == null
-        || !(dto.getState() == AssetStatus.AVAILABLE
-            || dto.getState() == AssetStatus.NOT_AVAILABLE
-            || dto.getState() == AssetStatus.WAITING
-            || dto.getState() == AssetStatus.RECYCLED)) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Invalid asset state");
-    }
-  }
-
-  private void validateRequiredFields(String name, String specification, LocalDate installedDate) {
-    if (name == null || name.trim().isEmpty()) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Asset name is required");
-    }
-    if (specification == null || specification.trim().isEmpty()) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Specification is required");
-    }
-    if (installedDate == null) {
-      throw new AppException(HttpStatus.BAD_REQUEST, "Installed date is required");
-    }
+    return admin.getLocation();
   }
 }

@@ -1,4 +1,4 @@
-package com.rookie.asset_management.service.impl;
+package com.rookie.asset_management.service.impl.handler;
 
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Notification;
@@ -15,9 +15,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Async;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Component;
 
-@Service
+@Component
 @Slf4j
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
