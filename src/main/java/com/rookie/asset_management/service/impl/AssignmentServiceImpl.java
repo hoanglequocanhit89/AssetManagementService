@@ -20,7 +20,7 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.AssignmentService;
 import com.rookie.asset_management.service.JwtService;
-import com.rookie.asset_management.service.NotificationService;
+import com.rookie.asset_management.service.NotificationCreator;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.AssignmentSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
@@ -49,7 +49,7 @@ public class AssignmentServiceImpl
   UserRepository userRepository;
   AssetRepository assetRepository;
   JwtService jwtService;
-  NotificationService notificationService;
+  NotificationCreator notificationCreator;
 
   @Autowired
   public AssignmentServiceImpl(
@@ -58,14 +58,14 @@ public class AssignmentServiceImpl
       UserRepository userRepository,
       AssetRepository assetRepository,
       JwtService jwtService,
-      NotificationService notificationService) {
+      NotificationCreator notificationCreator) {
     super(assignmentMapper, assignmentRepository);
     this.assignmentMapper = assignmentMapper;
     this.assignmentRepository = assignmentRepository;
     this.userRepository = userRepository;
     this.assetRepository = assetRepository;
     this.jwtService = jwtService;
-    this.notificationService = notificationService;
+    this.notificationCreator = notificationCreator;
   }
 
   @Override
@@ -127,7 +127,7 @@ public class AssignmentServiceImpl
     assignmentRepository.flush();
 
     // Create notification
-    notificationService.createAssignmentNotification(assigner, assignee, savedAssignment);
+    notificationCreator.createAssignmentNotification(assigner, assignee, savedAssignment);
 
     return assignmentMapper.toDto(savedAssignment);
   }
@@ -452,7 +452,7 @@ public class AssignmentServiceImpl
       assignment.setStatus(AssignmentStatus.DECLINED);
 
       // Create notification
-      notificationService.createAssignmentRejectedNotification(
+      notificationCreator.createAssignmentRejectedNotification(
           assignment.getAssignedTo(), assignment.getAssignedBy(), assignment);
 
     } else {
@@ -460,7 +460,7 @@ public class AssignmentServiceImpl
       assignment.setStatus(AssignmentStatus.ACCEPTED);
 
       // Create notification
-      notificationService.createAssignmentAcceptedNotification(
+      notificationCreator.createAssignmentAcceptedNotification(
           assignment.getAssignedTo(), assignment.getAssignedBy(), assignment);
 
       // Update the asset status to ASSIGNED

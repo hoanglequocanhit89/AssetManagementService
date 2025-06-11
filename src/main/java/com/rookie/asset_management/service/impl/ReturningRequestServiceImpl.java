@@ -16,7 +16,7 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.JwtService;
-import com.rookie.asset_management.service.NotificationService;
+import com.rookie.asset_management.service.NotificationCreator;
 import com.rookie.asset_management.service.ReturningRequestService;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
@@ -42,7 +42,7 @@ public class ReturningRequestServiceImpl
   UserRepository userRepository;
   ReturningRequestMapper returningRequestMapper;
   JwtService jwtService;
-  NotificationService notificationService;
+  NotificationCreator notificationCreator;
 
   @Autowired
   public ReturningRequestServiceImpl(
@@ -51,14 +51,14 @@ public class ReturningRequestServiceImpl
       UserRepository userRepository,
       ReturningRequestMapper returningRequestMapper,
       JwtService jwtService,
-      NotificationService notificationService) {
+      NotificationCreator notificationCreator) {
     super(returningRequestMapper, returningRequestRepository);
     this.returningRequestRepository = returningRequestRepository;
     this.userRepository = userRepository;
     this.returningRequestMapper = returningRequestMapper;
     this.jwtService = jwtService;
     this.assignmentRepository = assignmentRepository;
-    this.notificationService = notificationService;
+    this.notificationCreator = notificationCreator;
   }
 
   @Override
@@ -322,12 +322,12 @@ public class ReturningRequestServiceImpl
     assignmentRepository.save(assignment);
 
     // Create notification to requester
-    notificationService.createReturningRequestRejectedNotification(
+    notificationCreator.createReturningRequestRejectedNotification(
         admin, returningRequest.getRequestedBy(), assignment);
 
     // Create notification to assignee if requester is an admin
     if (returningRequest.getRequestedBy().getRole().getName().equals("ADMIN")) {
-      notificationService.createReturningRequestRejectedNotification(
+      notificationCreator.createReturningRequestRejectedNotification(
           admin,
           returningRequest.getAssignment().getAssignedTo(),
           returningRequest.getAssignment());

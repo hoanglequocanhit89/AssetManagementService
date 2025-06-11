@@ -53,7 +53,7 @@ public class ReturningRequestServiceTest {
 
   @Mock private AssignmentRepository assignmentRepository;
 
-  @Mock private NotificationService notificationService;
+  @Mock private NotificationCreator notificationCreator;
 
   @InjectMocks private ReturningRequestServiceImpl returningRequestService;
 
@@ -77,7 +77,7 @@ public class ReturningRequestServiceTest {
             userRepository,
             returningRequestMapper,
             jwtService,
-            notificationService);
+            notificationCreator);
 
     // Setup roles
     adminRole = new Role();
