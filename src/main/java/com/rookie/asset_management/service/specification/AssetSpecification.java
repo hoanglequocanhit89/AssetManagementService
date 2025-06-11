@@ -2,6 +2,7 @@ package com.rookie.asset_management.service.specification;
 
 import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.enums.AssetStatus;
+import jakarta.persistence.criteria.JoinType;
 import java.util.List;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -78,12 +79,13 @@ public class AssetSpecification {
     return (root, query, cb) -> {
       var subquery = query.subquery(Integer.class);
       var subRoot = subquery.from(Asset.class);
+      var assignmentJoin = subRoot.join("assignments", JoinType.LEFT);
       subquery
           .select(cb.literal(1))
           .where(
               cb.equal(root, subRoot),
-              cb.equal(subRoot.join("assignments").get("status"), status),
-              cb.equal(subRoot.join("assignments").get("deleted"), false));
+              cb.equal(assignmentJoin.get("status"), status),
+              cb.isFalse(assignmentJoin.get("deleted")));
       return cb.not(cb.exists(subquery));
     };
   }
