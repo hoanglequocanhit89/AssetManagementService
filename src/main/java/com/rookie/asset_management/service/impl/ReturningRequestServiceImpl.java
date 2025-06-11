@@ -9,6 +9,7 @@ import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.enums.AssignmentStatus;
+import com.rookie.asset_management.enums.NotificationType;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.ReturningRequestMapper;
@@ -16,6 +17,7 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.JwtService;
+import com.rookie.asset_management.service.NotificationService;
 import com.rookie.asset_management.service.ReturningRequestService;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
@@ -41,6 +43,7 @@ public class ReturningRequestServiceImpl
   UserRepository userRepository;
   ReturningRequestMapper returningRequestMapper;
   JwtService jwtService;
+  NotificationService notificationService;
 
   @Autowired
   public ReturningRequestServiceImpl(
@@ -48,13 +51,15 @@ public class ReturningRequestServiceImpl
       AssignmentRepository assignmentRepository,
       UserRepository userRepository,
       ReturningRequestMapper returningRequestMapper,
-      JwtService jwtService) {
+      JwtService jwtService,
+      NotificationService notificationService) {
     super(returningRequestMapper, returningRequestRepository);
     this.returningRequestRepository = returningRequestRepository;
     this.userRepository = userRepository;
     this.returningRequestMapper = returningRequestMapper;
     this.jwtService = jwtService;
     this.assignmentRepository = assignmentRepository;
+    this.notificationService = notificationService;
   }
 
   @Override
@@ -178,6 +183,18 @@ public class ReturningRequestServiceImpl
 
     // Save the updated request
     returningRequestRepository.save(returningRequest);
+    returningRequestRepository.flush();
+
+    // Create a notification to the assignee
+    var assignee = returningRequest.getAssignment().getAssignedTo();
+    notificationService.createReturningRequestCompletedNotification(
+        user, assignee, returningRequest);
+
+    // Create a notification to the requester(another admin)
+    if (!returningRequest.getRequestedBy().equals(assignee)) {
+      notificationService.createReturningRequestCompletedNotification(
+          user, returningRequest.getRequestedBy(), returningRequest);
+    }
 
     return CompleteReturningRequestDtoResponse.builder()
         .id(returningRequest.getId())
@@ -227,9 +244,17 @@ public class ReturningRequestServiceImpl
     // Update assignment status to WAITING_FOR_RETURNING
     assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
     assignmentRepository.save(assignment);
+    assignmentRepository.flush();
 
-    // Save and return
-    return returningRequestMapper.toDetailDto(returningRequestRepository.save(returningRequest));
+    // Save returning request
+    ReturningRequest savedReturningRequest = returningRequestRepository.save(returningRequest);
+    returningRequestRepository.flush();
+
+    // Create notification to another admin
+    notificationService.createReturningRequestNotification(admin, savedReturningRequest);
+
+    // Return DTO
+    return returningRequestMapper.toDetailDto(savedReturningRequest);
   }
 
   @Override
@@ -270,6 +295,10 @@ public class ReturningRequestServiceImpl
     // Update assignment status to WAITING_FOR_RETURNING
     assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
     assignmentRepository.save(assignment);
+    assignmentRepository.flush();
+
+    // Create notification all admins
+    notificationService.createReturningRequestNotification(user, returningRequest);
 
     // Save and return
     return returningRequestMapper.toDetailDto(returningRequestRepository.save(returningRequest));

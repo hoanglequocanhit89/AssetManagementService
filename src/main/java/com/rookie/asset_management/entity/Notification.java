@@ -1,0 +1,70 @@
+package com.rookie.asset_management.entity;
+
+import com.rookie.asset_management.enums.NotificationType;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.EntityListeners;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.GeneratedValue;
+import jakarta.persistence.GenerationType;
+import jakarta.persistence.Id;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import java.time.LocalDateTime;
+import lombok.AccessLevel;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
+import lombok.experimental.FieldDefaults;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.jpa.domain.support.AuditingEntityListener;
+
+@Entity
+@Getter
+@Setter
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
+@Table(name = "notifications")
+@FieldDefaults(level = AccessLevel.PRIVATE)
+@EntityListeners(AuditingEntityListener.class)
+public class Notification {
+  @Id
+  @GeneratedValue(strategy = GenerationType.IDENTITY)
+  Integer id;
+
+  @Enumerated(EnumType.STRING)
+  @JdbcTypeCode(SqlTypes.NAMED_ENUM)
+  @Column(name = "type", nullable = false)
+  NotificationType type;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "sender_id")
+  User sender;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "recipient_id")
+  User recipient;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "assignment_id")
+  Assignment assignment;
+
+  @ManyToOne(fetch = FetchType.LAZY)
+  @JoinColumn(name = "returning_request_id")
+  ReturningRequest returningRequest;
+
+  @Column(name = "is_read", nullable = false)
+  boolean isRead = false;
+
+  @CreatedDate
+  @Column(name = "created_at", nullable = false, updatable = false)
+  LocalDateTime createdAt;
+}

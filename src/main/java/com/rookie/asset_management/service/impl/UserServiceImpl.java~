@@ -330,6 +330,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   @Override
   public List<User> getAdminsByLocation(int locationId) {
     return userRepository.findAdminsByLocationId(locationId);
+
   }
 
   private boolean isAssigmentReturned(Assignment assignment) {
