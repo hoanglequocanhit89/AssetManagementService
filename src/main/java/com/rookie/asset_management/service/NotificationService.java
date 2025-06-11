@@ -3,7 +3,6 @@ package com.rookie.asset_management.service;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
-import com.rookie.asset_management.enums.NotificationType;
 
 public interface NotificationService {
   void createAssignmentNotification(User sender, User recipient, Assignment assignment);
@@ -11,6 +10,5 @@ public interface NotificationService {
   void createReturningRequestCompletedNotification(
       User sender, User recipient, ReturningRequest returningRequest);
 
-  void createReturningRequestNotification(
-      User sender, ReturningRequest returningRequest);
+  void createReturningRequestNotification(User sender, ReturningRequest returningRequest);
 }

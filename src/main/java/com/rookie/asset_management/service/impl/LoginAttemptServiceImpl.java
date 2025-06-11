@@ -48,7 +48,7 @@ public class LoginAttemptServiceImpl implements LoginAttemptService {
 
   @Override
   public void loginFailed(final String key) {
-    if(isBlocked(key)) {
+    if (isBlocked(key)) {
       log.warn("Login attempt blocked for: {}", key);
       return; // If the key is blocked, do not increment attempts
     }
