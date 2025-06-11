@@ -8,7 +8,6 @@ import com.rookie.asset_management.dto.response.user.CreateUserDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
-import com.rookie.asset_management.entity.User;
 import java.util.List;
 
 /** Service interface for managing User entities. layer related to user management. */
@@ -67,12 +66,4 @@ public interface UserService {
    * @return a PagingDtoResponse containing a list of UserBriefDtoResponse
    */
   List<UserBriefDtoResponse> getAllUserBrief(String query, String sortBy, String sortDir);
-
-  /**
-   * Retrieves a list of admin users based on their location.
-   *
-   * @param locationId the unique identifier of the location
-   * @return a list of Users who are admins at the specified location
-   */
-  List<User> getAdminsByLocation(int locationId);
 }
