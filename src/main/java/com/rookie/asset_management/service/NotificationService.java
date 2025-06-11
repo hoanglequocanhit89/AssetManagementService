@@ -11,4 +11,11 @@ public interface NotificationService {
       User sender, User recipient, ReturningRequest returningRequest);
 
   void createReturningRequestNotification(User sender, ReturningRequest returningRequest);
+
+  void createReturningRequestRejectedNotification(
+      User sender, User recipient, Assignment assignment);
+
+  void createAssignmentAcceptedNotification(User sender, User recipient, Assignment assignment);
+
+  void createAssignmentRejectedNotification(User sender, User recipient, Assignment assignment);
 }

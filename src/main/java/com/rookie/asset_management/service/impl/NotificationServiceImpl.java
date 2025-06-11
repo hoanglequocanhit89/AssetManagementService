@@ -9,7 +9,7 @@ import com.rookie.asset_management.repository.NotificationRepository;
 import com.rookie.asset_management.service.NotificationService;
 import com.rookie.asset_management.service.UserService;
 import jakarta.transaction.Transactional;
-import java.util.List;
+import java.util.Objects;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
@@ -26,24 +26,45 @@ public class NotificationServiceImpl implements NotificationService {
   NotificationRepository notificationRepository;
   UserService userService;
 
+  private void createAndSaveNotification(
+      NotificationType type,
+      User sender,
+      User recipient,
+      Assignment assignment,
+      ReturningRequest returningRequest) {
+    if (sender == null || recipient == null) {
+      log.warn("Invalid notification parameters: sender={}, recipient={}", sender, recipient);
+      return;
+    }
+
+    try {
+      Notification.NotificationBuilder builder =
+          Notification.builder().type(type).sender(sender).recipient(recipient).isRead(false);
+
+      if (assignment != null) {
+        builder.assignment(assignment);
+      }
+      if (returningRequest != null) {
+        builder.returningRequest(returningRequest);
+      }
+
+      notificationRepository.save(builder.build());
+    } catch (RuntimeException e) {
+      log.error(
+          "Failed to create notification of type {} for sender {} and recipient {}",
+          type,
+          sender.getId(),
+          recipient.getId(),
+          e);
+    }
+  }
+
   @Override
   @Async
   @Transactional
   public void createAssignmentNotification(User sender, User recipient, Assignment assignment) {
-    try {
-      Notification notification =
-          Notification.builder()
-              .type(NotificationType.ASSIGNMENT_CREATED)
-              .sender(sender)
-              .recipient(recipient)
-              .assignment(assignment)
-              .isRead(false)
-              .build();
-
-      notificationRepository.save(notification);
-    } catch (Exception e) {
-      log.error("Error creating assignment notification", e);
-    }
+    createAndSaveNotification(
+        NotificationType.ASSIGNMENT_CREATED, sender, recipient, assignment, null);
   }
 
   @Override
@@ -51,60 +72,72 @@ public class NotificationServiceImpl implements NotificationService {
   @Transactional
   public void createReturningRequestCompletedNotification(
       User sender, User recipient, ReturningRequest returningRequest) {
-    try {
-      Notification notification =
-          Notification.builder()
-              .type(NotificationType.RETURN_REQUEST_COMPLETED)
-              .sender(sender)
-              .recipient(recipient)
-              .returningRequest(returningRequest)
-              .isRead(false)
-              .build();
-
-      notificationRepository.save(notification);
-    } catch (Exception e) {
-      log.error("Error creating returning request completed notification", e);
-    }
+    createAndSaveNotification(
+        NotificationType.RETURN_REQUEST_COMPLETED, sender, recipient, null, returningRequest);
   }
 
   @Override
   @Async
   @Transactional
   public void createReturningRequestNotification(User sender, ReturningRequest returningRequest) {
-    try {
-      // Get admin at location
-      Integer locationId = sender.getLocation().getId();
-      List<User> adminsAtLocation = userService.getAdminsByLocation(locationId);
-
-      // Send notification to assignee if sender is an admin
-      if (sender.getRole().getName().equals("ADMIN")) {
-        Notification notification =
-            Notification.builder()
-                .type(NotificationType.RETURN_REQUEST_CREATED)
-                .sender(sender)
-                .recipient(returningRequest.getAssignment().getAssignedTo())
-                .returningRequest(returningRequest)
-                .isRead(false)
-                .build();
-        notificationRepository.save(notification);
-      }
-
-      // Send notification to admins at location except sender
-      for (User admin : adminsAtLocation) {
-        if (!admin.getId().equals(sender.getId())) {
-          Notification notification =
-              Notification.builder()
-                  .type(NotificationType.RETURN_REQUEST_CREATED)
-                  .sender(sender)
-                  .recipient(admin)
-                  .returningRequest(returningRequest)
-                  .isRead(false)
-                  .build();
-          notificationRepository.save(notification);
-        }
-      }
-    } catch (Exception e) {
-      log.error("Error creating returning request notification", e);
+    if (sender == null || returningRequest == null || sender.getLocation() == null) {
+      log.warn(
+          "Invalid parameters for return request notification: sender={}, returningRequest={}",
+          sender,
+          returningRequest);
+      return;
     }
+    try {
+      // Notify assignee if sender is admin
+      if ("ADMIN".equals(sender.getRole().getName())) {
+        createAndSaveNotification(
+            NotificationType.RETURN_REQUEST_CREATED,
+            sender,
+            returningRequest.getAssignment().getAssignedTo(),
+            null,
+            returningRequest);
+      }
+
+      // Notify other admins at the same location
+      userService.getAdminsByLocation(sender.getLocation().getId()).stream()
+          .filter(admin -> !Objects.equals(admin.getId(), sender.getId()))
+          .forEach(
+              admin ->
+                  createAndSaveNotification(
+                      NotificationType.RETURN_REQUEST_CREATED,
+                      sender,
+                      admin,
+                      null,
+                      returningRequest));
+    } catch (RuntimeException e) {
+      log.error("Failed to create return request notification for sender {}", sender.getId(), e);
+    }
+  }
+
+  @Override
+  @Async
+  @Transactional
+  public void createReturningRequestRejectedNotification(
+      User sender, User recipient, Assignment assignment) {
+    createAndSaveNotification(
+        NotificationType.RETURN_REQUEST_REJECTED, sender, recipient, assignment, null);
+  }
+
+  @Override
+  @Async
+  @Transactional
+  public void createAssignmentAcceptedNotification(
+      User sender, User recipient, Assignment assignment) {
+    createAndSaveNotification(
+        NotificationType.ASSIGNMENT_ACCEPTED, sender, recipient, assignment, null);
+  }
+
+  @Override
+  @Async
+  @Transactional
+  public void createAssignmentRejectedNotification(
+      User sender, User recipient, Assignment assignment) {
+    createAndSaveNotification(
+        NotificationType.ASSIGNMENT_REJECTED, sender, recipient, assignment, null);
   }
 }

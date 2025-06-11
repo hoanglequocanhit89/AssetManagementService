@@ -450,9 +450,19 @@ public class AssignmentServiceImpl
     if (status.equals(AssignmentStatus.DECLINED)) {
       // If the status is DECLINED, set the assignment status to DECLINED
       assignment.setStatus(AssignmentStatus.DECLINED);
+
+      // Create notification
+      notificationService.createAssignmentRejectedNotification(
+          assignment.getAssignedTo(), assignment.getAssignedBy(), assignment);
+
     } else {
       // If the status is ACCEPTED, set the assignment status to ACCEPTED
       assignment.setStatus(AssignmentStatus.ACCEPTED);
+
+      // Create notification
+      notificationService.createAssignmentAcceptedNotification(
+          assignment.getAssignedTo(), assignment.getAssignedBy(), assignment);
+
       // Update the asset status to ASSIGNED
       Asset asset = assignment.getAsset();
       asset.setStatus(AssetStatus.ASSIGNED);
