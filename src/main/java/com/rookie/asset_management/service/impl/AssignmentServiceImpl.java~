@@ -124,7 +124,6 @@ public class AssignmentServiceImpl
 
     // Save the assignment
     Assignment savedAssignment = assignmentRepository.save(assignment);
-    assignmentRepository.flush();
 
     // Create notification
     notificationService.createAssignmentNotification(assigner, assignee, savedAssignment);
