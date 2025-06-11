@@ -349,7 +349,9 @@ public class ReturningRequestServiceImpl
     // Create notification to assignee if requester is an admin
     if (returningRequest.getRequestedBy().getRole().getName().equals("ADMIN")) {
       notificationService.createReturningRequestRejectedNotification(
-          admin, returningRequest.getAssignment().getAssignedTo(), returningRequest.getAssignment());
+          admin,
+          returningRequest.getAssignment().getAssignedTo(),
+          returningRequest.getAssignment());
     }
 
     // Hard delete the returning request
