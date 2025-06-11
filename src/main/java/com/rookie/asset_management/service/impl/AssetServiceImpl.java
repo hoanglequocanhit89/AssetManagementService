@@ -22,9 +22,7 @@ import com.rookie.asset_management.util.SecurityUtils;
 import com.rookie.asset_management.util.SpecificationBuilder;
 import jakarta.transaction.Transactional;
 import java.time.LocalDate;
-import java.util.Date;
 import java.util.List;
-import java.util.Optional;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -80,11 +78,9 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
     // Get location from admin
     Location location = admin.getLocation();
 
-    Optional<Asset> existingAssetOpt =
-        assetRepository.findByNameAndLocation(dto.getName(), location);
-    if (existingAssetOpt.isPresent()) {
-      Asset existingAsset = existingAssetOpt.get();
-      if (!existingAsset.getDisabled()) {
+    List<Asset> assets = assetRepository.findByNameAndLocation(dto.getName(), location);
+    for (Asset asset : assets) {
+      if (Boolean.FALSE.equals(asset.getDisabled())) {
         throw new AppException(
             HttpStatus.CONFLICT,
             "Asset name already exists in this location and is active. Please choose a different name.");
@@ -110,6 +106,13 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
             .findById(assetId)
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Asset not found"));
 
+    // New check: asset was disabled by another user
+    if (Boolean.TRUE.equals(asset.getDisabled())) {
+      throw new AppException(
+          HttpStatus.CONFLICT,
+          "Update failed: The asset was modified by another user. Please refresh and try again.");
+    }
+
     // Check if the asset has been assigned — cannot be edited if assigned
     if (asset.getStatus() == AssetStatus.ASSIGNED) {
       throw new AppException(HttpStatus.BAD_REQUEST, "Cannot edit assigned asset");
@@ -123,11 +126,12 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
 
     Location location = admin.getLocation();
 
-    Optional<Asset> existingAssetOpt =
+    List<Asset> existingAssets =
         assetRepository.findByNameAndLocationAndIdNot(dto.getName(), location, assetId);
-    if (existingAssetOpt.isPresent()) {
-      Asset existingAsset = existingAssetOpt.get();
-      if (Boolean.FALSE.equals(existingAsset.getDisabled())) {
+    if (!existingAssets.isEmpty()) {
+      boolean hasActive =
+          existingAssets.stream().anyMatch(assets -> Boolean.FALSE.equals(assets.getDisabled()));
+      if (hasActive) {
         throw new AppException(
             HttpStatus.CONFLICT,
             "Asset name already exists in this location and is active. Please choose a different name.");
@@ -139,9 +143,6 @@ public class AssetServiceImpl extends PagingServiceImpl<ViewAssetListDtoResponse
     asset.setSpecification(dto.getSpecification());
     asset.setInstalledDate(dto.getInstalledDate());
     asset.setStatus(dto.getState());
-
-    asset.setUpdatedBy(admin);
-    asset.setUpdatedAt(new Date());
 
     asset = assetRepository.save(asset);
 

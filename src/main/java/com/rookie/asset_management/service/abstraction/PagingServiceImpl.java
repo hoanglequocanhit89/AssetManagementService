@@ -5,6 +5,7 @@ import com.rookie.asset_management.mapper.PagingMapper;
 import com.rookie.asset_management.repository.SpecificationRepository;
 import com.rookie.asset_management.service.PagingService;
 import java.io.Serializable;
+import java.util.function.Function;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
@@ -71,5 +72,24 @@ public abstract class PagingServiceImpl<D, E, K extends Serializable>
     }
     Page<E> page = specificationRepository.findAll(pageable);
     return pagingMapper.toPagingResult(page, pagingMapper::toDto);
+  }
+
+  /**
+   * Retrieve a paginated list of entities based on the provided specification and pageable, and map
+   * them to DTOs using the provided mapper function.
+   *
+   * @param spec the specification to filter entities
+   * @param pageable the pageable object containing pagination and sorting information
+   * @param mapper the function to map entities to DTOs
+   * @return a PagingDtoResponse containing the paginated list of DTOs
+   */
+  public PagingDtoResponse<D> getMany(
+      Specification<E> spec, Pageable pageable, Function<E, D> mapper) {
+    if (spec != null) {
+      Page<E> page = specificationRepository.findAll(spec, pageable);
+      return pagingMapper.toPagingResult(page, mapper);
+    }
+    Page<E> page = specificationRepository.findAll(pageable);
+    return pagingMapper.toPagingResult(page, mapper);
   }
 }

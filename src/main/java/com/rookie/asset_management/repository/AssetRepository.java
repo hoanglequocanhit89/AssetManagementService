@@ -53,7 +53,9 @@ public interface AssetRepository extends SpecificationRepository<Asset, Integer>
    */
   List<Asset> findAll(Specification<Asset> build, Sort sort);
 
-  Optional<Asset> findByNameAndLocation(String name, Location location);
+  List<Asset> findByNameAndLocation(String name, Location location);
 
-  Optional<Asset> findByNameAndLocationAndIdNot(String name, Location location, Integer assetId);
+  List<Asset> findByNameAndLocationAndIdNot(String name, Location location, Integer assetId);
+
+  List<Asset> findByLocationIdAndDisabledFalse(Integer locationId);
 }

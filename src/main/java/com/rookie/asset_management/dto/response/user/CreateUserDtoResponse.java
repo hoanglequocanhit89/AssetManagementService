@@ -1,5 +1,6 @@
 package com.rookie.asset_management.dto.response.user;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
 import lombok.AccessLevel;
 import lombok.AllArgsConstructor;
@@ -10,10 +11,10 @@ import lombok.experimental.FieldDefaults;
 
 @Getter
 @Setter
-@AllArgsConstructor
 @NoArgsConstructor
+@AllArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE)
-public class UserDetailDtoResponse {
+public class CreateUserDtoResponse {
   Integer id;
   String staffCode;
   String username;
@@ -26,4 +27,7 @@ public class UserDetailDtoResponse {
   String fullName;
   LocalDate dob;
   String gender;
+
+  @JsonProperty("isSentEmail")
+  boolean isSentEmail;
 }

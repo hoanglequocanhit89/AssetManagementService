@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.user.CreateUserDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
@@ -39,7 +40,7 @@ public interface UserService {
    * @param request the creation user request
    * @return the created user
    */
-  UserDetailDtoResponse createUser(UserRequestDTO request);
+  CreateUserDtoResponse createUser(UserRequestDTO request);
 
   /**
    * Updates the details of an existing user.

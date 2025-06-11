@@ -392,7 +392,7 @@ class AssetServiceTest {
     when(assetMapper.toEntity(request)).thenReturn(mappedAsset);
     mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocation("Laptop Dell", location))
-        .thenReturn(Optional.empty());
+        .thenReturn(Collections.emptyList());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(
             invocation -> {
@@ -581,7 +581,7 @@ class AssetServiceTest {
     Asset existingAsset = new Asset();
     existingAsset.setDisabled(false); // simulate an active (not deleted) asset
     when(assetRepository.findByNameAndLocation("Laptop Dell", location))
-        .thenReturn(Optional.of(existingAsset));
+        .thenReturn(List.of(existingAsset));
 
     // Act & Assert
     AppException ex = assertThrows(AppException.class, () -> assetService.createNewAsset(request));
@@ -623,7 +623,7 @@ class AssetServiceTest {
 
     mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocation("Laptop Dell", location))
-        .thenReturn(Optional.empty());
+        .thenReturn(Collections.emptyList());
 
     // Add mock for assetMapper.toEntity
     Asset mappedAsset = new Asset();
@@ -710,7 +710,7 @@ class AssetServiceTest {
     when(assetRepository.findById(assetId)).thenReturn(Optional.of(asset));
     mockAuthenticatedUser(admin);
     when(assetRepository.findByNameAndLocationAndIdNot("Updated Laptop", location, assetId))
-        .thenReturn(Optional.empty());
+        .thenReturn(Collections.emptyList());
     when(assetRepository.save(any(Asset.class)))
         .thenAnswer(invocation -> invocation.getArgument(0));
 
@@ -1026,7 +1026,7 @@ class AssetServiceTest {
     existingAsset.setName("Existing Asset Name");
     existingAsset.setLocation(location);
     existingAsset.setDisabled(false);
-    Optional<Asset> mockAsset = Optional.of(existingAsset);
+    List<Asset> mockAsset = List.of(existingAsset);
 
     EditAssetDtoRequest request =
         EditAssetDtoRequest.builder()

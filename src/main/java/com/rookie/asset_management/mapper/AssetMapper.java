@@ -122,4 +122,9 @@ public interface AssetMapper extends PagingMapper<Asset, ViewAssetListDtoRespons
   default String toAssetName(Asset asset) {
     return asset != null ? asset.getName() : null;
   }
+
+  @Mapping(target = "categoryName", expression = "java(toCategoryName(asset.getCategory()))")
+  @Mapping(target = "locationName", expression = "java(toLocationName(asset.getLocation()))")
+  @Mapping(source = "id", target = "canDelete", qualifiedByName = "mapCanNotDeleteAsset")
+  ViewAssetListDtoResponse toAssetListDto(Asset asset);
 }

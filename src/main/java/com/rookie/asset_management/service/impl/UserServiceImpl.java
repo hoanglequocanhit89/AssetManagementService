@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.request.UserRequestDTO;
 import com.rookie.asset_management.dto.request.user.UpdateUserRequest;
 import com.rookie.asset_management.dto.request.user.UserFilterRequest;
 import com.rookie.asset_management.dto.response.PagingDtoResponse;
+import com.rookie.asset_management.dto.response.user.CreateUserDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserBriefDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDetailDtoResponse;
 import com.rookie.asset_management.dto.response.user.UserDtoResponse;
@@ -17,6 +18,7 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.UserMapper;
 import com.rookie.asset_management.repository.RoleRepository;
 import com.rookie.asset_management.repository.UserRepository;
+import com.rookie.asset_management.service.EmailService;
 import com.rookie.asset_management.service.UserService;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.UserSpecification;
@@ -50,6 +52,7 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
   RoleRepository roleRepository;
   UserMapper userMapper;
   PasswordEncoder passwordEncoder;
+  EmailService emailService;
 
   // Autowired constructor for paging service implementation
   @Autowired
@@ -57,12 +60,14 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
       UserRepository userRepository,
       UserMapper userMapper,
       RoleRepository roleRepository,
-      PasswordEncoder passwordEncoder) {
+      PasswordEncoder passwordEncoder,
+      EmailService emailService) {
     super(userMapper, userRepository);
     this.userRepository = userRepository;
     this.userMapper = userMapper;
     this.roleRepository = roleRepository;
     this.passwordEncoder = passwordEncoder;
+    this.emailService = emailService;
   }
 
   @Transactional
@@ -108,11 +113,16 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
 
   @Transactional
   @Override
-  public UserDetailDtoResponse createUser(UserRequestDTO request) {
+  public CreateUserDtoResponse createUser(UserRequestDTO request) {
     // Get the user from JWT token
     User admin = SecurityUtils.getCurrentUser();
     if (!"ADMIN".equalsIgnoreCase(admin.getRole().getName())) {
       throw new AppException(HttpStatus.FORBIDDEN, "Only admins can create users");
+    }
+
+    // Check if email already exists
+    if (userRepository.existsByEmailAndDisabledFalse(request.getEmail())) {
+      throw new AppException(HttpStatus.CONFLICT, "Email already exists");
     }
 
     // Map DTO to Entity
@@ -148,9 +158,9 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
       throw new AppException(HttpStatus.CONFLICT, "Username already exists");
     }
 
+    String password = generatePassword(username, user.getUserProfile().getDob());
     // Bcrypt password
-    String hashedPassword =
-        passwordEncoder.encode(generatePassword(username, user.getUserProfile().getDob()));
+    String hashedPassword = passwordEncoder.encode(password);
 
     user.setUsername(username);
     user.setStaffCode("SDTEMP");
@@ -158,7 +168,17 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     // Save user to persist and generate staffCode
     user = userRepository.save(user);
 
-    return userMapper.toUserDetailsDto(user);
+    // Send email
+    String content =
+        EmailServiceImpl.generateEmailTemplate(
+            user.getUserProfile().getFullName(), username, password);
+    boolean isSentEmail =
+        emailService.sendSimpleMessage(user.getEmail(), "Your account has been created", content);
+
+    var createdUser = userMapper.toUserDetailsDto(user);
+    var createdUserResponse = userMapper.toCreateUserDtoResponse(createdUser);
+    createdUserResponse.setSentEmail(isSentEmail);
+    return createdUserResponse;
   }
 
   private String generateUsername(String firstName, String lastName) {
@@ -195,7 +215,6 @@ public class UserServiceImpl extends PagingServiceImpl<UserDtoResponse, User, In
     passwordBuilder.append("@");
     // format the date of birth to ddMMyyyy
     DateTimeFormatter formatter = DateTimeFormatter.ofPattern("ddMMyyyy");
-    System.out.println("new password:" + passwordBuilder);
     passwordBuilder.append(dob.format(formatter));
     return passwordBuilder.toString();
   }

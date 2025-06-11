@@ -19,10 +19,9 @@ import org.springframework.data.domain.Pageable;
 public interface AssetService {
 
   /**
-   * Searches, filters, and sorts assets based on location, keyword, category, and states. This
-   * method is commonly used for listing assets in the admin view with pagination support.
+   * Searches, filters, and sorts assets based on keyword, category, and states. This method is
+   * commonly used for listing assets in the admin view with pagination support.
    *
-   * @param locationId the ID of the location where the assets belong
    * @param keyword keyword to search in asset name or code
    * @param categoryName the category name to filter assets (optional)
    * @param states a list of asset states to filter (e.g., AVAILABLE, NOT_AVAILABLE)
