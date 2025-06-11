@@ -70,8 +70,7 @@ public class NotificationServiceImpl implements NotificationService {
   @Override
   @Async
   @Transactional
-  public void createReturningRequestNotification(
-      User sender, ReturningRequest returningRequest) {
+  public void createReturningRequestNotification(User sender, ReturningRequest returningRequest) {
     try {
       // Get admin at location
       Integer locationId = sender.getLocation().getId();

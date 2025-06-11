@@ -9,7 +9,6 @@ import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.enums.AssignmentStatus;
-import com.rookie.asset_management.enums.NotificationType;
 import com.rookie.asset_management.enums.ReturningRequestStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.mapper.ReturningRequestMapper;
