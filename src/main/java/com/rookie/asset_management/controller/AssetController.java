@@ -1,5 +1,6 @@
 package com.rookie.asset_management.controller;
 
+import com.rookie.asset_management.constant.ApiPaths;
 import com.rookie.asset_management.dto.request.asset.CreateNewAssetDtoRequest;
 import com.rookie.asset_management.dto.request.asset.EditAssetDtoRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
@@ -14,7 +15,9 @@ import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.service.AssetService;
 import jakarta.validation.Valid;
 import java.util.List;
-import org.springframework.beans.factory.annotation.Autowired;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
+import lombok.experimental.FieldDefaults;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
@@ -28,10 +31,12 @@ import org.springframework.web.bind.annotation.*;
  * "/api/v1/asset" base path.
  */
 @RestController
-@RequestMapping("api/v1/assets")
+@RequestMapping(ApiPaths.V1 + "/assets")
+@RequiredArgsConstructor
+@FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
 public class AssetController {
 
-  @Autowired private AssetService assetService;
+  AssetService assetService;
 
   @GetMapping
   public ResponseEntity<ApiDtoResponse<PagingDtoResponse<ViewAssetListDtoResponse>>>
@@ -67,7 +72,7 @@ public class AssetController {
 
   @PostMapping
   public ResponseEntity<ApiDtoResponse<CreateNewAssetDtoResponse>> createAsset(
-      @RequestBody CreateNewAssetDtoRequest dto) {
+      @Valid @RequestBody CreateNewAssetDtoRequest dto) {
     // Call the service layer to handle asset creation logic
     CreateNewAssetDtoResponse createdAsset = assetService.createNewAsset(dto);
 
