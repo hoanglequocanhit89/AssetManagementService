@@ -70,10 +70,6 @@ public class NotificationServiceImpl implements NotificationService {
     List<Notification> notifications =
         notificationRepository.findAllByRecipientAndIsRead(currentUser, false);
     for (Notification notification : notifications) {
-      if (notification.isRead()) {
-        throw new AppException(
-            HttpStatus.CONFLICT, "Some notifications are already marked as read");
-      }
       notification.setRead(true);
     }
     notificationRepository.saveAll(notifications);
