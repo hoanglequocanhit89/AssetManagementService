@@ -68,6 +68,6 @@ public final class SecurityUtils {
     if (principal instanceof UserDetailModel userDetailModel) {
       return userDetailModel.getUser();
     }
-    throw new AppException(HttpStatus.UNAUTHORIZED, "User not found in security context");
+    throw new AppException(HttpStatus.UNAUTHORIZED, "Unauthorized access. Please log in.");
   }
 }

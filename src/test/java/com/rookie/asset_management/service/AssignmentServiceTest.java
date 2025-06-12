@@ -4,6 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -27,6 +28,7 @@ import com.rookie.asset_management.repository.AssetRepository;
 import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.AssignmentServiceImpl;
+import com.rookie.asset_management.service.impl.handler.NotificationCreatorImpl;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -47,13 +49,15 @@ import org.springframework.http.HttpStatus;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
-public class AssignmentServiceTest {
+class AssignmentServiceTest {
 
   @Mock private AssignmentRepository assignmentRepository;
 
   @Mock private AssignmentMapper assignmentMapper;
 
   @Mock private UserRepository userRepository;
+
+  @Mock private NotificationCreatorImpl notificationCreator;
 
   @Mock private AssetRepository assetRepository;
 
@@ -98,6 +102,9 @@ public class AssignmentServiceTest {
 
     AssignmentListDtoResponse response = new AssignmentListDtoResponse();
 
+    doNothing()
+        .when(notificationCreator)
+        .createAssignmentNotification(any(User.class), any(User.class), any(Assignment.class));
     when(userRepository.findById(1)).thenReturn(Optional.of(assignee));
     when(assetRepository.findById(1)).thenReturn(Optional.of(asset));
     when(jwtService.extractUsername()).thenReturn("assigner");
@@ -1003,6 +1010,9 @@ public class AssignmentServiceTest {
     assignment.setAssignedTo(assignedUser);
     assignment.setAsset(asset);
 
+    doNothing()
+        .when(notificationCreator)
+        .createAssignmentNotification(any(User.class), any(User.class), any(Assignment.class));
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
     when(jwtService.extractUsername()).thenReturn("assignee");
     when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
@@ -1046,6 +1056,9 @@ public class AssignmentServiceTest {
     assignment.setAssignedTo(assignedUser);
     assignment.setAsset(asset);
 
+    doNothing()
+        .when(notificationCreator)
+        .createAssignmentNotification(any(User.class), any(User.class), any(Assignment.class));
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
     when(jwtService.extractUsername()).thenReturn("assignee");
     when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
@@ -1161,6 +1174,9 @@ public class AssignmentServiceTest {
     assignment.setAssignedTo(assignedUser);
     assignment.setAsset(asset);
 
+    doNothing()
+        .when(notificationCreator)
+        .createAssignmentNotification(any(User.class), any(User.class), any(Assignment.class));
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
     when(jwtService.extractUsername()).thenReturn("assignee");
     when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
@@ -1194,6 +1210,9 @@ public class AssignmentServiceTest {
     assignment.setAssignedTo(assignedUser);
     assignment.setAsset(asset);
 
+    doNothing()
+        .when(notificationCreator)
+        .createAssignmentNotification(any(User.class), any(User.class), any(Assignment.class));
     when(assignmentRepository.findById(assignmentId)).thenReturn(Optional.of(assignment));
     when(jwtService.extractUsername()).thenReturn("assignee");
     when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);

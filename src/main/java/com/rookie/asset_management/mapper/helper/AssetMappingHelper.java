@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.response.assignment.AssignmentDtoResponse
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.entity.ReturningRequest;
+import com.rookie.asset_management.enums.AssignmentStatus;
 import com.rookie.asset_management.exception.AppException;
 import com.rookie.asset_management.repository.AssetRepository;
 import com.rookie.asset_management.repository.CategoryRepository;
@@ -68,6 +69,11 @@ public class AssetMappingHelper {
       return List.of();
     }
     return assignments.stream()
+        .filter(
+            assignment ->
+                !assignment.isDeleted()
+                    && !assignment.getStatus().equals(AssignmentStatus.DECLINED)
+                    && !assignment.getStatus().equals(AssignmentStatus.WAITING))
         .map(
             assignment -> {
               AssignmentDtoResponse dto = new AssignmentDtoResponse();

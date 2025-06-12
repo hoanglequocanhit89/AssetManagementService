@@ -53,6 +53,8 @@ public class ReturningRequestServiceTest {
 
   @Mock private AssignmentRepository assignmentRepository;
 
+  @Mock private NotificationCreator notificationCreator;
+
   @InjectMocks private ReturningRequestServiceImpl returningRequestService;
 
   private User adminUser;
@@ -74,7 +76,8 @@ public class ReturningRequestServiceTest {
             assignmentRepository,
             userRepository,
             returningRequestMapper,
-            jwtService);
+            jwtService,
+            notificationCreator);
 
     // Setup roles
     adminRole = new Role();
@@ -722,7 +725,7 @@ public class ReturningRequestServiceTest {
   }
 
   @Test
-  void completeReturningRequest_WhenRequestAlreadyCompleted_ShouldReturnNull() {
+  void completeReturningRequest_WhenRequestAlreadyCompleted_ShouldThrowConflictException() {
     // Given
     Integer requestId = 1;
     ReturningRequest returningRequest = createMockReturningRequest();
@@ -738,12 +741,13 @@ public class ReturningRequestServiceTest {
     when(jwtService.extractUsername()).thenReturn("admin");
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
 
-    // When
-    CompleteReturningRequestDtoResponse result =
-        returningRequestService.completeReturningRequest(requestId);
+    // When & Then
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
 
-    // Then
-    assertNull(result);
+    assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
+    assertEquals("Request has been completed already", exception.getMessage());
     verify(returningRequestRepository, never()).save(any(ReturningRequest.class));
   }
 
