@@ -40,6 +40,7 @@ public class ReportSpecification {
       // For count queries, return early
       assert query != null;
       if (query.getResultType().equals(Long.class)) {
+        query.distinct(true); // for count queries, ensure distinct categories
         return cb.conjunction();
       }
 
@@ -49,21 +50,6 @@ public class ReportSpecification {
       // Apply sorting based on parameters
       applySorting(sortBy, sortDir, query, cb, assetJoin, root);
 
-      return cb.conjunction();
-    };
-  }
-
-  /**
-   * Specification to count distinct categories.
-   *
-   * @return a Specification that counts distinct categories
-   */
-  public static Specification<Category> countDistinctCategorySpec() {
-    return (root, query, cb) -> {
-      assert query != null;
-      if (query.getResultType().equals(Long.class)) {
-        query.distinct(true); // for count queries, ensure distinct categories
-      }
       return cb.conjunction();
     };
   }
