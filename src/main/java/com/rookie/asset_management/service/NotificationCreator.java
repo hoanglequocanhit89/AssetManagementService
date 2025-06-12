@@ -38,10 +38,31 @@ public interface NotificationCreator {
    */
   void createReturningRequestNotification(User sender, ReturningRequest returningRequest);
 
+  /**
+   * Creates a notification for a returning request that has been rejected.
+   *
+   * @param sender the user who is sending the notification
+   * @param recipient the user who is the recipient of the notification
+   * @param assignment the assignment related to the returning request
+   */
   void createReturningRequestRejectedNotification(
       User sender, User recipient, Assignment assignment);
 
+  /**
+   * Creates a notification for an assignment that has been accepted.
+   *
+   * @param sender the user who is sending the notification
+   * @param recipient the user who is the recipient of the notification
+   * @param assignment the assignment related to the notification
+   */
   void createAssignmentAcceptedNotification(User sender, User recipient, Assignment assignment);
 
+  /**
+   * Creates a notification for an assignment that has been rejected.
+   *
+   * @param sender the user who is sending the notification
+   * @param recipient the user who is the recipient of the notification
+   * @param assignment the assignment related to the notification
+   */
   void createAssignmentRejectedNotification(User sender, User recipient, Assignment assignment);
 }

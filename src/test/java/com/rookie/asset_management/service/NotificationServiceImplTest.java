@@ -70,6 +70,7 @@ class NotificationServiceImplTest {
   void markNotificationAsRead_marksNotificationAsReadSuccessfully() {
     User user = new User();
     user.setDisabled(false);
+    user.setUsername("username");
     Notification notification = new Notification();
     notification.setRecipient(user);
     notification.setRead(false);
@@ -87,6 +88,7 @@ class NotificationServiceImplTest {
   @DisplayName("Should mark notification as read failure")
   void markNotificationAsRead_throwsExceptionWhenNotificationDoesNotExist() {
     User user = new User();
+    user.setUsername("username");
     user.setDisabled(false);
 
     mockAuthenticatedUser(user);
@@ -99,6 +101,7 @@ class NotificationServiceImplTest {
   @DisplayName("Should throw AppException if notification is already marked as read")
   void markNotificationAsRead_throwsExceptionWhenNotificationIsAlreadyMarkedAsRead() {
     User user = new User();
+    user.setUsername("username");
     user.setDisabled(false);
     Notification notification = new Notification();
     notification.setRecipient(user);
@@ -117,9 +120,13 @@ class NotificationServiceImplTest {
       "Should throw AppException if user does not have permission to mark notification as read")
   void markNotificationAsRead_throwsExceptionWhenUserDoesNotHavePermission() {
     User user = new User();
+    user.setUsername("username");
     user.setDisabled(false);
     Notification notification = new Notification();
-    notification.setRecipient(new User());
+    User otherUser = new User();
+    otherUser.setUsername("otherUser");
+    otherUser.setDisabled(false);
+    notification.setRecipient(otherUser);
     notification.setRead(false);
 
     mockAuthenticatedUser(user);
@@ -135,6 +142,7 @@ class NotificationServiceImplTest {
   void markNotificationAsRead_throwsAppExceptionIfNotificationNotFound() {
     // Given
     User user = new User();
+    user.setUsername("username");
     user.setDisabled(false);
 
     mockAuthenticatedUser(user);
@@ -176,6 +184,7 @@ class NotificationServiceImplTest {
   void getUnreadNotificationsCount_returnsUnreadNotificationsCountSuccessfully() {
     User user = new User();
     user.setDisabled(false);
+    user.setUsername("username");
     Notification notification1 = new Notification();
     notification1.setRecipient(user);
     notification1.setRead(false);
@@ -198,6 +207,7 @@ class NotificationServiceImplTest {
   void getUnreadNotificationsCount_returnsZeroWhenNoNotificationsExist() {
     User user = new User();
     user.setDisabled(false);
+    user.setUsername("username");
 
     mockAuthenticatedUser(user);
     when(notificationRepository.findAllByRecipientAndIsRead(user, false))
@@ -213,6 +223,7 @@ class NotificationServiceImplTest {
   @DisplayName("Should mark all notifications as read successfully")
   void markAllNotificationsAsRead_marksAllNotificationsAsReadSuccessfully() {
     User user = new User();
+    user.setUsername("username");
     user.setDisabled(false);
     Notification notification1 = new Notification();
     notification1.setRecipient(user);
@@ -222,7 +233,7 @@ class NotificationServiceImplTest {
     notification2.setRead(false);
 
     mockAuthenticatedUser(user);
-    when(notificationRepository.findAllByRecipient(user))
+    when(notificationRepository.findAllByRecipientAndIsRead(user, false))
         .thenReturn(List.of(notification1, notification2));
 
     notificationServiceImpl.markAllNotificationsAsRead();
