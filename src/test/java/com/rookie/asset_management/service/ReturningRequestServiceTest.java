@@ -55,6 +55,8 @@ public class ReturningRequestServiceTest {
 
   @Mock private NotificationCreator notificationCreator;
 
+  @Mock private NotificationService notificationService;
+
   @InjectMocks private ReturningRequestServiceImpl returningRequestService;
 
   private User adminUser;
@@ -77,7 +79,8 @@ public class ReturningRequestServiceTest {
             userRepository,
             returningRequestMapper,
             jwtService,
-            notificationCreator);
+            notificationCreator,
+            notificationService);
 
     // Setup roles
     adminRole = new Role();
@@ -158,7 +161,7 @@ public class ReturningRequestServiceTest {
     assertEquals(responseDto.getId(), result.getId());
     assertEquals(AssignmentStatus.WAITING_FOR_RETURNING, assignment.getStatus());
     verify(assignmentRepository, times(1)).save(assignment);
-    verify(returningRequestRepository, times(1)).save(any(ReturningRequest.class));
+    verify(returningRequestRepository, times(2)).save(any(ReturningRequest.class));
   }
 
   @Test
