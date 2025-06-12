@@ -16,7 +16,7 @@ import org.springframework.stereotype.Component;
 public class DefaultExcelStyleDecorator implements ExcelStyleDecorator {
 
   @Override
-  public void applyHeaderStyle(Workbook workbook, Row headerRow, String[] headers) {
+  public void applyStyle(Workbook workbook, Row headerRow, String[] headers) {
     CellStyle headerStyle = workbook.createCellStyle();
     Font font = workbook.createFont();
     font.setBold(true);
@@ -27,19 +27,6 @@ public class DefaultExcelStyleDecorator implements ExcelStyleDecorator {
       Cell cell = headerRow.getCell(i);
       cell.setCellValue(headers[i]);
       cell.setCellStyle(headerStyle);
-    }
-  }
-
-  @Override
-  public void applyDataStyle(Workbook workbook, Row dataRow, int columnIndex, Object value) {
-    // Optional: Add logic to apply cell style for data if needed
-    // For now, we just set the value without specific styling
-    Cell cell = dataRow.createCell(columnIndex);
-    switch (value) {
-      case String string -> cell.setCellValue(string);
-      case Number number -> cell.setCellValue(number.doubleValue());
-      case Boolean b -> cell.setCellValue(b);
-      default -> cell.setCellValue(value.toString());
     }
   }
 }

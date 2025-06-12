@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.response.ApiDtoResponse;
 import com.rookie.asset_management.exception.AppException;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -80,5 +81,15 @@ public class GlobalExceptionHandler {
   public ResponseEntity<ApiDtoResponse<Void>> handleBadCredentials(BadCredentialsException ex) {
     ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
     return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(response);
+  }
+
+  // handle case when spring throws HttpMessageNotReadableException when request body is not
+  // readable
+  // this can happen when the request body is not in the expected format
+  @ExceptionHandler(HttpMessageNotReadableException.class)
+  public ResponseEntity<ApiDtoResponse<Void>> handleHttpMessageNotReadableException(
+      HttpMessageNotReadableException ex) {
+    ApiDtoResponse<Void> response = ApiDtoResponse.<Void>builder().message(ex.getMessage()).build();
+    return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(response);
   }
 }
