@@ -742,10 +742,9 @@ public class ReturningRequestServiceTest {
     when(userRepository.findByUsername("admin")).thenReturn(Optional.of(adminUser));
 
     // When & Then
-    AppException exception = assertThrows(
-        AppException.class,
-        () -> returningRequestService.completeReturningRequest(requestId)
-    );
+    AppException exception =
+        assertThrows(
+            AppException.class, () -> returningRequestService.completeReturningRequest(requestId));
 
     assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
     assertEquals("Request has been completed already", exception.getMessage());

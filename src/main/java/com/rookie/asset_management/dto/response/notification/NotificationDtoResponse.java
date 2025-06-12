@@ -1,5 +1,6 @@
 package com.rookie.asset_management.dto.response.notification;
 
+import com.fasterxml.jackson.annotation.JsonProperty;
 import com.rookie.asset_management.enums.NotificationType;
 import java.time.LocalDateTime;
 import lombok.AccessLevel;
@@ -17,6 +18,9 @@ public class NotificationDtoResponse {
   String senderName;
   NotificationType type;
   String assetName;
-  Boolean isRead;
+
+  @JsonProperty("isRead")
+  boolean isRead;
+
   LocalDateTime createdAt;
 }

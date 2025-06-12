@@ -12,9 +12,11 @@ import java.util.List;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import lombok.experimental.FieldDefaults;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -35,29 +37,29 @@ public class NotificationServiceImpl implements NotificationService {
   public Integer getUnreadNotificationsCount() {
     User currentUser = SecurityUtils.getCurrentUser();
 
-    List<Notification> notifications = notificationRepository.findAllByRecipientAndRead(
-        currentUser, false);
+    List<Notification> notifications =
+        notificationRepository.findAllByRecipientAndIsRead(currentUser, false);
     return notifications.size();
   }
 
   @Override
   public void markNotificationAsRead(Integer notificationId) {
     User currentUser = SecurityUtils.getCurrentUser();
-
     Notification notification =
         notificationRepository
             .findById(notificationId)
             .orElseThrow(() -> new AppException(HttpStatus.NOT_FOUND, "Notification not found"));
 
-    if(notification.isRead()) {
+    if (notification.isRead()) {
       throw new AppException(HttpStatus.CONFLICT, "Notification is already marked as read");
     }
 
-    if (notification.getRecipient().equals(currentUser)) {
+    if (notification.getRecipient().getUsername().equals(currentUser.getUsername())) {
       notification.setRead(true);
       notificationRepository.save(notification);
     } else {
-      throw new AppException(HttpStatus.FORBIDDEN, "You do not have permission to mark this notification as read");
+      throw new AppException(
+          HttpStatus.FORBIDDEN, "You do not have permission to mark this notification as read");
     }
   }
 
@@ -65,10 +67,12 @@ public class NotificationServiceImpl implements NotificationService {
   public void markAllNotificationsAsRead() {
     User currentUser = SecurityUtils.getCurrentUser();
 
-    List<Notification> notifications = notificationRepository.findAllByRecipientAndRead(currentUser, false);
+    List<Notification> notifications =
+        notificationRepository.findAllByRecipientAndIsRead(currentUser, false);
     for (Notification notification : notifications) {
       if (notification.isRead()) {
-        throw new AppException(HttpStatus.CONFLICT, "Some notifications are already marked as read");
+        throw new AppException(
+            HttpStatus.CONFLICT, "Some notifications are already marked as read");
       }
       notification.setRead(true);
     }
