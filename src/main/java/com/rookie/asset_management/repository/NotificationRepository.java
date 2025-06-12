@@ -14,11 +14,5 @@ public interface NotificationRepository extends BaseRepository<Notification, Int
    */
   List<Notification> findAllByRecipient(User recipient);
 
-  /**
-   * Finds all notifications for a specific recipient and read status.
-   * @param recipient the user who is the recipient of the notifications
-   * @param read whether to filter by read status
-   * @return a list of unread notifications for the specified recipient
-   */
-  List<Notification> findAllByRecipientAndRead(User recipient, boolean read);
+  List<Notification> findAllByRecipientAndIsRead(User currentUser, boolean b);
 }

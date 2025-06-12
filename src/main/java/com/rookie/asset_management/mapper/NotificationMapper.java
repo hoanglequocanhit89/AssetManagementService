@@ -11,6 +11,7 @@ public interface NotificationMapper extends BaseMapper<Notification, Notificatio
 
   @Mapping(target = "senderName", expression = "java(mapToSenderName(entity))")
   @Mapping(target = "assetName", expression = "java(mapToAssetName(entity))")
+  @Mapping(target = "isRead", expression = "java(entity.isRead())")
   @Override
   NotificationDtoResponse toDto(Notification entity);
 

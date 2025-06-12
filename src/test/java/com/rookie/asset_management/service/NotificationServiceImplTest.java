@@ -1,5 +1,14 @@
 package com.rookie.asset_management.service;
 
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.anyInt;
+import static org.mockito.Mockito.mockStatic;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import com.rookie.asset_management.dto.response.notification.NotificationDtoResponse;
 import com.rookie.asset_management.entity.Notification;
 import com.rookie.asset_management.entity.User;
@@ -9,6 +18,9 @@ import com.rookie.asset_management.mapper.NotificationMapper;
 import com.rookie.asset_management.repository.NotificationRepository;
 import com.rookie.asset_management.service.impl.NotificationServiceImpl;
 import com.rookie.asset_management.util.SecurityUtils;
+import java.util.Collections;
+import java.util.List;
+import java.util.Optional;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,29 +33,14 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.context.SecurityContextHolder;
 
-import java.util.Collections;
-import java.util.List;
-import java.util.Optional;
-import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertThrows;
-import static org.junit.jupiter.api.Assertions.assertTrue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.Mockito.mockStatic;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
 @ExtendWith(MockitoExtension.class)
 class NotificationServiceImplTest {
 
-  @Mock
-  private NotificationRepository notificationRepository;
+  @Mock private NotificationRepository notificationRepository;
 
-  @Mock
-  private NotificationMapper notificationMapper;
+  @Mock private NotificationMapper notificationMapper;
 
-  @InjectMocks
-  private NotificationServiceImpl notificationServiceImpl;
+  @InjectMocks private NotificationServiceImpl notificationServiceImpl;
 
   @BeforeEach
   void setupSecurityContext() {
@@ -110,13 +107,14 @@ class NotificationServiceImplTest {
     mockAuthenticatedUser(user);
     when(notificationRepository.findById(anyInt())).thenReturn(Optional.of(notification));
 
-
-    AppException exception = assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
     assertEquals(HttpStatus.CONFLICT, exception.getHttpStatusCode());
   }
 
   @Test
-  @DisplayName("Should throw AppException if user does not have permission to mark notification as read")
+  @DisplayName(
+      "Should throw AppException if user does not have permission to mark notification as read")
   void markNotificationAsRead_throwsExceptionWhenUserDoesNotHavePermission() {
     User user = new User();
     user.setDisabled(false);
@@ -127,8 +125,8 @@ class NotificationServiceImplTest {
     mockAuthenticatedUser(user);
     when(notificationRepository.findById(anyInt())).thenReturn(Optional.of(notification));
 
-
-    AppException exception = assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
     assertEquals(HttpStatus.FORBIDDEN, exception.getHttpStatusCode());
   }
 
@@ -143,7 +141,8 @@ class NotificationServiceImplTest {
     when(notificationRepository.findById(anyInt())).thenReturn(Optional.empty());
 
     // When & Then
-    AppException exception = assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
+    AppException exception =
+        assertThrows(AppException.class, () -> notificationServiceImpl.markNotificationAsRead(1));
     assertEquals(HttpStatus.NOT_FOUND, exception.getHttpStatusCode());
     assertEquals("Notification not found", exception.getMessage());
   }
@@ -159,9 +158,12 @@ class NotificationServiceImplTest {
     notification2.setRecipient(user);
 
     mockAuthenticatedUser(user);
-    when(notificationRepository.findAllByRecipient(user)).thenReturn(List.of(notification1, notification2));
-    when(notificationMapper.toDto(notification1)).thenReturn(NotificationDtoResponse.builder().build());
-    when(notificationMapper.toDto(notification2)).thenReturn(NotificationDtoResponse.builder().build());
+    when(notificationRepository.findAllByRecipient(user))
+        .thenReturn(List.of(notification1, notification2));
+    when(notificationMapper.toDto(notification1))
+        .thenReturn(NotificationDtoResponse.builder().build());
+    when(notificationMapper.toDto(notification2))
+        .thenReturn(NotificationDtoResponse.builder().build());
 
     List<NotificationDtoResponse> result = notificationServiceImpl.getAllNotifications();
 
@@ -182,12 +184,13 @@ class NotificationServiceImplTest {
     notification2.setRead(true);
 
     mockAuthenticatedUser(user);
-    when(notificationRepository.findAllByRecipientAndRead(user, false)).thenReturn(List.of(notification1));
+    when(notificationRepository.findAllByRecipientAndIsRead(user, false))
+        .thenReturn(List.of(notification1));
 
     Integer unreadCount = notificationServiceImpl.getUnreadNotificationsCount();
 
     assertEquals(1, unreadCount);
-    verify(notificationRepository, times(1)).findAllByRecipientAndRead(user, false);
+    verify(notificationRepository, times(1)).findAllByRecipientAndIsRead(user, false);
   }
 
   @Test
@@ -197,12 +200,13 @@ class NotificationServiceImplTest {
     user.setDisabled(false);
 
     mockAuthenticatedUser(user);
-    when(notificationRepository.findAllByRecipientAndRead(user, false)).thenReturn(Collections.emptyList());
+    when(notificationRepository.findAllByRecipientAndIsRead(user, false))
+        .thenReturn(Collections.emptyList());
 
     Integer unreadCount = notificationServiceImpl.getUnreadNotificationsCount();
 
     assertEquals(0, unreadCount);
-    verify(notificationRepository, times(1)).findAllByRecipientAndRead(user, false);
+    verify(notificationRepository, times(1)).findAllByRecipientAndIsRead(user, false);
   }
 
   @Test
@@ -218,7 +222,8 @@ class NotificationServiceImplTest {
     notification2.setRead(false);
 
     mockAuthenticatedUser(user);
-    when(notificationRepository.findAllByRecipient(user)).thenReturn(List.of(notification1, notification2));
+    when(notificationRepository.findAllByRecipient(user))
+        .thenReturn(List.of(notification1, notification2));
 
     notificationServiceImpl.markAllNotificationsAsRead();
 
