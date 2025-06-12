@@ -12,6 +12,7 @@ import jakarta.persistence.Table;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
 
 @Entity
 @Table(name = "categories")
@@ -30,5 +31,6 @@ public class Category {
 
   @JsonIgnore // to prevent circular reference in JSON serialization
   @OneToMany(mappedBy = "category", fetch = FetchType.LAZY)
+  @Filter(name = "activeAssets", condition = "disabled = :isDisabled")
   List<Asset> assets;
 }

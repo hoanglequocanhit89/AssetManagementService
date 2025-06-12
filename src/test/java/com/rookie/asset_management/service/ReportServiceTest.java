@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -15,8 +16,12 @@ import com.rookie.asset_management.entity.Category;
 import com.rookie.asset_management.enums.AssetStatus;
 import com.rookie.asset_management.repository.CategoryRepository;
 import com.rookie.asset_management.service.impl.ReportServiceImpl;
+import jakarta.persistence.EntityManager;
 import java.util.ArrayList;
 import java.util.List;
+import org.hibernate.Filter;
+import org.hibernate.Session;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -33,7 +38,21 @@ import org.springframework.data.jpa.domain.Specification;
 class ReportServiceTest {
   @Mock CategoryRepository categoryRepository;
 
+  @Mock EntityManager entityManager;
+
   @InjectMocks ReportServiceImpl reportService;
+
+  @BeforeEach
+  void setUp() {
+    // Mock the behavior of EntityManager.unwrap to return the mock Session
+    Session session = mock(Session.class);
+    when(entityManager.unwrap(Session.class)).thenReturn(session);
+
+    // Mock the behavior of enableFilter and setParameter
+    Filter mockFilter = mock(Filter.class);
+    when(session.enableFilter("activeAssets")).thenReturn(mockFilter);
+    when(mockFilter.setParameter("isDisabled", false)).thenReturn(mockFilter);
+  }
 
   // Add test methods here to test the ReportServiceImpl methods
   @Test
@@ -114,7 +133,7 @@ class ReportServiceTest {
 
     // Verify the results
     assertEquals(1, reports.size());
-    CategoryReportDtoResponse report = reports.get(0);
+    CategoryReportDtoResponse report = reports.getFirst();
     assertEquals("Test Category", report.getCategory());
     assertEquals(0, report.getTotal());
     assertEquals(0, report.getAssigned());
@@ -126,6 +145,7 @@ class ReportServiceTest {
 
   @Test
   @DisplayName("getAllReports with paging should return paginated reports")
+  @SuppressWarnings("unchecked")
   void getAllReports_WithPaging_ShouldReturnPaginatedReports() {
     // Create test categories with assets
     Category category1 = createCategoryWithAssets("Category 1", 5, 3, 2);
@@ -156,6 +176,7 @@ class ReportServiceTest {
 
   @Test
   @DisplayName("getAllReports with paging should handle empty results")
+  @SuppressWarnings("unchecked")
   void getAllReports_WithPaging_ShouldHandleEmptyResults() {
     Page<Category> emptyPage = new PageImpl<>(List.of(), PageRequest.of(0, 10), 0);
 
@@ -175,6 +196,7 @@ class ReportServiceTest {
 
   @Test
   @DisplayName("getAllReports with paging should sort by specified field descending")
+  @SuppressWarnings("unchecked")
   void getAllReports_WithPaging_ShouldSortBySpecifiedFieldDescending() {
     Category category1 = createCategoryWithAssets("Category 1", 5, 2, 3);
     Category category2 = createCategoryWithAssets("Category 2", 3, 1, 2);
@@ -191,6 +213,7 @@ class ReportServiceTest {
 
   @Test
   @DisplayName("getAllReports with paging should handle null sort parameters")
+  @SuppressWarnings("unchecked")
   void getAllReports_WithPaging_ShouldHandleNullSortParameters() {
     Category category = createCategoryWithAssets("Test Category", 3, 1, 2);
 
@@ -203,7 +226,7 @@ class ReportServiceTest {
         reportService.getAllReports(0, 10, null, "asc");
 
     assertEquals(1, response.getContent().size());
-    assertEquals("Test Category", response.getContent().stream().toList().get(0).getCategory());
+    assertEquals("Test Category", response.getContent().stream().toList().getFirst().getCategory());
   }
 
   // Helper method to create test data

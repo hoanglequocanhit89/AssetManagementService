@@ -5,6 +5,7 @@ import static org.junit.jupiter.api.Assertions.assertNull;
 
 import com.rookie.asset_management.config.audit.AuditorAwareImpl;
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.entity.UserDetailModel;
 import java.util.Collections;
 import java.util.Optional;
 import org.junit.jupiter.api.AfterEach;
@@ -38,16 +39,19 @@ class AuditAwareTest {
   void testGetCurrentAuditor() {
     User user = new User();
     user.setId(1);
+    user.setDisabled(false);
     user.setUsername("testUser");
 
+    UserDetailModel userDetailModel = new UserDetailModel(user);
+
     UsernamePasswordAuthenticationToken authenticationToken =
-        new UsernamePasswordAuthenticationToken(user, null, Collections.emptyList());
+        new UsernamePasswordAuthenticationToken(userDetailModel, null, Collections.emptyList());
     authenticationToken.setDetails("testUser");
     SecurityContextHolder.getContext().setAuthentication(authenticationToken);
 
     Optional<User> auditor = auditorAware.getCurrentAuditor();
 
-    User actualUser = (User) auditor.orElse(null);
+    User actualUser = auditor.orElse(null);
 
     Assertions.assertNotNull(actualUser);
     assertEquals(
