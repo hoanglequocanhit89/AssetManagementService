@@ -4,10 +4,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 
 import com.rookie.asset_management.dto.request.assignment.CreateUpdateAssignmentRequest;
 import com.rookie.asset_management.dto.response.ApiDtoResponse;
@@ -29,6 +26,7 @@ import com.rookie.asset_management.repository.AssignmentRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.impl.AssignmentServiceImpl;
 import com.rookie.asset_management.service.impl.handler.NotificationCreatorImpl;
+import jakarta.persistence.EntityManager;
 import java.time.LocalDate;
 import java.util.Arrays;
 import java.util.Collections;
@@ -46,6 +44,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
+import org.springframework.transaction.annotation.Transactional;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -63,8 +62,11 @@ class AssignmentServiceTest {
 
   @Mock private JwtService jwtService;
 
+  @Mock private EntityManager entityManager;
+
   @InjectMocks private AssignmentServiceImpl assignmentService;
 
+  @Transactional
   @Test
   void createAssignment_Success() {
     // Arrange
