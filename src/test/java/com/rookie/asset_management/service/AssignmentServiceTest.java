@@ -38,6 +38,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.MockedStatic;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.mockito.junit.jupiter.MockitoSettings;
 import org.mockito.quality.Strictness;
@@ -45,6 +47,7 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @ExtendWith(MockitoExtension.class)
 @MockitoSettings(strictness = Strictness.LENIENT)
@@ -114,8 +117,18 @@ class AssignmentServiceTest {
     when(assignmentRepository.save(any(Assignment.class))).thenReturn(assignment);
     when(assignmentMapper.toDto(any(Assignment.class))).thenReturn(response);
 
-    // Act
-    AssignmentListDtoResponse result = assignmentService.createAssignment(request);
+    AssignmentListDtoResponse result;
+
+    // Mock TransactionSynchronizationManager behavior
+    try (MockedStatic<TransactionSynchronizationManager> mockedStatic =
+        Mockito.mockStatic(TransactionSynchronizationManager.class)) {
+      mockedStatic
+          .when(() -> TransactionSynchronizationManager.registerSynchronization(any()))
+          .thenAnswer(invocation -> null);
+
+      // Act
+      result = assignmentService.createAssignment(request);
+    }
 
     // Assert
     assertNotNull(result);
