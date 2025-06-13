@@ -24,6 +24,7 @@ import com.rookie.asset_management.service.NotificationCreator;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.AssignmentSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
+import jakarta.persistence.EntityManager;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Objects;
@@ -38,6 +39,8 @@ import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronizationAdapter;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 @Service
 @FieldDefaults(level = AccessLevel.PRIVATE, makeFinal = true)
@@ -50,6 +53,7 @@ public class AssignmentServiceImpl
   AssetRepository assetRepository;
   JwtService jwtService;
   NotificationCreator notificationCreator;
+  EntityManager entityManager;
 
   @Autowired
   public AssignmentServiceImpl(
@@ -58,7 +62,8 @@ public class AssignmentServiceImpl
       UserRepository userRepository,
       AssetRepository assetRepository,
       JwtService jwtService,
-      NotificationCreator notificationCreator) {
+      NotificationCreator notificationCreator,
+      EntityManager entityManager) {
     super(assignmentMapper, assignmentRepository);
     this.assignmentMapper = assignmentMapper;
     this.assignmentRepository = assignmentRepository;
@@ -66,6 +71,7 @@ public class AssignmentServiceImpl
     this.assetRepository = assetRepository;
     this.jwtService = jwtService;
     this.notificationCreator = notificationCreator;
+    this.entityManager = entityManager;
   }
 
   @Override
@@ -124,11 +130,17 @@ public class AssignmentServiceImpl
 
     // Save the assignment
     Assignment savedAssignment = assignmentRepository.save(assignment);
-    assignmentRepository.flush();
+
+    entityManager.flush();
 
     // Create notification
-    notificationCreator.createAssignmentNotification(assigner, assignee, savedAssignment);
-
+    TransactionSynchronizationManager.registerSynchronization(
+        new TransactionSynchronizationAdapter() {
+          @Override
+          public void afterCommit() {
+            notificationCreator.createAssignmentNotification(assigner, assignee, savedAssignment);
+          }
+        });
     return assignmentMapper.toDto(savedAssignment);
   }
 

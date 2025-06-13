@@ -4,6 +4,7 @@ import com.rookie.asset_management.dto.response.PagingDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.CompleteReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.return_request.ReturningRequestDtoResponse;
 import com.rookie.asset_management.dto.response.returning.ReturningRequestDetailDtoResponse;
+import com.rookie.asset_management.entity.Asset;
 import com.rookie.asset_management.entity.Assignment;
 import com.rookie.asset_management.entity.ReturningRequest;
 import com.rookie.asset_management.entity.User;
@@ -17,6 +18,7 @@ import com.rookie.asset_management.repository.ReturningRequestRepository;
 import com.rookie.asset_management.repository.UserRepository;
 import com.rookie.asset_management.service.JwtService;
 import com.rookie.asset_management.service.NotificationCreator;
+import com.rookie.asset_management.service.NotificationService;
 import com.rookie.asset_management.service.ReturningRequestService;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReturningRequestSpecification;
@@ -43,6 +45,7 @@ public class ReturningRequestServiceImpl
   ReturningRequestMapper returningRequestMapper;
   JwtService jwtService;
   NotificationCreator notificationCreator;
+  NotificationService notificationService;
 
   @Autowired
   public ReturningRequestServiceImpl(
@@ -51,7 +54,8 @@ public class ReturningRequestServiceImpl
       UserRepository userRepository,
       ReturningRequestMapper returningRequestMapper,
       JwtService jwtService,
-      NotificationCreator notificationCreator) {
+      NotificationCreator notificationCreator,
+      NotificationService notificationService) {
     super(returningRequestMapper, returningRequestRepository);
     this.returningRequestRepository = returningRequestRepository;
     this.userRepository = userRepository;
@@ -59,6 +63,7 @@ public class ReturningRequestServiceImpl
     this.jwtService = jwtService;
     this.assignmentRepository = assignmentRepository;
     this.notificationCreator = notificationCreator;
+    this.notificationService = notificationService;
   }
 
   @Override
@@ -131,7 +136,6 @@ public class ReturningRequestServiceImpl
   }
 
   @Override
-  @Transactional
   public CompleteReturningRequestDtoResponse completeReturningRequest(Integer id) {
     ReturningRequest returningRequest =
         returningRequestRepository
@@ -145,10 +149,12 @@ public class ReturningRequestServiceImpl
             .findByUsername(username)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
+    // Check if user is admin
     if (!"ADMIN".equalsIgnoreCase(user.getRole().getName())) {
       throw new AppException(HttpStatus.FORBIDDEN, "Only admins can access this endpoint");
     }
 
+    // Check if admin has the same location as the returning request
     if (!returningRequest
         .getAssignment()
         .getAsset()
@@ -182,6 +188,18 @@ public class ReturningRequestServiceImpl
 
     // Save the updated request
     returningRequestRepository.save(returningRequest);
+    returningRequestRepository.flush();
+
+    // Create a notification to the assignee
+    var assignee = returningRequest.getAssignment().getAssignedTo();
+    notificationService.createReturningRequestCompletedNotification(
+        user, assignee, returningRequest);
+
+    // Create a notification to the requester(another admin)
+    if (!returningRequest.getRequestedBy().equals(assignee)) {
+      notificationService.createReturningRequestCompletedNotification(
+          user, returningRequest.getRequestedBy(), returningRequest);
+    }
 
     return CompleteReturningRequestDtoResponse.builder()
         .id(returningRequest.getId())
@@ -192,6 +210,7 @@ public class ReturningRequestServiceImpl
   @Override
   @Transactional
   public ReturningRequestDetailDtoResponse createReturningRequest(Integer assignmentId) {
+    // Get current admin from JWT
     String username = jwtService.extractUsername();
     User admin =
         userRepository
@@ -202,6 +221,7 @@ public class ReturningRequestServiceImpl
       throw new AppException(HttpStatus.FORBIDDEN, "Only admins can create returning requests");
     }
 
+    // Find the assignment
     Assignment assignment =
         assignmentRepository
             .findById(assignmentId)
@@ -232,26 +252,39 @@ public class ReturningRequestServiceImpl
     returningRequest.setReturnedDate(null);
     returningRequest.setStatus(ReturningRequestStatus.WAITING);
 
+    // Update assignment status to WAITING_FOR_RETURNING
     assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
     assignmentRepository.save(assignment);
+    assignmentRepository.flush();
 
+    // Save returning request
+    ReturningRequest savedReturningRequest = returningRequestRepository.save(returningRequest);
+    returningRequestRepository.flush();
+
+    // Create notification to another admin
+    notificationService.createReturningRequestNotification(admin, savedReturningRequest);
+
+    // Return DTO
     return returningRequestMapper.toDetailDto(returningRequestRepository.save(returningRequest));
   }
 
   @Override
   @Transactional
   public ReturningRequestDetailDtoResponse createUserReturningRequest(Integer assignmentId) {
+    // Get current user from JWT
     String username = jwtService.extractUsername();
     User user =
         userRepository
             .findByUsername(username)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "User Not Found"));
 
+    // Find the assignment
     Assignment assignment =
         assignmentRepository
             .findById(assignmentId)
             .orElseThrow(() -> new AppException(HttpStatus.BAD_REQUEST, "Assignment Not Found"));
 
+    // Check if the user is the one assigned to this assignment
     if (!assignment.getAssignedTo().getId().equals(user.getId())) {
       throw new AppException(
           HttpStatus.FORBIDDEN, "You can only create returning requests for your own assignments");
@@ -264,22 +297,40 @@ public class ReturningRequestServiceImpl
           HttpStatus.CONFLICT, "Failed to request return, another user has already initiated it");
     }
 
+    // Check if assignment is in ACCEPTED state
     if (!assignment.getStatus().equals(AssignmentStatus.ACCEPTED)) {
       throw new AppException(
           HttpStatus.BAD_REQUEST, "Only accepted assignments can have returning requests");
     }
 
+    // Create new returning request
     ReturningRequest returningRequest = new ReturningRequest();
     returningRequest.setAssignment(assignment);
     returningRequest.setRequestedBy(user);
     returningRequest.setAcceptedBy(null);
     returningRequest.setReturnedDate(null);
+
     returningRequest.setStatus(ReturningRequestStatus.WAITING);
 
+    // Update assignment status to WAITING_FOR_RETURNING
     assignment.setStatus(AssignmentStatus.WAITING_FOR_RETURNING);
     assignmentRepository.save(assignment);
+    assignmentRepository.flush();
 
-    return returningRequestMapper.toDetailDto(returningRequestRepository.save(returningRequest));
+    // Save returning request first
+    ReturningRequest savedRequest = returningRequestRepository.save(returningRequest);
+
+    Assignment loadedAssignment = savedRequest.getAssignment();
+    Asset loadedAsset = loadedAssignment.getAsset();
+    User assignedTo = loadedAssignment.getAssignedTo();
+
+    loadedAsset.getName(); // force load asset name
+    assignedTo.getUsername(); // force load assignedTo user
+
+    notificationService.createReturningRequestNotification(user, savedRequest);
+
+    // Return DTO
+    return returningRequestMapper.toDetailDto(savedRequest);
   }
 
   @Override
@@ -322,12 +373,12 @@ public class ReturningRequestServiceImpl
     assignmentRepository.save(assignment);
 
     // Create notification to requester
-    notificationCreator.createReturningRequestRejectedNotification(
+    notificationService.createReturningRequestRejectedNotification(
         admin, returningRequest.getRequestedBy(), assignment);
 
     // Create notification to assignee if requester is an admin
     if (returningRequest.getRequestedBy().getRole().getName().equals("ADMIN")) {
-      notificationCreator.createReturningRequestRejectedNotification(
+      notificationService.createReturningRequestRejectedNotification(
           admin,
           returningRequest.getAssignment().getAssignedTo(),
           returningRequest.getAssignment());
