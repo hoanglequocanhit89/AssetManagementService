@@ -15,7 +15,10 @@ import java.time.LocalDate;
 import java.util.List;
 import lombok.Getter;
 import lombok.Setter;
+import org.hibernate.annotations.Filter;
+import org.hibernate.annotations.FilterDef;
 import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.annotations.ParamDef;
 import org.hibernate.type.SqlTypes;
 import org.springframework.format.annotation.DateTimeFormat;
 
@@ -23,6 +26,8 @@ import org.springframework.format.annotation.DateTimeFormat;
 @Table(name = "assets")
 @Getter
 @Setter
+@FilterDef(name = "activeAssets", parameters = @ParamDef(name = "isDisabled", type = Boolean.class))
+@Filter(name = "activeAssets", condition = "disabled = :isDisabled")
 public class Asset extends BaseEntityAudit {
   private String name;
   private String specification;

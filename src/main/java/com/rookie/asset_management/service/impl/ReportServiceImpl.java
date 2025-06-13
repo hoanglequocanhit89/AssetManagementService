@@ -11,11 +11,15 @@ import com.rookie.asset_management.service.ReportService;
 import com.rookie.asset_management.service.abstraction.PagingServiceImpl;
 import com.rookie.asset_management.service.specification.ReportSpecification;
 import com.rookie.asset_management.util.SpecificationBuilder;
+import jakarta.persistence.EntityManager;
+import jakarta.persistence.PersistenceContext;
 import java.util.EnumMap;
 import java.util.List;
 import java.util.Map;
 import lombok.AccessLevel;
 import lombok.experimental.FieldDefaults;
+import org.hibernate.Filter;
+import org.hibernate.Session;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -28,9 +32,10 @@ public class ReportServiceImpl
     extends PagingServiceImpl<CategoryReportDtoResponse, Category, Integer>
     implements ReportService {
   CategoryRepository categoryRepository;
+  @PersistenceContext EntityManager entityManager;
 
   @Autowired
-  public ReportServiceImpl(CategoryRepository categoryRepository) {
+  public ReportServiceImpl(CategoryRepository categoryRepository, EntityManager entityManager) {
     // Initialize the PagingMapper with a no-op implementation
     // using anonymous inner class
     super(
@@ -46,12 +51,14 @@ public class ReportServiceImpl
           }
         },
         categoryRepository);
+    this.entityManager = entityManager;
     this.categoryRepository = categoryRepository;
   }
 
   @Override
   public List<CategoryReportDtoResponse> getAllReports() {
     // Retrieve all categories from the repository
+    enableActiveAssetsFilter();
     List<Category> categories = categoryRepository.findAll();
     return categories.stream()
         .map(this::getReport)
@@ -64,9 +71,9 @@ public class ReportServiceImpl
     Specification<Category> spec =
         new SpecificationBuilder<Category>()
             .add(ReportSpecification.getSortedByAssetsCount(sortBy, sortDir))
-            .add(ReportSpecification.countDistinctCategorySpec())
             .build();
     Pageable pageable = PageRequest.of(page, size);
+    enableActiveAssetsFilter();
     return getMany(spec, pageable, this::getReport);
   }
 
@@ -110,5 +117,15 @@ public class ReportServiceImpl
         .waiting(statusCounts.get(AssetStatus.WAITING))
         .recycled(statusCounts.get(AssetStatus.RECYCLED))
         .build();
+  }
+
+  private void enableActiveAssetsFilter() {
+    Session session = entityManager.unwrap(Session.class);
+    if (session != null) {
+      Filter filter = session.enableFilter("activeAssets");
+      if (filter != null) {
+        filter.setParameter("isDisabled", false);
+      }
+    }
   }
 }

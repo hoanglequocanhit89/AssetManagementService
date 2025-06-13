@@ -1,6 +1,7 @@
 package com.rookie.asset_management.config.audit;
 
 import com.rookie.asset_management.entity.User;
+import com.rookie.asset_management.entity.UserDetailModel;
 import java.util.Optional;
 import org.springframework.data.domain.AuditorAware;
 import org.springframework.security.core.Authentication;
@@ -29,8 +30,8 @@ public class AuditorAwareImpl implements AuditorAware<User> {
 
     Object principal = authentication.getPrincipal();
 
-    if (principal instanceof User user) {
-      return Optional.of(user);
+    if (principal instanceof UserDetailModel userDetailModel) {
+      return Optional.of(userDetailModel.getUser());
     }
 
     return Optional.empty();
